@@ -1,0 +1,17 @@
+{
+  "name": "lineage-classic-db",
+  "version": "1.0.0",
+  "description": "天堂精典版 血盟管理系統",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "@line/bot-sdk": "^11.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
+    "express": "^4.18.2",
+    "firebase-admin": "^13.8.0"
+  }
+}

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>天堂精典 - 盟友小幫手</title>
+  <link rel="stylesheet" href="../style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    /* LIFF Specific Overrides */
+    body {
+      padding-top: 20px;
+    }
+    .profile-banner {
+      text-align: center;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      font-size: 14px;
+    }
+    .profile-banner span {
+      color: var(--primary-color);
+      font-weight: 500;
+    }
+    .liff-btn {
+      width: 100%;
+      margin-bottom: 12px;
+      padding: 16px;
+      font-size: 16px;
+      justify-content: flex-start;
+      border: 1px solid var(--border-color);
+      background-color: var(--card-bg);
+      color: var(--text-main);
+    }
+    .liff-btn:hover {
+      background-color: var(--primary-light);
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+    }
+    .liff-btn-primary {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      justify-content: center;
+    }
+    .liff-btn-primary:hover {
+      background-color: #5E35B1;
+    }
+    a.liff-btn {
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    
+    <header class="form-header">
+      <h1>⚔️ 盟友小幫手</h1>
+      <p>快速查詢血盟資訊，或進入完整系統管理紀錄。</p>
+    </header>
+
+    <div class="card">
+      <div id="profile" class="profile-banner">正在讀取 LINE 資料...</div>
+      
+      <button class="btn liff-btn" onclick="sendMessage('名單')">🛡️ 查詢盟友名單</button>
+      <button class="btn liff-btn" onclick="sendMessage('拍賣')">💰 查詢最新拍賣分紅</button>
+      <br><br>
+      <a href="/" class="btn liff-btn liff-btn-primary">🌐 開啟完整管理系統</a>
+    </div>
+
+  </div>
+
+  <script>
+    async function initLIFF() {
+      try {
+        // 請將 YOUR_LIFF_ID 替換為實際的 LIFF ID
+        await liff.init({ liffId: "YOUR_LIFF_ID" });
+        if (liff.isLoggedIn()) {
+          const profile = await liff.getProfile();
+          document.getElementById('profile').innerHTML = `歡迎，<span>${profile.displayName}</span>！`;
+        } else {
+          document.getElementById('profile').innerHTML = `請在 LINE 內部開啟以獲得最佳體驗。`;
+        }
+      } catch (err) {
+        console.error('LIFF 初始化失敗', err);
+        document.getElementById('profile').innerHTML = `請在 LINE App 內開啟`;
+      }
+    }
+    
+    function sendMessage(text) {
+      if (liff.isLoggedIn() && liff.isInClient()) {
+        liff.sendMessages([{ type: 'text', text: text }])
+          .then(() => liff.closeWindow())
+          .catch((err) => console.error('發送失敗', err));
+      } else {
+        alert('請在 LINE 聊天室內使用這項功能喔！\n您點擊了：' + text);
+      }
+    }
+
+    initLIFF();
+  </script>
+</body>
+</html>
