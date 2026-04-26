@@ -3,240 +3,311 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>天堂精典版管理系統</title>
+  <title>天堂：經典版 | 水蛇伺服器-長途夜車</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="container">
-    
-    <!-- Header Card -->
-    <header class="form-header">
-      <h1>天堂精典版管理系統</h1>
-      <p>請選擇您要管理或查看的項目，所有資料將同步儲存至雲端。</p>
+
+  <!-- Background particles -->
+  <div class="particles" id="particles"></div>
+
+  <div class="app-wrapper">
+
+    <!-- Header -->
+    <header class="site-header">
+      <div class="header-inner">
+        <div class="logo-area">
+          <div class="logo-emblem">⚔️</div>
+          <div class="logo-text">
+            <h1 class="site-title">天堂：經典版</h1>
+            <p class="site-subtitle">水蛇伺服器 · 長途夜車</p>
+          </div>
+        </div>
+        <div class="header-deco"></div>
+      </div>
     </header>
 
     <!-- Navigation -->
-    <nav id="navBar">
-      <button class="nav-btn active" onclick="switchSection('members')">血盟成員</button>
-      <button class="nav-btn" onclick="switchSection('battles')">首領戰紀錄</button>
-      <button class="nav-btn" onclick="switchSection('sieges')">攻城戰紀錄</button>
-      <button class="nav-btn" onclick="switchSection('alliances')">聯盟名單</button>
+    <nav class="main-nav">
+      <div class="nav-inner">
+        <button class="nav-btn active" data-section="members" onclick="switchSection('members')">
+          <span class="nav-icon">🛡️</span>
+          <span>血盟成員</span>
+        </button>
+        <button class="nav-btn" data-section="battles" onclick="switchSection('battles')">
+          <span class="nav-icon">⚔️</span>
+          <span>首領討伐</span>
+        </button>
+        <button class="nav-btn" data-section="sieges" onclick="switchSection('sieges')">
+          <span class="nav-icon">🏰</span>
+          <span>攻城戰紀錄</span>
+        </button>
+        <button class="nav-btn" data-section="alliances" onclick="switchSection('alliances')">
+          <span class="nav-icon">🤝</span>
+          <span>聯盟名單</span>
+        </button>
+      </div>
     </nav>
 
-    <!-- Section: Members -->
-    <section id="members" class="section active">
-      <div class="card">
-        <h2>新增血盟成員</h2>
-        <div class="form-row">
-          <div class="input-group">
-            <input type="text" id="mName" placeholder="角色名稱" required>
-          </div>
-          <div class="input-group">
-            <select id="mJob" required>
-              <option value="" disabled selected>選擇職業</option>
-              <option value="王族">王族</option>
-              <option value="騎士">騎士</option>
-              <option value="妖精">妖精</option>
-              <option value="法師">法師</option>
-              <option value="黑妖">黑妖</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="input-group">
-            <input type="number" id="mLevel" placeholder="等級" min="1">
-          </div>
-        </div>
-        <div class="actions">
-          <div></div>
-          <button class="btn" onclick="addMember()">送出</button>
-        </div>
-      </div>
+    <!-- Main Content -->
+    <main class="main-content">
 
-      <div class="card">
-        <h2>成員列表</h2>
-        <div class="table-responsive">
-          <table id="membersTable">
-            <thead>
-              <tr>
-                <th>名稱</th>
-                <th>職業</th>
-                <th>等級</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+      <!-- ── Members Section ── -->
+      <section id="members" class="section active">
+        <div class="section-header">
+          <h2>🛡️ 血盟成員管理</h2>
+          <div class="member-count-badge" id="memberCountBadge">載入中...</div>
         </div>
-      </div>
-    </section>
 
-    <!-- Section: Battles -->
-    <section id="battles" class="section">
-      <div class="card">
-        <h2>登記首領戰</h2>
-        <div class="input-group">
-          <label>首領名稱</label>
-          <select id="bBossName">
-            <option value="死亡騎士">死亡騎士</option>
-            <option value="克特">克特</option>
-            <option value="惡魔">惡魔</option>
-            <option value="巴風特">巴風特</option>
-            <option value="其他">其他</option>
-          </select>
-        </div>
-        <div class="input-group">
-          <label>戰鬥時間</label>
-          <input type="datetime-local" id="bTime">
-        </div>
-        <div class="input-group">
-          <label>出席成員</label>
-          <div class="checkbox-list" id="bAttendance">
-            <!-- Checkboxes generated by JS -->
-          </div>
-        </div>
-        <div class="input-group">
-          <label>拍賣總金額 (天幣)</label>
-          <input type="number" id="bAuctionPool" placeholder="0">
-        </div>
-        
-        <div class="input-group">
-          <label>戰利品明細 (選填)</label>
-          <div id="bDropsList">
-            <div class="loot-item">
-              <input type="text" placeholder="物品名稱" class="loot-name">
-              <input type="number" placeholder="拍出金額" class="loot-price">
+        <div class="card">
+          <div class="card-title">新增成員</div>
+          <div class="form-grid">
+            <div class="field-group">
+              <label>角色名稱</label>
+              <input type="text" id="mName" placeholder="輸入角色名稱">
+            </div>
+            <div class="field-group">
+              <label>職業</label>
+              <select id="mJob">
+                <option value="" disabled selected>選擇職業</option>
+                <option value="王族">👑 王族</option>
+                <option value="騎士">🗡️ 騎士</option>
+                <option value="妖精">🌿 妖精</option>
+                <option value="法師">🔮 法師</option>
+                <option value="黑妖">🌑 黑妖</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label>等級</label>
+              <input type="number" id="mLevel" placeholder="Lv." min="1" max="99">
             </div>
           </div>
-          <button class="btn btn-secondary mt-2" onclick="addLootRow()">+ 新增物品</button>
-        </div>
-        
-        <div class="actions">
-          <div></div>
-          <button class="btn" onclick="addBattle()">提交紀錄</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>首領戰歷史紀錄</h2>
-        <div class="table-responsive">
-          <table id="battlesTable">
-            <thead>
-              <tr>
-                <th>時間</th>
-                <th>首領</th>
-                <th>出席數</th>
-                <th>總拍賣金</th>
-                <th>每人分紅</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- Section: Sieges -->
-    <section id="sieges" class="section">
-      <div class="card">
-        <h2>登記攻守城戰</h2>
-        <div class="input-group">
-          <label>日期</label>
-          <input type="datetime-local" id="sDate">
-        </div>
-        <div class="input-group">
-          <label>城堡</label>
-          <select id="sCastle">
-            <option value="肯特城">肯特城</option>
-            <option value="妖魔堡壘">妖魔堡壘</option>
-            <option value="風木城">風木城</option>
-            <option value="海音城">海音城</option>
-            <option value="奇岩城">奇岩城</option>
-          </select>
-        </div>
-        <div class="input-group">
-          <label>發放總獎金 (天幣)</label>
-          <input type="number" id="sReward" placeholder="0">
-        </div>
-        <div class="input-group">
-          <label>出席成員</label>
-          <div class="checkbox-list" id="sAttendance">
-            <!-- Checkboxes generated by JS -->
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="addMember()">
+              <span>＋ 加入血盟</span>
+            </button>
           </div>
         </div>
-        <div class="actions">
-          <div></div>
-          <button class="btn" onclick="addSiege()">提交紀錄</button>
-        </div>
-      </div>
 
-      <div class="card">
-        <h2>攻城戰歷史紀錄</h2>
-        <div class="table-responsive">
-          <table id="siegesTable">
-            <thead>
-              <tr>
-                <th>時間</th>
-                <th>城堡</th>
-                <th>出席數</th>
-                <th>總獎金</th>
-                <th>每人分紅</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- Section: Alliances -->
-    <section id="alliances" class="section">
-      <div class="card">
-        <h2>新增聯盟成員</h2>
-        <p class="mb-2" style="color: var(--text-muted); font-size: 13px;">登記同盟玩家，作為後續聯合活動的參考名單。</p>
-        <div class="form-row">
-          <div class="input-group">
-            <input type="text" id="aName" placeholder="角色名稱" required>
-          </div>
-          <div class="input-group">
-            <select id="aJob" required>
-              <option value="" disabled selected>選擇職業</option>
-              <option value="王族">王族</option>
-              <option value="騎士">騎士</option>
-              <option value="妖精">妖精</option>
-              <option value="法師">法師</option>
-              <option value="黑妖">黑妖</option>
-            </select>
+        <div class="card">
+          <div class="card-title">成員列表</div>
+          <div class="table-wrap">
+            <table id="membersTable">
+              <thead>
+                <tr>
+                  <th>角色名稱</th>
+                  <th>職業</th>
+                  <th>等級</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
           </div>
         </div>
-        <div class="actions">
-          <div></div>
-          <button class="btn" onclick="addAlliance()">送出</button>
-        </div>
-      </div>
+      </section>
 
-      <div class="card">
-        <h2>聯盟列表</h2>
-        <div class="table-responsive">
-          <table id="alliancesTable">
-            <thead>
-              <tr>
-                <th>名稱</th>
-                <th>職業</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+      <!-- ── Battles Section ── -->
+      <section id="battles" class="section">
+        <div class="section-header">
+          <h2>⚔️ 首領討伐紀錄</h2>
         </div>
-      </div>
-    </section>
 
+        <div class="card">
+          <div class="card-title">登記討伐</div>
+          <div class="form-grid">
+            <div class="field-group">
+              <label>討伐首領</label>
+              <select id="bBossName">
+                <option value="死亡騎士">💀 死亡騎士</option>
+                <option value="克特">🐉 克特</option>
+                <option value="惡魔">😈 惡魔</option>
+                <option value="巴風特">🐐 巴風特</option>
+                <option value="其他">⚡ 其他</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label>戰鬥時間</label>
+              <input type="datetime-local" id="bTime">
+            </div>
+            <div class="field-group">
+              <label>拍賣總金額（天幣）</label>
+              <input type="number" id="bAuctionPool" placeholder="0">
+            </div>
+          </div>
+
+          <div class="field-group mt-1">
+            <label>出席成員</label>
+            <div class="attendance-grid" id="bAttendance"></div>
+          </div>
+
+          <div class="field-group mt-1">
+            <label>戰利品明細（選填）</label>
+            <div id="bDropsList">
+              <div class="loot-row">
+                <input type="text" placeholder="物品名稱" class="loot-name">
+                <input type="number" placeholder="拍出天幣" class="loot-price">
+                <button class="btn-icon" onclick="removeLootRow(this)">✕</button>
+              </div>
+            </div>
+            <button class="btn btn-ghost mt-1" onclick="addLootRow()">＋ 新增戰利品</button>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="addBattle()">⚔️ 提交討伐紀錄</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">討伐歷史</div>
+          <div class="table-wrap">
+            <table id="battlesTable">
+              <thead>
+                <tr>
+                  <th>時間</th>
+                  <th>首領</th>
+                  <th>出席數</th>
+                  <th>總拍賣金</th>
+                  <th>每人分紅</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Sieges Section ── -->
+      <section id="sieges" class="section">
+        <div class="section-header">
+          <h2>🏰 攻城戰紀錄</h2>
+        </div>
+
+        <div class="card">
+          <div class="card-title">登記攻城</div>
+          <div class="form-grid">
+            <div class="field-group">
+              <label>日期</label>
+              <input type="datetime-local" id="sDate">
+            </div>
+            <div class="field-group">
+              <label>城堡</label>
+              <select id="sCastle">
+                <option value="肯特城">🏰 肯特城</option>
+                <option value="妖魔堡壘">🔥 妖魔堡壘</option>
+                <option value="風木城">🌲 風木城</option>
+                <option value="海音城">🌊 海音城</option>
+                <option value="奇岩城">⛰️ 奇岩城</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label>發放總獎金（天幣）</label>
+              <input type="number" id="sReward" placeholder="0">
+            </div>
+          </div>
+
+          <div class="field-group mt-1">
+            <label>出席成員</label>
+            <div class="attendance-grid" id="sAttendance"></div>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="addSiege()">🏰 提交攻城紀錄</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">攻城歷史</div>
+          <div class="table-wrap">
+            <table id="siegesTable">
+              <thead>
+                <tr>
+                  <th>時間</th>
+                  <th>城堡</th>
+                  <th>出席數</th>
+                  <th>總獎金</th>
+                  <th>每人分紅</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Alliances Section ── -->
+      <section id="alliances" class="section">
+        <div class="section-header">
+          <h2>🤝 聯盟管理</h2>
+        </div>
+
+        <div class="card">
+          <div class="card-title">新增聯盟玩家</div>
+          <p class="card-desc">登記同盟玩家，作為後續聯合活動的參考名單。</p>
+          <div class="form-grid">
+            <div class="field-group">
+              <label>角色名稱</label>
+              <input type="text" id="aName" placeholder="輸入角色名稱">
+            </div>
+            <div class="field-group">
+              <label>職業</label>
+              <select id="aJob">
+                <option value="" disabled selected>選擇職業</option>
+                <option value="王族">👑 王族</option>
+                <option value="騎士">🗡️ 騎士</option>
+                <option value="妖精">🌿 妖精</option>
+                <option value="法師">🔮 法師</option>
+                <option value="黑妖">🌑 黑妖</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="addAlliance()">＋ 加入聯盟</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">聯盟列表</div>
+          <div class="table-wrap">
+            <table id="alliancesTable">
+              <thead>
+                <tr>
+                  <th>角色名稱</th>
+                  <th>職業</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <footer class="site-footer">
+      <p>⚔️ 天堂：經典版 · 水蛇伺服器-長途夜車 · Firebase Cloud 驅動</p>
+    </footer>
   </div>
 
-  <div id="toast"></div>
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
 
   <script src="app.js"></script>
+  <script>
+    // Generate floating particles
+    const container = document.getElementById('particles');
+    for (let i = 0; i < 30; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      p.style.left = Math.random() * 100 + '%';
+      p.style.animationDelay = Math.random() * 15 + 's';
+      p.style.animationDuration = (12 + Math.random() * 10) + 's';
+      p.style.opacity = Math.random() * 0.4 + 0.1;
+      container.appendChild(p);
+    }
+  </script>
 </body>
 </html>
