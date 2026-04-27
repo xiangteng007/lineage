@@ -4,18 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>天堂：經典版 | 水蛇伺服器-長途夜車</title>
+  <meta name="description" content="天堂經典版 水蛇伺服器 長途夜車 血盟管理系統">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+  <!-- Google Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-  <!-- Background particles -->
   <div class="particles" id="particles"></div>
 
   <div class="app-wrapper">
 
-    <!-- Header -->
+    <!-- ── Header ── -->
     <header class="site-header">
       <div class="header-inner">
         <div class="logo-area">
@@ -25,51 +26,64 @@
             <p class="site-subtitle">水蛇伺服器 · 長途夜車</p>
           </div>
         </div>
-        <div class="header-deco"></div>
+        <div class="header-right">
+          <!-- Admin login area -->
+          <div id="authArea">
+            <div id="loginBtn" class="google-login-btn" onclick="openLoginModal()">
+              <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+              <span>管理員登入</span>
+            </div>
+            <div id="userInfo" class="user-info hidden">
+              <img id="userAvatar" src="" alt="avatar" class="user-avatar">
+              <div class="user-details">
+                <span id="userName" class="user-name"></span>
+                <span id="adminBadge" class="admin-badge hidden">管理員</span>
+              </div>
+              <button class="btn-logout" onclick="logout()">登出</button>
+            </div>
+          </div>
+        </div>
       </div>
     </header>
 
-    <!-- Navigation -->
+    <!-- ── Navigation ── -->
     <nav class="main-nav">
       <div class="nav-inner">
         <button class="nav-btn active" data-section="members" onclick="switchSection('members')">
-          <span class="nav-icon">🛡️</span>
-          <span>血盟成員</span>
+          <span class="nav-icon">🛡️</span><span>血盟成員</span>
         </button>
         <button class="nav-btn" data-section="battles" onclick="switchSection('battles')">
-          <span class="nav-icon">⚔️</span>
-          <span>首領討伐</span>
+          <span class="nav-icon">⚔️</span><span>首領討伐</span>
         </button>
         <button class="nav-btn" data-section="sieges" onclick="switchSection('sieges')">
-          <span class="nav-icon">🏰</span>
-          <span>攻城戰紀錄</span>
+          <span class="nav-icon">🏰</span><span>攻城戰</span>
         </button>
         <button class="nav-btn" data-section="alliances" onclick="switchSection('alliances')">
-          <span class="nav-icon">🤝</span>
-          <span>聯盟名單</span>
+          <span class="nav-icon">🤝</span><span>聯盟名單</span>
         </button>
       </div>
     </nav>
 
-    <!-- Main Content -->
+    <!-- ── Main Content ── -->
     <main class="main-content">
 
-      <!-- ── Members Section ── -->
+      <!-- ── Members ── -->
       <section id="members" class="section active">
         <div class="section-header">
           <h2>🛡️ 血盟成員管理</h2>
-          <div class="member-count-badge" id="memberCountBadge">載入中...</div>
+          <div class="member-count-badge" id="memberCountBadge">讀取中...</div>
         </div>
 
-        <div class="card">
-          <div class="card-title">新增成員</div>
-          <div class="form-grid">
+        <!-- Admin-only add form -->
+        <div class="card admin-only hidden" id="memberAddCard">
+          <div class="card-title">＋ 新增成員</div>
+          <div class="form-grid cols-3">
             <div class="field-group">
-              <label>角色名稱</label>
+              <label>角色名稱 *</label>
               <input type="text" id="mName" placeholder="輸入角色名稱">
             </div>
             <div class="field-group">
-              <label>職業</label>
+              <label>職業 *</label>
               <select id="mJob">
                 <option value="" disabled selected>選擇職業</option>
                 <option value="王族">👑 王族</option>
@@ -80,15 +94,18 @@
               </select>
             </div>
             <div class="field-group">
-              <label>等級</label>
-              <input type="number" id="mLevel" placeholder="Lv." min="1" max="99">
+              <label>備註（職業特性）</label>
+              <input type="text" id="mNotes" placeholder="例：力量騎士、火屬性、有特殊魔法書">
             </div>
           </div>
           <div class="form-actions">
-            <button class="btn btn-primary" onclick="addMember()">
-              <span>＋ 加入血盟</span>
-            </button>
+            <button class="btn btn-primary" onclick="addMember()">＋ 加入血盟</button>
           </div>
+        </div>
+
+        <!-- Guest prompt -->
+        <div class="guest-notice hidden" id="memberGuestNotice">
+          <span>🔒 如需新增或修改成員，請以管理員帳號登入</span>
         </div>
 
         <div class="card">
@@ -99,8 +116,8 @@
                 <tr>
                   <th>角色名稱</th>
                   <th>職業</th>
-                  <th>等級</th>
-                  <th>操作</th>
+                  <th>備註 / 職業特性</th>
+                  <th class="admin-col hidden">操作</th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -109,24 +126,61 @@
         </div>
       </section>
 
-      <!-- ── Battles Section ── -->
+      <!-- ── Battles ── -->
       <section id="battles" class="section">
         <div class="section-header">
           <h2>⚔️ 首領討伐紀錄</h2>
         </div>
 
-        <div class="card">
+        <div class="card admin-only hidden" id="battleAddCard">
           <div class="card-title">登記討伐</div>
-          <div class="form-grid">
+          <div class="form-grid cols-3">
             <div class="field-group">
-              <label>討伐首領</label>
-              <select id="bBossName">
-                <option value="死亡騎士">💀 死亡騎士</option>
-                <option value="克特">🐉 克特</option>
-                <option value="惡魔">😈 惡魔</option>
-                <option value="巴風特">🐐 巴風特</option>
-                <option value="其他">⚡ 其他</option>
+              <label>討伐首領 *</label>
+              <select id="bBossSelect" onchange="handleBossSelect(this)">
+                <optgroup label="🐉 龍族 BOSS">
+                  <option value="冰龍提亞馬特">🐉 冰龍提亞馬特 (Tiamat)</option>
+                  <option value="地龍安塔拉斯">🌋 地龍安塔拉斯 (Antharas)</option>
+                  <option value="火龍瓦拉卡斯">🔥 火龍瓦拉卡斯 (Valakas)</option>
+                  <option value="風龍林德維姆">💨 風龍林德維姆 (Lindvior)</option>
+                </optgroup>
+                <optgroup label="⚔️ 高難度 BOSS">
+                  <option value="傑卡斯">🏴‍☠️ 傑卡斯 (Zaken)</option>
+                  <option value="貝利斯">👑 貝利斯 (Beleth)</option>
+                  <option value="哈帝斯">⚰️ 哈帝斯 (Hades)</option>
+                  <option value="奧法神">🌊 奧法神 (Orfen)</option>
+                  <option value="沙帝達">🌑 沙帝達 (Core)</option>
+                  <option value="巫妖王">💀 巫妖王 (Lich King)</option>
+                </optgroup>
+                <optgroup label="👿 一般 BOSS">
+                  <option value="死亡騎士">💀 死亡騎士 (Death Knight)</option>
+                  <option value="克特">🐱 克特 (Kat)</option>
+                  <option value="大惡魔">😈 大惡魔 (Demon Lord)</option>
+                  <option value="巴風特">🐐 巴風特 (Baphomet)</option>
+                  <option value="蜥蜴王">🦎 蜥蜴王 (Lizard King)</option>
+                  <option value="草地蜥蜴王">🌿 草地蜥蜴王</option>
+                  <option value="沼澤蜥蜴王">🌊 沼澤蜥蜴王</option>
+                  <option value="吸血蝙蝠王">🦇 吸血蝙蝠王 (Bat Queen)</option>
+                  <option value="巨型蜘蛛">🕷️ 巨型蜘蛛 (Giant Spider)</option>
+                  <option value="骷髏龍">🐲 骷髏龍 (Bone Dragon)</option>
+                  <option value="法蘭肯">🧟 法蘭肯 (Franken)</option>
+                  <option value="幽靈騎士">👻 幽靈騎士 (Ghost Knight)</option>
+                  <option value="闇黑薩曼達">🌑 闇黑薩曼達 (Dark Samanda)</option>
+                  <option value="狼人王">🐺 狼人王 (Werewolf King)</option>
+                  <option value="冰女巫">🧊 冰女巫 (Ice Witch)</option>
+                  <option value="哥布林王">👺 哥布林王 (Goblin King)</option>
+                  <option value="精靈王">🧝 精靈王 (Elf King)</option>
+                  <option value="水晶守護者">💎 水晶守護者 (Crystal Guardian)</option>
+                  <option value="暗騎士王">🖤 暗騎士王 (Dark Knight King)</option>
+                </optgroup>
+                <optgroup label="✏️ 其他">
+                  <option value="__custom__">✏️ 自訂首領名稱...</option>
+                </optgroup>
               </select>
+            </div>
+            <div class="field-group" id="bCustomBossGroup" style="display:none;">
+              <label>自訂首領名稱 *</label>
+              <input type="text" id="bBossCustom" placeholder="輸入首領名稱">
             </div>
             <div class="field-group">
               <label>戰鬥時間</label>
@@ -179,15 +233,15 @@
         </div>
       </section>
 
-      <!-- ── Sieges Section ── -->
+      <!-- ── Sieges ── -->
       <section id="sieges" class="section">
         <div class="section-header">
           <h2>🏰 攻城戰紀錄</h2>
         </div>
 
-        <div class="card">
+        <div class="card admin-only hidden" id="siegeAddCard">
           <div class="card-title">登記攻城</div>
-          <div class="form-grid">
+          <div class="form-grid cols-3">
             <div class="field-group">
               <label>日期</label>
               <input type="datetime-local" id="sDate">
@@ -200,6 +254,9 @@
                 <option value="風木城">🌲 風木城</option>
                 <option value="海音城">🌊 海音城</option>
                 <option value="奇岩城">⛰️ 奇岩城</option>
+                <option value="歐倫城">⚡ 歐倫城</option>
+                <option value="銀蕨城">🌿 銀蕨城</option>
+                <option value="拉奎城">🏔️ 拉奎城</option>
               </select>
             </div>
             <div class="field-group">
@@ -207,12 +264,10 @@
               <input type="number" id="sReward" placeholder="0">
             </div>
           </div>
-
           <div class="field-group mt-1">
             <label>出席成員</label>
             <div class="attendance-grid" id="sAttendance"></div>
           </div>
-
           <div class="form-actions">
             <button class="btn btn-primary" onclick="addSiege()">🏰 提交攻城紀錄</button>
           </div>
@@ -223,13 +278,7 @@
           <div class="table-wrap">
             <table id="siegesTable">
               <thead>
-                <tr>
-                  <th>時間</th>
-                  <th>城堡</th>
-                  <th>出席數</th>
-                  <th>總獎金</th>
-                  <th>每人分紅</th>
-                </tr>
+                <tr><th>時間</th><th>城堡</th><th>出席數</th><th>總獎金</th><th>每人分紅</th></tr>
               </thead>
               <tbody></tbody>
             </table>
@@ -237,22 +286,21 @@
         </div>
       </section>
 
-      <!-- ── Alliances Section ── -->
+      <!-- ── Alliances ── -->
       <section id="alliances" class="section">
         <div class="section-header">
           <h2>🤝 聯盟管理</h2>
         </div>
 
-        <div class="card">
+        <div class="card admin-only hidden" id="allianceAddCard">
           <div class="card-title">新增聯盟玩家</div>
-          <p class="card-desc">登記同盟玩家，作為後續聯合活動的參考名單。</p>
-          <div class="form-grid">
+          <div class="form-grid cols-3">
             <div class="field-group">
-              <label>角色名稱</label>
+              <label>角色名稱 *</label>
               <input type="text" id="aName" placeholder="輸入角色名稱">
             </div>
             <div class="field-group">
-              <label>職業</label>
+              <label>職業 *</label>
               <select id="aJob">
                 <option value="" disabled selected>選擇職業</option>
                 <option value="王族">👑 王族</option>
@@ -261,6 +309,10 @@
                 <option value="法師">🔮 法師</option>
                 <option value="黑妖">🌑 黑妖</option>
               </select>
+            </div>
+            <div class="field-group">
+              <label>備註</label>
+              <input type="text" id="aNotes" placeholder="備註（選填）">
             </div>
           </div>
           <div class="form-actions">
@@ -274,9 +326,8 @@
             <table id="alliancesTable">
               <thead>
                 <tr>
-                  <th>角色名稱</th>
-                  <th>職業</th>
-                  <th>操作</th>
+                  <th>角色名稱</th><th>職業</th><th>備註</th>
+                  <th class="admin-col hidden">操作</th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -284,7 +335,6 @@
           </div>
         </div>
       </section>
-
     </main>
 
     <footer class="site-footer">
@@ -292,12 +342,64 @@
     </footer>
   </div>
 
+  <!-- ── Edit Member Modal ── -->
+  <div class="modal-overlay hidden" id="editMemberModal" onclick="closeEditModal(event)">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>✏️ 編輯成員</h3>
+        <button class="modal-close" onclick="closeEditModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editMemberId">
+        <div class="form-grid cols-2">
+          <div class="field-group">
+            <label>角色名稱 *</label>
+            <input type="text" id="editMemberName" placeholder="角色名稱">
+          </div>
+          <div class="field-group">
+            <label>職業 *</label>
+            <select id="editMemberJob">
+              <option value="王族">👑 王族</option>
+              <option value="騎士">🗡️ 騎士</option>
+              <option value="妖精">🌿 妖精</option>
+              <option value="法師">🔮 法師</option>
+              <option value="黑妖">🌑 黑妖</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-group mt-1">
+          <label>備註 / 職業特性</label>
+          <input type="text" id="editMemberNotes" placeholder="例：力量騎士、火屬性妖精、有特殊魔法書、質騎士...">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeEditModal()">取消</button>
+        <button class="btn btn-primary" onclick="updateMember()">💾 儲存變更</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Google Login Modal ── -->
+  <div class="modal-overlay hidden" id="loginModal" onclick="closeLoginModal(event)">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h3>🔐 管理員登入</h3>
+        <button class="modal-close" onclick="closeLoginModal()">✕</button>
+      </div>
+      <div class="modal-body" style="text-align:center;padding:32px 24px;">
+        <p style="color:var(--text-soft);margin-bottom:24px;font-size:14px;">僅限授權管理員帳號登入<br>以進行新增、編輯、刪除等操作</p>
+        <div id="googleSignInDiv"></div>
+        <div id="loginError" class="login-error hidden"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast -->
   <div id="toast" class="toast"></div>
 
   <script src="app.js"></script>
   <script>
-    // Generate floating particles
+    // Particles
     const container = document.getElementById('particles');
     for (let i = 0; i < 30; i++) {
       const p = document.createElement('div');
@@ -308,6 +410,25 @@
       p.style.opacity = Math.random() * 0.4 + 0.1;
       container.appendChild(p);
     }
+
+    // Google One Tap callback
+    function handleGoogleCredential(response) {
+      window.handleGoogleLogin(response.credential);
+    }
+
+    // Init Google Sign-In button when GSI loaded
+    window.addEventListener('load', () => {
+      const clientId = window.GOOGLE_CLIENT_ID || '';
+      if (!clientId) return; // Skip if no client ID configured
+
+      if (window.google && window.google.accounts) {
+        google.accounts.id.initialize({
+          client_id: clientId,
+          callback: handleGoogleCredential,
+          auto_select: false,
+        });
+      }
+    });
   </script>
 </body>
 </html>
