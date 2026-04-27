@@ -114,6 +114,15 @@ async function requireAdmin(req, res, next) {
   next();
 }
 
+// ── System Config Endpoint ────────────────────────
+app.get('/api/config', (req, res) => {
+  const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
+  res.json({
+    openMode: adminEmails.length === 0,   // true = no auth required
+    googleClientId: process.env.GOOGLE_CLIENT_ID || ''
+  });
+});
+
 // ── Auth Endpoints ───────────────────────────────
 app.post('/api/auth/verify', async (req, res) => {
   const { token } = req.body;

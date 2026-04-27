@@ -11,26 +11,51 @@ let auth = { isLoggedIn: false, isAdmin: false, user: null, token: null };
 
 // ── Init ─────────────────────────────────────────
 async function init() {
-  // Restore session from localStorage
-  const savedToken = localStorage.getItem('gToken');
-  const savedUser = localStorage.getItem('gUser');
-  if (savedToken && savedUser) {
-    try {
-      const user = JSON.parse(savedUser);
-      // Re-verify token silently
-      const res = await fetch(`${API_BASE}/auth/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: savedToken })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setAuthState(savedToken, data);
-      } else {
+  // 1. Fetch server config (open mode / Google Client ID)
+  try {
+    const cfgRes = await fetch(`${API_BASE}/config`);
+    const cfg = await cfgRes.json();
+    if (cfg.openMode) {
+      // No ADMIN_EMAILS configured — give everyone admin access
+      auth.isAdmin = true;
+      auth.isLoggedIn = false; // still not "logged in" as a named user
+      auth.openMode = true;
+    }
+    if (cfg.googleClientId) {
+      window.GOOGLE_CLIENT_ID = cfg.googleClientId;
+      // Init Google Sign-In after we have the client ID
+      if (window.google && window.google.accounts) {
+        google.accounts.id.initialize({
+          client_id: cfg.googleClientId,
+          callback: handleGoogleCredential,
+          auto_select: false,
+        });
+      }
+    }
+  } catch (e) {
+    console.warn('Config fetch failed, defaulting to guest mode');
+  }
+
+  // 2. Restore existing session from localStorage
+  if (!auth.openMode) {
+    const savedToken = localStorage.getItem('gToken');
+    const savedUser = localStorage.getItem('gUser');
+    if (savedToken && savedUser) {
+      try {
+        const res = await fetch(`${API_BASE}/auth/verify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: savedToken })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setAuthState(savedToken, data);
+        } else {
+          clearAuthState();
+        }
+      } catch (e) {
         clearAuthState();
       }
-    } catch (e) {
-      clearAuthState();
     }
   }
 
@@ -104,7 +129,14 @@ function renderAuthUI() {
   const loginBtn = document.getElementById('loginBtn');
   const userInfo = document.getElementById('userInfo');
 
-  if (auth.isLoggedIn && auth.user) {
+  if (auth.openMode) {
+    // Open mode: hide login button, show status pill
+    loginBtn.innerHTML = '🔓 <span style="font-size:12px;">開放管理模式</span>';
+    loginBtn.style.cursor = 'default';
+    loginBtn.onclick = null;
+    loginBtn.classList.remove('hidden');
+    userInfo.classList.add('hidden');
+  } else if (auth.isLoggedIn && auth.user) {
     loginBtn.classList.add('hidden');
     userInfo.classList.remove('hidden');
     document.getElementById('userAvatar').src = auth.user.picture || '';
@@ -115,11 +147,13 @@ function renderAuthUI() {
       document.getElementById('adminBadge').classList.add('hidden');
     }
   } else {
+    loginBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg><span>管理員登入</span>';
+    loginBtn.onclick = openLoginModal;
     loginBtn.classList.remove('hidden');
     userInfo.classList.add('hidden');
   }
 
-  // Show/hide admin-only elements
+  // Show/hide admin-only elements based on isAdmin flag
   document.querySelectorAll('.admin-only').forEach(el => {
     el.classList.toggle('hidden', !auth.isAdmin);
   });
