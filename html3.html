@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+
+<html class="light" lang="zh-TW"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Lineage Classic - 結算中心</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary": "#515f74",
+                    "surface-container-high": "#e8e7ec",
+                    "on-secondary": "#ffffff",
+                    "surface": "#faf9fe",
+                    "primary-fixed-dim": "#adc6ff",
+                    "on-tertiary-container": "#ffcb8f",
+                    "secondary-fixed-dim": "#b9c7df",
+                    "surface-container-low": "#f4f3f8",
+                    "on-secondary-fixed": "#0d1c2e",
+                    "outline-variant": "#c2c6d5",
+                    "on-primary-container": "#c3d4ff",
+                    "inverse-surface": "#2f3034",
+                    "surface-tint": "#095bbf",
+                    "on-surface-variant": "#424753",
+                    "on-error-container": "#93000a",
+                    "error-container": "#ffdad6",
+                    "tertiary-fixed-dim": "#ffb95f",
+                    "on-surface": "#1a1c1f",
+                    "inverse-on-surface": "#f1f0f5",
+                    "surface-variant": "#e3e2e7",
+                    "on-tertiary": "#ffffff",
+                    "inverse-primary": "#adc6ff",
+                    "surface-dim": "#dad9de",
+                    "tertiary": "#623c00",
+                    "on-error": "#ffffff",
+                    "primary-fixed": "#d8e2ff",
+                    "on-secondary-fixed-variant": "#3a485b",
+                    "background": "#faf9fe",
+                    "on-primary-fixed": "#001a41",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container": "#eeedf2",
+                    "primary-container": "#0058bc",
+                    "on-tertiary-fixed": "#2a1700",
+                    "surface-bright": "#faf9fe",
+                    "on-primary": "#ffffff",
+                    "surface-container-highest": "#e3e2e7",
+                    "primary": "#00418f",
+                    "tertiary-container": "#825100",
+                    "outline": "#727784",
+                    "on-secondary-container": "#57657a",
+                    "on-tertiary-fixed-variant": "#653e00",
+                    "error": "#ba1a1a",
+                    "secondary-fixed": "#d5e3fc",
+                    "on-background": "#1a1c1f",
+                    "secondary-container": "#d5e3fc",
+                    "on-primary-fixed-variant": "#004494",
+                    "tertiary-fixed": "#ffddb8"
+            },
+            "fontFamily": {
+                    "headline": ["Inter"],
+                    "display": ["Inter"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #faf9fe; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="flex min-h-screen text-on-surface antialiased">
+<!-- SideNavBar (Shared Component) -->
+<aside class="fixed left-0 top-0 h-full z-40 bg-[#faf9fe] dark:bg-slate-950 w-64 flex flex-col border-r-0">
+<div class="p-8">
+<h1 class="text-lg font-black tracking-tighter text-[#0058bc] dark:text-blue-400">Lineage Classic</h1>
+<p class="text-xs font-medium text-slate-400 mt-1 uppercase tracking-widest">Ethereal Command</p>
+</div>
+<nav class="flex-1 px-4 space-y-2">
+<!-- 主頁 -->
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:text-[#0058bc] transition-colors hover:bg-[#f4f3f8] rounded-xl" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-medium">主頁</span>
+</a>
+<!-- 成員管理 -->
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:text-[#0058bc] transition-colors hover:bg-[#f4f3f8] rounded-xl" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-medium">成員管理</span>
+</a>
+<!-- 血盟戰爭 -->
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:text-[#0058bc] transition-colors hover:bg-[#f4f3f8] rounded-xl" href="#">
+<span class="material-symbols-outlined">swords</span>
+<span class="font-medium">血盟戰爭</span>
+</a>
+<!-- 結算中心 (ACTIVE) -->
+<a class="flex items-center gap-3 px-4 py-3 bg-[#0058bc]/10 text-[#0058bc] dark:text-blue-300 rounded-xl font-bold" href="#">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+<span class="font-medium">結算中心</span>
+</a>
+<!-- 系統設置 -->
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:text-[#0058bc] transition-colors hover:bg-[#f4f3f8] rounded-xl" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-medium">系統設置</span>
+</a>
+</nav>
+<div class="p-6">
+<div class="flex items-center gap-3 p-3 rounded-2xl bg-surface-container-low">
+<img alt="Clan Crest" class="w-10 h-10 rounded-full object-cover" data-alt="High-resolution circular crest of a medieval lineage clan with blue and gold heraldry elements" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAE4b6KyZ32kOY_wCpXnaF8iqW93mXfIPDmcwfKDSf2YCbT9Y6-UOaH1fygvkywUlEAiZ4yH8wgsf5BvUeBagAy7Fi4Km6fLknXuvZD7c7_3GYyW_rVgyHwkwzHZ88gP77Q1jkNniSxnxouRCo8-y5QfY1E6hnXOfUgg9InDhvOib1BojYSePmjF0NPwUs3rYecczNzqYxyvYF8vo1_g2UPlIMj3fM5W2c2ZuqMrqD9ljgD2VCggkznjUYfrRI0af7ug1l6ztqZbwo"/>
+<div>
+<p class="text-sm font-bold truncate">Leader Profile</p>
+<p class="text-[10px] text-slate-400 uppercase tracking-tight">Clan Lord</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Canvas -->
+<main class="flex-1 ml-64 min-h-screen flex flex-col">
+<!-- TopAppBar (Shared Component) -->
+<header class="h-16 sticky top-0 z-30 flex justify-between items-center w-full px-8 bg-[#faf9fe]/80 backdrop-blur-lg shadow-sm shadow-blue-900/5">
+<div class="flex items-center gap-4">
+<h2 class="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-50">結算中心</h2>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-slate-400">search</span>
+<input class="pl-10 pr-4 py-1.5 bg-surface-container-low border-none rounded-full text-sm w-64 focus:ring-2 focus:ring-primary/20 transition-all" placeholder="搜尋成員或項目..." type="text"/>
+</div>
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-slate-600">notifications</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-slate-600">history</span>
+</button>
+<div class="h-8 w-[1px] bg-slate-200"></div>
+<img alt="Leader Profile" class="w-8 h-8 rounded-full" data-alt="Close-up of a premium character avatar with silver hair and blue glowing eyes from a fantasy role playing game" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBe9pRs7hvsrP_FkRRkkWCRtS0cM8OjhBX-0USxUb8xrfZBxxV8DQX71bkrrBZIc75QizvXBXdzKPEnYBZbo-Ix-1vEyxhVx9tpy9Z9GuE0q8_-2YJX-WZL2ATtLIVQxwDqYL015nNftAm7i6tdKqpRsNFeEf_Vp3sgn-Ok_XZudDmjXAuVeEt5OBDl-E9cgUUcwns404p5YC0jxVrTQH5jD6Xcv_s4grC9CzZ-FFEx8WNYiGm2phsCuSXPu_OnmeC8k5x6jRxZt4c"/>
+</div>
+</div>
+</header>
+<!-- Page Content -->
+<div class="p-10 flex-1 space-y-10">
+<!-- Page Header -->
+<header class="max-w-4xl">
+<h3 class="text-3xl font-extrabold tracking-tighter mb-3 flex items-center gap-3">
+<span class="text-primary">💰</span> 結算中心
+                </h3>
+<p class="text-secondary leading-relaxed max-w-2xl font-medium">
+                    系統將自動統計目前所有「首領討伐」與「攻城戰」紀錄，計算每位成員的累積參與次數與應得分紅。
+                </p>
+</header>
+<!-- Metrics Row (Tonal Layering & Elevation) -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Metric 1 -->
+<div class="glass-card p-8 rounded-3xl flex flex-col justify-between min-h-[160px] border border-white/40">
+<span class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">總討伐次數</span>
+<div class="flex items-end justify-between">
+<span class="text-5xl font-black tracking-tighter text-slate-900">124</span>
+<div class="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">swords</span>
+</div>
+</div>
+</div>
+<!-- Metric 2 -->
+<div class="glass-card p-8 rounded-3xl flex flex-col justify-between min-h-[160px] border border-white/40">
+<span class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">總攻城場次</span>
+<div class="flex items-end justify-between">
+<span class="text-5xl font-black tracking-tighter text-slate-900">18</span>
+<div class="w-12 h-12 rounded-2xl bg-tertiary-container/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary-container" style="font-variation-settings: 'FILL' 1;">fort</span>
+</div>
+</div>
+</div>
+<!-- Metric 3 -->
+<div class="glass-card p-8 rounded-3xl flex flex-col justify-between min-h-[160px] border border-white/40 bg-gradient-to-br from-primary/5 to-transparent">
+<span class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">已發放天幣</span>
+<div class="flex items-end justify-between">
+<div>
+<span class="text-4xl font-black tracking-tighter text-primary">5.2B</span>
+<span class="text-sm font-bold text-primary ml-1 uppercase">Adena</span>
+</div>
+<div class="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">payments</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Main Table Card (Bento-style large container) -->
+<section class="glass-card rounded-[32px] overflow-hidden border border-white/40">
+<div class="p-8 border-b border-slate-100 flex justify-between items-center bg-white/30">
+<h4 class="text-lg font-bold tracking-tight text-on-surface">血盟成員分紅總覽</h4>
+<div class="flex gap-2">
+<button class="px-4 py-2 bg-surface-container-low hover:bg-surface-container-high rounded-xl text-sm font-bold transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">filter_list</span>
+                            篩選角色
+                        </button>
+<button class="px-4 py-2 bg-primary text-white rounded-xl text-sm font-bold shadow-md shadow-primary/20 transition-all hover:translate-y-[-1px] flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">download</span>
+                            導出報表
+                        </button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="text-xs font-bold text-slate-400 uppercase tracking-widest bg-slate-50/50">
+<th class="px-8 py-5">角色名稱</th>
+<th class="px-8 py-5">參與次數</th>
+<th class="px-8 py-5">累積首領分紅</th>
+<th class="px-8 py-5">累積攻城分紅</th>
+<th class="px-8 py-5 text-right">總計應得 (Adena)</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-50">
+<!-- Row 1 -->
+<tr class="hover:bg-primary/5 transition-all group">
+<td class="px-8 py-5">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-primary font-bold text-xs">長</div>
+<span class="font-bold">長途夜車</span>
+</div>
+</td>
+<td class="px-8 py-5 font-medium text-slate-600">86</td>
+<td class="px-8 py-5 font-medium text-slate-600">45,000,000</td>
+<td class="px-8 py-5 font-medium text-slate-600">105,000,000</td>
+<td class="px-8 py-5 text-right">
+<span class="text-[#0058bc] font-black text-lg">150,000,000</span>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-primary/5 transition-all group">
+<td class="px-8 py-5">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-xs">屠</div>
+<span class="font-bold">屠龍戰士A</span>
+</div>
+</td>
+<td class="px-8 py-5 font-medium text-slate-600">112</td>
+<td class="px-8 py-5 font-medium text-slate-600">72,500,000</td>
+<td class="px-8 py-5 font-medium text-slate-600">120,000,000</td>
+<td class="px-8 py-5 text-right">
+<span class="text-[#0058bc] font-black text-lg">192,500,000</span>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-primary/5 transition-all group">
+<td class="px-8 py-5">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs">冰</div>
+<span class="font-bold">冰晶之嵐</span>
+</div>
+</td>
+<td class="px-8 py-5 font-medium text-slate-600">65</td>
+<td class="px-8 py-5 font-medium text-slate-600">32,000,000</td>
+<td class="px-8 py-5 font-medium text-slate-600">90,000,000</td>
+<td class="px-8 py-5 text-right">
+<span class="text-[#0058bc] font-black text-lg">122,000,000</span>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-primary/5 transition-all group">
+<td class="px-8 py-5">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center text-red-600 font-bold text-xs">狂</div>
+<span class="font-bold">狂風咆哮者</span>
+</div>
+</td>
+<td class="px-8 py-5 font-medium text-slate-600">98</td>
+<td class="px-8 py-5 font-medium text-slate-600">51,000,000</td>
+<td class="px-8 py-5 font-medium text-slate-600">115,000,000</td>
+<td class="px-8 py-5 text-right">
+<span class="text-[#0058bc] font-black text-lg">166,000,000</span>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="hover:bg-primary/5 transition-all group">
+<td class="px-8 py-5">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-xs">翡</div>
+<span class="font-bold">翡翠夢境人</span>
+</div>
+</td>
+<td class="px-8 py-5 font-medium text-slate-600">42</td>
+<td class="px-8 py-5 font-medium text-slate-600">15,000,000</td>
+<td class="px-8 py-5 font-medium text-slate-600">45,000,000</td>
+<td class="px-8 py-5 text-right">
+<span class="text-[#0058bc] font-black text-lg">60,000,000</span>
+</td>
+</tr>
+<!-- Row 6 -->
+<tr class="hover:bg-primary/5 transition-all group">
+<td class="px-8 py-5">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-xs">影</div>
+<span class="font-bold">影子武士K</span>
+</div>
+</td>
+<td class="px-8 py-5 font-medium text-slate-600">105</td>
+<td class="px-8 py-5 font-medium text-slate-600">68,000,000</td>
+<td class="px-8 py-5 font-medium text-slate-600">130,000,000</td>
+<td class="px-8 py-5 text-right">
+<span class="text-[#0058bc] font-black text-lg">198,000,000</span>
+</td>
+</tr>
+<!-- Row 7 -->
+<tr class="hover:bg-primary/5 transition-all group">
+<td class="px-8 py-5">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center text-purple-600 font-bold text-xs">紫</div>
+<span class="font-bold">紫禁城之巔</span>
+</div>
+</td>
+<td class="px-8 py-5 font-medium text-slate-600">77</td>
+<td class="px-8 py-5 font-medium text-slate-600">38,000,000</td>
+<td class="px-8 py-5 font-medium text-slate-600">82,000,000</td>
+<td class="px-8 py-5 text-right">
+<span class="text-[#0058bc] font-black text-lg">120,000,000</span>
+</td>
+</tr>
+<!-- Row 8 -->
+<tr class="hover:bg-primary/5 transition-all group">
+<td class="px-8 py-5">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-cyan-100 flex items-center justify-center text-cyan-600 font-bold text-xs">蒼</div>
+<span class="font-bold">蒼月祭司</span>
+</div>
+</td>
+<td class="px-8 py-5 font-medium text-slate-600">130</td>
+<td class="px-8 py-5 font-medium text-slate-600">85,000,000</td>
+<td class="px-8 py-5 font-medium text-slate-600">150,000,000</td>
+<td class="px-8 py-5 text-right">
+<span class="text-[#0058bc] font-black text-lg">235,000,000</span>
+</td>
+</tr>
+</tbody>
+<tfoot>
+<tr class="bg-primary/5 font-black border-t-2 border-primary/20">
+<td class="px-8 py-6 text-primary" colspan="2">全盟總計參與人次: 712</td>
+<td class="px-8 py-6 text-slate-600">446,500,000</td>
+<td class="px-8 py-6 text-slate-600">797,000,000</td>
+<td class="px-8 py-6 text-right">
+<span class="text-2xl text-primary tracking-tighter">1,243,500,000</span>
+</td>
+</tr>
+</tfoot>
+</table>
+</div>
+</section>
+<!-- Bottom Note -->
+<footer class="flex items-center justify-center gap-2 p-10">
+<div class="h-[1px] flex-1 bg-slate-200"></div>
+<p class="text-[10px] text-slate-400 font-bold tracking-[0.2em] uppercase">Lineage Classic Ethereal Governance System v4.2</p>
+<div class="h-[1px] flex-1 bg-slate-200"></div>
+</footer>
+</div>
+</main>
+<!-- FAB for Quick Settlement Action (Suppressed as per rules for Treasury screen, but could be present for Dashboard) -->
+</body></html>

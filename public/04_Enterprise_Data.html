@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lineage AI - Enterprise Data</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Roboto', sans-serif; background-color: #f1f5f9; color: #1e293b; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 0.875rem; }
+        th { background-color: #f8fafc; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.75rem; position: sticky; top: 0; }
+        .data-card { background: white; border: 1px solid #cbd5e1; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+    
+    <header class="bg-slate-800 text-white px-6 py-3 flex justify-between items-center shrink-0 shadow-md z-10">
+        <div class="font-bold tracking-wide">LINEAGE AI | Global Operations Center</div>
+        <div class="flex gap-6 text-sm">
+            <div><span class="text-slate-400">Total Nodes:</span> 1,024</div>
+            <div><span class="text-slate-400">Network Health:</span> <span class="text-green-400">99.9%</span></div>
+            <div><span class="text-slate-400">Active Agents:</span> 5</div>
+        </div>
+    </header>
+
+    <div class="flex-1 p-4 grid grid-cols-12 grid-rows-2 gap-4 overflow-hidden">
+        
+        <div class="col-span-12 md:col-span-8 row-span-2 data-card flex flex-col overflow-hidden">
+            <div class="px-4 py-3 border-b border-slate-200 bg-slate-50 font-semibold flex justify-between items-center shrink-0">
+                <span>System Event Log</span>
+                <span class="text-xs text-slate-500 font-normal">Auto-refreshing</span>
+            </div>
+            <div class="flex-1 overflow-y-auto">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Severity</th>
+                            <th>Source Agent</th>
+                            <th>Event Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td class="text-slate-500">2026-04-28 14:02:11</td><td><span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs font-bold">INFO</span></td><td>System</td><td>Boot sequence complete.</td></tr>
+                        <tr><td class="text-slate-500">2026-04-28 14:05:00</td><td><span class="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs font-bold">SUCCESS</span></td><td>Lyra</td><td>Model synchronization finished.</td></tr>
+                        <tr><td class="text-slate-500">2026-04-28 14:12:33</td><td><span class="bg-orange-100 text-orange-800 px-2 py-0.5 rounded text-xs font-bold">WARN</span></td><td>Argus</td><td>High latency detected on Node B.</td></tr>
+                        <tr><td class="text-slate-500">2026-04-28 14:15:21</td><td><span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs font-bold">INFO</span></td><td>Nova</td><td>Predictive caching updated.</td></tr>
+                        <tr><td class="text-slate-500">2026-04-28 14:18:02</td><td><span class="bg-red-100 text-red-800 px-2 py-0.5 rounded text-xs font-bold">ERROR</span></td><td>Titan</td><td>Connection to external database failed.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="col-span-12 md:col-span-4 data-card flex flex-col">
+            <div class="px-4 py-3 border-b border-slate-200 bg-slate-50 font-semibold">Real-time Telemetry</div>
+            <div class="p-4 grid grid-cols-2 gap-4 flex-1">
+                <div class="bg-slate-50 border border-slate-200 rounded p-3 text-center flex flex-col justify-center">
+                    <div class="text-slate-500 text-xs uppercase mb-1">Compute Load</div>
+                    <div class="text-3xl font-bold text-slate-800">42<span class="text-sm text-slate-500 ml-1">%</span></div>
+                </div>
+                <div class="bg-slate-50 border border-slate-200 rounded p-3 text-center flex flex-col justify-center">
+                    <div class="text-slate-500 text-xs uppercase mb-1">Memory Alloc</div>
+                    <div class="text-3xl font-bold text-slate-800">128<span class="text-sm text-slate-500 ml-1">GB</span></div>
+                </div>
+                <div class="bg-slate-50 border border-slate-200 rounded p-3 text-center flex flex-col justify-center">
+                    <div class="text-slate-500 text-xs uppercase mb-1">API Req/sec</div>
+                    <div class="text-3xl font-bold text-slate-800">3,492</div>
+                </div>
+                <div class="bg-slate-50 border border-slate-200 rounded p-3 text-center flex flex-col justify-center">
+                    <div class="text-slate-500 text-xs uppercase mb-1">Latency</div>
+                    <div class="text-3xl font-bold text-slate-800">14<span class="text-sm text-slate-500 ml-1">ms</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-span-12 md:col-span-4 data-card flex flex-col border-red-300 shadow-[0_0_15px_rgba(239,68,68,0.1)]">
+            <div class="px-4 py-3 border-b border-red-200 bg-red-50 text-red-800 font-semibold flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-red-600 animate-pulse"></span>
+                Critical Controls
+            </div>
+            <div class="p-6 flex-1 flex flex-col justify-center items-center text-center">
+                <p class="text-sm text-slate-600 mb-6 font-medium">Manual override of safety protocols. Requires administrative validation.</p>
+                <div class="w-full flex shadow-sm">
+                    <input type="text" placeholder="Type 'CONFIRM'" class="border border-slate-300 rounded-l px-3 py-3 w-full focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 text-sm font-mono">
+                    <button class="bg-red-600 hover:bg-red-700 text-white px-5 py-3 rounded-r font-medium text-sm transition-colors whitespace-nowrap">
+                        Force Override
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

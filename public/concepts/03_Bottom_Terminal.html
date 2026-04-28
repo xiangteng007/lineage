@@ -1,0 +1,93 @@
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8"/>
+  <title>Layout Concept</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700;900&display=swap" rel="stylesheet">
+  
+  <style>
+      body {
+          background-color: #f0f0f0;
+          color: #111;
+          font-family: 'Space Grotesk', sans-serif;
+          background-image: radial-gradient(#ccc 1px, transparent 1px);
+          background-size: 20px 20px;
+          margin: 0;
+      }
+      .brutal-card {
+          border: 4px solid #111;
+          box-shadow: 6px 6px 0px #111;
+          background: #fff;
+      }
+      .brutal-button {
+          border: 4px solid #111;
+          box-shadow: 4px 4px 0px #111;
+          text-transform: uppercase;
+          font-weight: 900;
+          transition: transform 0.1s, box-shadow 0.1s;
+          cursor: pointer;
+      }
+      .brutal-button:active {
+          transform: translate(4px, 4px);
+          box-shadow: 0px 0px 0px #111;
+      }
+      .brutal-button-primary { background: #ff3333; color: #fff; }
+      .brutal-button-secondary { background: #ffe600; color: #111; }
+      .brutal-button-dark { background: #111; color: #fff; }
+      .brutal-input {
+          border: 4px solid #111;
+          background: #fff;
+          border-radius: 0;
+          padding: 10px 14px;
+          font-weight: 700;
+          width: 100%;
+          font-size: 14px;
+      }
+      .table-container { border: 4px solid #111; background: #fff; box-shadow: 6px 6px 0px #111; }
+      table { border-collapse: collapse; width: 100%; text-transform: uppercase; }
+      th { border-bottom: 4px solid #111; border-right: 4px solid #111; padding: 12px; font-weight: 900; font-size: 13px; background: #111; color: #fff; text-align: left; }
+      td { border-bottom: 2px solid #111; border-right: 2px solid #111; padding: 12px; font-weight: 700; font-size: 13px; }
+      .marquee {
+          white-space: nowrap; overflow: hidden; border-bottom: 4px solid #111; border-top: 4px solid #111;
+          background: #ffe600; padding: 6px 0; font-weight: 900; text-transform: uppercase;
+      }
+  </style>
+
+</head>
+<body class="min-h-screen text-[#111]">
+
+    <div class="h-screen flex flex-col">
+      <header class="bg-black text-white p-4 flex justify-between items-center border-b-4 border-[#ffe600]">
+        <h1 class="text-2xl font-black">L-AI // TACTICAL</h1>
+        <nav class="flex gap-2">
+          <button class="brutal-button bg-[#ffe600] text-black px-4 py-1 text-sm">MEMBERS</button>
+          <button class="brutal-button bg-white text-black px-4 py-1 text-sm">BATTLES</button>
+        </nav>
+      </header>
+      
+      <!-- Main Table Area -->
+      <main class="flex-1 overflow-auto p-6 bg-[#f0f0f0]">
+        <div class="table-container mb-24">
+          <table>
+            <thead><tr><th>TIMESTAMP</th><th>ID</th><th>CLASS</th><th>STATUS</th></tr></thead>
+            <tbody>
+              <tr><td>2026-04-28 10:00</td><td>Rusty</td><td>Prince</td><td>ACTIVE</td></tr>
+              <tr><td>2026-04-28 10:05</td><td>Argus</td><td>Dark Elf</td><td>ACTIVE</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </main>
+
+      <!-- Bottom Fixed Terminal/Form -->
+      <div class="fixed bottom-0 left-0 w-full bg-[#111] border-t-8 border-[#ff3333] p-4 text-white z-50">
+        <div class="max-w-6xl mx-auto flex gap-4 items-center">
+          <span class="text-[#ffe600] font-black text-xl">></span>
+          <input type="text" class="brutal-input bg-transparent border-2 border-gray-700 text-[#ffe600] font-mono flex-1 focus:bg-gray-900" placeholder="ENTER ID...">
+          <select class="brutal-input w-48 text-black"><option>CLASS</option></select>
+          <button class="brutal-button brutal-button-primary px-8 py-3">EXECUTE</button>
+        </div>
+      </div>
+    </div>
+    </body></html>

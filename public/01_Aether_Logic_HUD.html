@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lineage AI - Aether Logic HUD</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                fontFamily: {
+                    sans: ['Space Grotesk', 'sans-serif'],
+                    mono: ['JetBrains Mono', 'monospace'],
+                },
+                extend: {
+                    colors: {
+                        cyber: { cyan: '#00f0ff', magenta: '#ff003c', dark: '#050505', panel: 'rgba(255,255,255,0.03)' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #050505; color: #fff; }
+        .glass-panel { background: rgba(255,255,255,0.02); backdrop-filter: blur(10px); }
+        .neon-text-cyan { text-shadow: 0 0 10px rgba(0, 240, 255, 0.5); }
+        .neon-text-magenta { text-shadow: 0 0 10px rgba(255, 0, 60, 0.5); }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden selection:bg-cyber-magenta/30 p-4">
+    <!-- Header -->
+    <header class="flex justify-between items-center p-6 glass-panel rounded-2xl mb-4 border border-white/5">
+        <div class="flex items-center gap-4">
+            <div class="w-3 h-3 bg-cyber-cyan rounded-full animate-pulse shadow-[0_0_10px_#00f0ff]"></div>
+            <h1 class="text-2xl font-bold tracking-widest uppercase text-cyber-cyan neon-text-cyan">Lineage AI // Command</h1>
+        </div>
+        <div class="font-mono text-xs text-cyber-magenta neon-text-magenta">SYS.STATUS: ONLINE</div>
+    </header>
+
+    <div class="flex-1 grid grid-cols-12 gap-4 overflow-hidden">
+        <!-- Telemetry -->
+        <div class="col-span-3 flex flex-col gap-4">
+            <div class="glass-panel p-6 rounded-2xl flex-1 flex flex-col border border-white/5">
+                <h2 class="text-xs text-gray-500 font-mono mb-6 uppercase tracking-widest border-b border-white/10 pb-2">Telemetry / Vitality</h2>
+                <div class="space-y-8">
+                    <div>
+                        <div class="flex justify-between font-mono text-xs mb-3">
+                            <span class="text-gray-400">CPU.Core</span>
+                            <span class="text-cyber-cyan">84%</span>
+                        </div>
+                        <div class="h-1 bg-white/10 rounded-full overflow-hidden">
+                            <div class="h-full bg-cyber-cyan shadow-[0_0_10px_#00f0ff]" style="width: 84%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between font-mono text-xs mb-3">
+                            <span class="text-gray-400">MEM.Alloc</span>
+                            <span class="text-cyber-magenta">62%</span>
+                        </div>
+                        <div class="h-1 bg-white/10 rounded-full overflow-hidden">
+                            <div class="h-full bg-cyber-magenta shadow-[0_0_10px_#ff003c]" style="width: 62%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Terminal -->
+        <div class="col-span-6 glass-panel rounded-2xl p-6 flex flex-col relative overflow-hidden border border-white/5">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyber-cyan to-transparent opacity-50"></div>
+            <h2 class="text-xs text-gray-500 font-mono mb-4 uppercase tracking-widest">Terminal / Stream</h2>
+            <div class="flex-1 font-mono text-sm space-y-3 overflow-y-auto text-gray-300">
+                <p><span class="text-cyber-cyan">[14:02:11]</span> System initialized.</p>
+                <p><span class="text-cyber-cyan">[14:02:15]</span> Agent Lyra connected to node 0x4A.</p>
+                <p><span class="text-cyber-magenta">[14:03:01] WARN:</span> Anomalous packet dropped on eth0.</p>
+                <p><span class="text-cyber-cyan">[14:03:05]</span> Awaiting commands...</p>
+                <div class="mt-4 flex items-center">
+                    <span class="text-cyber-cyan mr-2">root@lineage:~#</span>
+                    <span class="w-2 h-4 bg-cyber-cyan animate-pulse"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="col-span-3 flex flex-col gap-4">
+            <div class="glass-panel border border-cyber-magenta/30 p-6 rounded-2xl flex-1 flex flex-col justify-center items-center text-center relative overflow-hidden">
+                <div class="absolute inset-0 bg-cyber-magenta/5 animate-pulse"></div>
+                <h2 class="text-xs text-cyber-magenta font-mono mb-6 uppercase tracking-widest relative z-10">Danger Zone</h2>
+                <div class="w-24 h-24 rounded-full border border-cyber-magenta/50 flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(255,0,60,0.2)] relative z-10">
+                    <span class="material-symbols-outlined text-4xl text-cyber-magenta">warning</span>
+                </div>
+                <p class="text-xs text-gray-400 mb-8 font-mono relative z-10">Requires Level 5 Auth</p>
+                <button class="w-full relative z-10 py-4 bg-cyber-magenta/20 hover:bg-cyber-magenta/40 text-cyber-magenta font-bold uppercase tracking-widest font-mono text-sm transition-all border border-cyber-magenta shadow-[0_0_15px_rgba(255,0,60,0.4)]">
+                    Force Override
+                </button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

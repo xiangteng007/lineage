@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lineage AI - Zen Minimal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Outfit', sans-serif; background: #fafafa; color: #333; }
+        .soft-shadow { box-shadow: 0 20px 40px -15px rgba(0,0,0,0.05); }
+        .gradient-text { background: linear-gradient(135deg, #6366f1, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    </style>
+</head>
+<body class="h-screen flex items-center justify-center p-8 relative overflow-hidden">
+    <div class="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-100 rounded-full blur-[100px] opacity-70"></div>
+    <div class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-100 rounded-full blur-[100px] opacity-70"></div>
+    
+    <div class="max-w-6xl w-full grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
+        
+        <div class="col-span-1 space-y-8">
+            <div class="bg-white/80 backdrop-blur-xl p-8 rounded-[2rem] soft-shadow border border-white/50">
+                <h1 class="text-3xl font-semibold mb-2">Lineage AI</h1>
+                <p class="text-gray-400 text-sm mb-8">System Overview & Monitoring</p>
+                
+                <div class="space-y-6">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-500 font-medium">84%</div>
+                        <div>
+                            <div class="text-sm font-medium text-gray-700">CPU Load</div>
+                            <div class="text-xs text-gray-400">Normal operating range</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-500 font-medium">16G</div>
+                        <div>
+                            <div class="text-sm font-medium text-gray-700">Memory Usage</div>
+                            <div class="text-xs text-gray-400">Optimized</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white/80 backdrop-blur-xl p-8 rounded-[2rem] soft-shadow border border-white/50">
+                <h2 class="text-lg font-medium text-red-500 mb-2">Critical Action</h2>
+                <p class="text-sm text-gray-400 mb-6">Authorize manual override of AI safety protocols.</p>
+                <button class="w-full py-4 rounded-2xl bg-red-50 hover:bg-red-100 text-red-600 font-medium transition-colors">
+                    Execute Override
+                </button>
+            </div>
+        </div>
+
+        <div class="col-span-2 bg-white/80 backdrop-blur-xl p-8 rounded-[2rem] soft-shadow border border-white/50 flex flex-col h-[80vh]">
+            <h2 class="text-xl font-medium mb-6">Activity Stream</h2>
+            <div class="flex-1 overflow-y-auto space-y-4 pr-4">
+                <div class="flex gap-4 p-4 rounded-2xl hover:bg-gray-50 transition-colors">
+                    <div class="text-gray-300 text-sm font-medium pt-0.5">14:02</div>
+                    <div>
+                        <div class="text-gray-700 font-medium text-sm">System initialized successfully</div>
+                        <div class="text-gray-400 text-xs mt-1">All core modules loaded and verified.</div>
+                    </div>
+                </div>
+                <div class="flex gap-4 p-4 rounded-2xl bg-indigo-50/50">
+                    <div class="text-indigo-300 text-sm font-medium pt-0.5">14:05</div>
+                    <div>
+                        <div class="text-indigo-700 font-medium text-sm">Agent Lyra Connected</div>
+                        <div class="text-indigo-400 text-xs mt-1">Synchronized with Node 0x4A.</div>
+                    </div>
+                </div>
+                <div class="flex gap-4 p-4 rounded-2xl bg-red-50">
+                    <div class="text-red-300 text-sm font-medium pt-0.5">14:12</div>
+                    <div>
+                        <div class="text-red-700 font-medium text-sm">Network Anomaly Detected</div>
+                        <div class="text-red-400 text-xs mt-1">Packet loss detected on primary interface.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

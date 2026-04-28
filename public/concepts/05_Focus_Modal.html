@@ -1,0 +1,106 @@
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8"/>
+  <title>Layout Concept</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700;900&display=swap" rel="stylesheet">
+  
+  <style>
+      body {
+          background-color: #f0f0f0;
+          color: #111;
+          font-family: 'Space Grotesk', sans-serif;
+          background-image: radial-gradient(#ccc 1px, transparent 1px);
+          background-size: 20px 20px;
+          margin: 0;
+      }
+      .brutal-card {
+          border: 4px solid #111;
+          box-shadow: 6px 6px 0px #111;
+          background: #fff;
+      }
+      .brutal-button {
+          border: 4px solid #111;
+          box-shadow: 4px 4px 0px #111;
+          text-transform: uppercase;
+          font-weight: 900;
+          transition: transform 0.1s, box-shadow 0.1s;
+          cursor: pointer;
+      }
+      .brutal-button:active {
+          transform: translate(4px, 4px);
+          box-shadow: 0px 0px 0px #111;
+      }
+      .brutal-button-primary { background: #ff3333; color: #fff; }
+      .brutal-button-secondary { background: #ffe600; color: #111; }
+      .brutal-button-dark { background: #111; color: #fff; }
+      .brutal-input {
+          border: 4px solid #111;
+          background: #fff;
+          border-radius: 0;
+          padding: 10px 14px;
+          font-weight: 700;
+          width: 100%;
+          font-size: 14px;
+      }
+      .table-container { border: 4px solid #111; background: #fff; box-shadow: 6px 6px 0px #111; }
+      table { border-collapse: collapse; width: 100%; text-transform: uppercase; }
+      th { border-bottom: 4px solid #111; border-right: 4px solid #111; padding: 12px; font-weight: 900; font-size: 13px; background: #111; color: #fff; text-align: left; }
+      td { border-bottom: 2px solid #111; border-right: 2px solid #111; padding: 12px; font-weight: 700; font-size: 13px; }
+      .marquee {
+          white-space: nowrap; overflow: hidden; border-bottom: 4px solid #111; border-top: 4px solid #111;
+          background: #ffe600; padding: 6px 0; font-weight: 900; text-transform: uppercase;
+      }
+  </style>
+
+</head>
+<body class="min-h-screen text-[#111]">
+
+    <div class="h-screen flex flex-col relative overflow-hidden">
+      <!-- Minimal Header -->
+      <header class="bg-white border-b-4 border-black p-4 flex justify-between items-center shadow-md">
+        <div class="flex gap-4 items-center">
+          <h1 class="text-2xl font-black bg-black text-white px-2">LAI</h1>
+          <nav class="flex gap-4 font-bold text-sm">
+            <a href="#" class="border-b-4 border-[#ffe600]">MEMBERS</a>
+            <a href="#" class="border-b-4 border-transparent hover:border-black">BATTLES</a>
+          </nav>
+        </div>
+        <button class="brutal-button brutal-button-primary px-4 py-2" onclick="document.getElementById('focusModal').style.display='flex'">+ NEW ENTRY</button>
+      </header>
+      
+      <!-- Full Table -->
+      <main class="flex-1 p-8 overflow-auto">
+        <div class="table-container">
+          <table>
+            <thead><tr><th>ID</th><th>CLASS</th><th>TAGS</th></tr></thead>
+            <tbody>
+              <tr><td>User1</td><td>Knight</td><td>-</td></tr>
+              <tr><td>User2</td><td>Elf</td><td>-</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </main>
+
+      <!-- Focus Modal Form -->
+      <div id="focusModal" class="fixed inset-0 bg-[#ffe600] z-50 flex flex-col p-12" style="display:none;">
+        <div class="flex justify-between items-center border-b-8 border-black pb-4 mb-12">
+          <h2 class="text-6xl font-black">APPEND RECORD</h2>
+          <button class="brutal-button bg-white text-3xl px-4 py-2 border-8 border-black" onclick="document.getElementById('focusModal').style.display='none'">X</button>
+        </div>
+        <div class="max-w-2xl mx-auto w-full flex flex-col gap-8">
+          <div>
+            <label class="block text-2xl font-black mb-2">CHARACTER ID</label>
+            <input type="text" class="brutal-input text-2xl py-4 border-8 border-black shadow-[8px_8px_0px_#111]">
+          </div>
+          <div>
+            <label class="block text-2xl font-black mb-2">CLASS</label>
+            <select class="brutal-input text-2xl py-4 border-8 border-black shadow-[8px_8px_0px_#111]"><option>SELECT...</option></select>
+          </div>
+          <button class="brutal-button brutal-button-dark text-3xl py-6 mt-8 shadow-[12px_12px_0px_#ff3333]">EXECUTE</button>
+        </div>
+      </div>
+    </div>
+    </body></html>

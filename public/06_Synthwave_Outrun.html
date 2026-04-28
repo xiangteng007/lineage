@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lineage AI | Synthwave</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=VT323&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #0b0c10;
+            background-image: 
+                linear-gradient(rgba(255, 0, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 0, 255, 0.1) 1px, transparent 1px);
+            background-size: 30px 30px;
+            background-position: center bottom;
+            font-family: 'Orbitron', sans-serif;
+            color: #fff;
+            overflow-x: hidden;
+        }
+        .neon-text-pink {
+            text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px #ff00ff, 0 0 40px #ff00ff, 0 0 80px #ff00ff;
+        }
+        .neon-text-cyan {
+            text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px #00ffff, 0 0 40px #00ffff, 0 0 80px #00ffff;
+        }
+        .neon-box-pink {
+            box-shadow: 0 0 5px #ff00ff, inset 0 0 5px #ff00ff;
+            border: 2px solid #ff00ff;
+            background: rgba(255, 0, 255, 0.05);
+        }
+        .neon-box-cyan {
+            box-shadow: 0 0 5px #00ffff, inset 0 0 5px #00ffff;
+            border: 2px solid #00ffff;
+            background: rgba(0, 255, 255, 0.05);
+        }
+        .retro-gradient {
+            background: linear-gradient(180deg, #ff00ff 0%, #00ffff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .terminal-font {
+            font-family: 'VT323', monospace;
+        }
+        .sun {
+            position: fixed;
+            bottom: -200px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 800px;
+            height: 800px;
+            background: linear-gradient(180deg, #ff00ff 0%, #ff8c00 100%);
+            border-radius: 50%;
+            z-index: -1;
+            opacity: 0.15;
+            box-shadow: 0 0 100px #ff00ff;
+            mask-image: linear-gradient(to top, transparent 20%, black 80%);
+            -webkit-mask-image: linear-gradient(to top, transparent 20%, black 80%);
+        }
+        /* Sun stripes */
+        .sun::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: repeating-linear-gradient(
+                to bottom,
+                transparent,
+                transparent 10px,
+                #0b0c10 10px,
+                #0b0c10 20px
+            );
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-6 relative flex flex-col gap-6">
+    <div class="sun"></div>
+    
+    <!-- Header -->
+    <header class="flex justify-between items-center mb-4">
+        <h1 class="text-5xl font-black italic retro-gradient tracking-widest uppercase">Lineage.AI</h1>
+        <div class="neon-box-cyan px-6 py-2 rounded-full text-cyan-400 font-bold uppercase tracking-widest text-sm flex items-center gap-3">
+            <span class="w-3 h-3 bg-cyan-400 rounded-full animate-pulse shadow-[0_0_10px_#00ffff]"></span>
+            System Online
+        </div>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow">
+        
+        <!-- Telemetry -->
+        <div class="lg:col-span-2 flex flex-col gap-6">
+            <div class="neon-box-pink p-6 rounded-xl flex-grow relative overflow-hidden backdrop-blur-sm">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#ff00ff] to-transparent opacity-50"></div>
+                <h2 class="text-2xl text-pink-500 font-bold mb-6 uppercase tracking-wider neon-text-pink">/// Telemetry Stream</h2>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    <div class="bg-black/50 p-4 border border-pink-500/30 rounded text-center backdrop-blur-md">
+                        <div class="text-xs text-pink-400/70 uppercase mb-2">Core Temp</div>
+                        <div class="text-4xl font-black text-white">84<span class="text-lg text-pink-500">°C</span></div>
+                    </div>
+                    <div class="bg-black/50 p-4 border border-cyan-500/30 rounded text-center backdrop-blur-md">
+                        <div class="text-xs text-cyan-400/70 uppercase mb-2">CPU Load</div>
+                        <div class="text-4xl font-black text-white">92<span class="text-lg text-cyan-500">%</span></div>
+                    </div>
+                    <div class="bg-black/50 p-4 border border-pink-500/30 rounded text-center backdrop-blur-md">
+                        <div class="text-xs text-pink-400/70 uppercase mb-2">Memory Flux</div>
+                        <div class="text-4xl font-black text-white">16<span class="text-lg text-pink-500">PB</span></div>
+                    </div>
+                    <div class="bg-black/50 p-4 border border-cyan-500/30 rounded text-center backdrop-blur-md">
+                        <div class="text-xs text-cyan-400/70 uppercase mb-2">Network</div>
+                        <div class="text-4xl font-black text-white">4<span class="text-lg text-cyan-500">Tb/s</span></div>
+                    </div>
+                </div>
+
+                <!-- Fake Chart -->
+                <div class="mt-8 h-48 border-b-2 border-l-2 border-pink-500/50 relative">
+                    <svg class="absolute inset-0 h-full w-full" preserveAspectRatio="none" viewBox="0 0 100 100">
+                        <path d="M0,80 L10,75 L20,85 L30,60 L40,65 L50,40 L60,50 L70,20 L80,30 L90,10 L100,5" fill="none" stroke="#00ffff" stroke-width="2" style="filter: drop-shadow(0 0 5px #00ffff);"/>
+                        <path d="M0,80 L10,75 L20,85 L30,60 L40,65 L50,40 L60,50 L70,20 L80,30 L90,10 L100,5 L100,100 L0,100 Z" fill="rgba(0,255,255,0.1)" />
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Terminal -->
+            <div class="neon-box-cyan p-6 rounded-xl h-64 flex flex-col relative backdrop-blur-sm">
+                <h2 class="text-xl text-cyan-500 font-bold mb-4 uppercase tracking-wider neon-text-cyan">/// Command Matrix</h2>
+                <div class="flex-grow bg-black/80 rounded border border-cyan-500/20 p-4 font-mono terminal-font text-xl text-cyan-400 overflow-y-auto">
+                    <div class="opacity-70">> INIT _LINEAGE_ PROTOCOL...</div>
+                    <div class="opacity-70">> BYPASSING MAINFRAME... OK.</div>
+                    <div class="opacity-70">> ESTABLISHING NEURAL LINK... 99%</div>
+                    <div class="text-pink-400">> WARNING: ANOMALY DETECTED IN SECTOR 7.</div>
+                    <div class="animate-pulse">> AWAITING INPUT_</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="neon-box-pink p-6 rounded-xl flex flex-col justify-between backdrop-blur-sm relative overflow-hidden">
+            <div class="absolute inset-0 bg-pink-500/10 animate-pulse mix-blend-overlay"></div>
+            <div>
+                <h2 class="text-3xl text-pink-500 font-black mb-2 uppercase tracking-widest neon-text-pink">Danger Zone</h2>
+                <p class="text-pink-200/60 text-sm mb-8">Execute manual overrides at your own risk. This will destabilize the grid.</p>
+                
+                <div class="space-y-6 relative z-10">
+                    <div class="bg-black/60 p-4 rounded border border-pink-500/50">
+                        <label class="block text-pink-400 text-xs uppercase mb-2">Target Node</label>
+                        <select class="w-full bg-transparent border-b border-pink-500 text-white p-2 outline-none font-mono">
+                            <option>ALPHA-CORE</option>
+                            <option>BETA-NODE</option>
+                            <option>GAMMA-GRID</option>
+                        </select>
+                    </div>
+                    <div class="bg-black/60 p-4 rounded border border-pink-500/50">
+                        <label class="block text-pink-400 text-xs uppercase mb-2">Authorization Key</label>
+                        <input type="password" class="w-full bg-transparent border-b border-pink-500 text-white p-2 outline-none font-mono tracking-widest" value="********">
+                    </div>
+                </div>
+            </div>
+
+            <button class="w-full mt-8 py-4 bg-pink-600 hover:bg-pink-500 text-white font-black uppercase tracking-[0.2em] text-xl rounded shadow-[0_0_20px_#ff00ff] hover:shadow-[0_0_40px_#ff00ff] transition-all relative z-10">
+                Initiate Override
+            </button>
+        </div>
+
+    </div>
+</body>
+</html>

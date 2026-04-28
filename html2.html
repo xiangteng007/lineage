@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+
+<html class="light" lang="zh-TW"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-dim": "#dad9de",
+                        "inverse-surface": "#2f3034",
+                        "inverse-on-surface": "#f1f0f5",
+                        "on-tertiary-container": "#ffcb8f",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-fixed-dim": "#ffb95f",
+                        "surface-container": "#eeedf2",
+                        "on-secondary-fixed-variant": "#3a485b",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-fixed": "#ffddb8",
+                        "tertiary-container": "#825100",
+                        "on-secondary": "#ffffff",
+                        "primary-fixed": "#d8e2ff",
+                        "surface-variant": "#e3e2e7",
+                        "secondary-fixed": "#d5e3fc",
+                        "outline-variant": "#c2c6d5",
+                        "surface-container-high": "#e8e7ec",
+                        "error-container": "#ffdad6",
+                        "inverse-primary": "#adc6ff",
+                        "primary-fixed-dim": "#adc6ff",
+                        "surface": "#faf9fe",
+                        "on-error-container": "#93000a",
+                        "primary-container": "#0058bc",
+                        "surface-container-low": "#f4f3f8",
+                        "on-tertiary-fixed-variant": "#653e00",
+                        "on-error": "#ffffff",
+                        "on-primary-fixed": "#001a41",
+                        "on-background": "#1a1c1f",
+                        "surface-container-highest": "#e3e2e7",
+                        "error": "#ba1a1a",
+                        "secondary-container": "#d5e3fc",
+                        "secondary": "#515f74",
+                        "on-surface-variant": "#424753",
+                        "primary": "#00418f",
+                        "on-primary-container": "#c3d4ff",
+                        "background": "#faf9fe",
+                        "tertiary": "#623c00",
+                        "on-tertiary-fixed": "#2a1700",
+                        "secondary-fixed-dim": "#b9c7df",
+                        "outline": "#727784",
+                        "on-surface": "#1a1c1f",
+                        "on-primary-fixed-variant": "#004494",
+                        "on-secondary-container": "#57657a",
+                        "on-secondary-fixed": "#0d1c2e",
+                        "on-primary": "#ffffff",
+                        "surface-bright": "#faf9fe",
+                        "surface-tint": "#095bbf"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "display": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #faf9fe; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="flex min-h-screen">
+<!-- SideNavBar -->
+<aside class="h-screen w-64 left-0 sticky bg-[#f4f3f8] flex flex-col p-6 gap-y-2 z-50">
+<div class="mb-8 px-2">
+<div class="flex items-center gap-3 mb-6">
+<div class="w-10 h-10 rounded-xl bg-primary-container flex items-center justify-center text-white shadow-lg">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">shield</span>
+</div>
+<div>
+<h2 class="text-lg font-bold text-[#0058bc]">血盟管理員</h2>
+<p class="text-[10px] text-slate-500 font-semibold tracking-wider uppercase">王族 - 伊娃伺服器</p>
+</div>
+</div>
+<button class="w-full py-3 bg-primary text-white rounded-xl font-bold text-sm shadow-md active:scale-95 transition-transform">
+                發起突擊
+            </button>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-600 transition-transform hover:translate-x-1 font-semibold text-sm" href="#">
+<span class="material-symbols-outlined">fort</span>
+                領地戰
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 bg-white/90 text-[#0058bc] rounded-xl shadow-sm border-r-4 border-[#0058bc] font-semibold text-sm transition-transform hover:translate-x-1" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">swords</span>
+                首領討伐
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-600 transition-transform hover:translate-x-1 font-semibold text-sm" href="#">
+<span class="material-symbols-outlined">shield</span>
+                血盟大廳
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-600 transition-transform hover:translate-x-1 font-semibold text-sm" href="#">
+<span class="material-symbols-outlined">payments</span>
+                戰物分配
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-600 transition-transform hover:translate-x-1 font-semibold text-sm" href="#">
+<span class="material-symbols-outlined">gavel</span>
+                領袖議會
+            </a>
+</nav>
+<div class="pt-6 border-t border-slate-200 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-600 font-semibold text-sm" href="#">
+<span class="material-symbols-outlined">account_circle</span>
+                個人設置
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-600 font-semibold text-sm" href="#">
+<span class="material-symbols-outlined">logout</span>
+                登出
+            </a>
+</div>
+</aside>
+<div class="flex-1 flex flex-col">
+<!-- TopNavBar -->
+<header class="w-full top-0 sticky bg-[#faf9fe]/80 backdrop-blur-xl z-40 shadow-sm">
+<div class="flex justify-between items-center px-8 py-4 w-full">
+<div class="flex items-center gap-8">
+<h1 class="text-2xl font-black tracking-tighter text-[#0058bc]">天堂：經典版</h1>
+<nav class="hidden md:flex gap-6">
+<a class="text-slate-500 hover:text-[#0058bc] font-medium tracking-tight" href="#">首頁</a>
+<a class="text-slate-500 hover:text-[#0058bc] font-medium tracking-tight" href="#">成員</a>
+<a class="text-[#0058bc] font-bold border-b-2 border-[#0058bc] tracking-tight" href="#">戰績</a>
+<a class="text-slate-500 hover:text-[#0058bc] font-medium tracking-tight" href="#">排名</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex gap-2">
+<button class="p-2 text-slate-400 hover:bg-[#f4f3f8] rounded-full transition-all">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-slate-400 hover:bg-[#f4f3f8] rounded-full transition-all">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+<button class="px-5 py-2 bg-primary-container text-white rounded-full font-bold text-sm scale-95 active:scale-90 transition-transform">
+                        登錄戰報
+                    </button>
+<img alt="Clan Leader Avatar" class="w-10 h-10 rounded-full bg-slate-200 border-2 border-white shadow-sm" data-alt="professional 3D avatar of a fantasy noble leader with silver hair and blue ceremonial armor" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDII0mb6_6S6TctLx0_sPfTgrOntTgrf4HFGbbuGB792mDukqc37KtfSCrpuadh2uj1QgTRS2MyWV6pNwtYhPAtzvaiY5LvnlcL6IzbnNFOcwFFuZFGcbu85Z0JeaD4RNfzv6pIEBW3CGmfkcQvnj4zigqDmjDNCiZ3fNqjkM7o_bYyE1s3jmKglRJV-FdRxHpcwrER_IFm9nCGtYKuypFMyBsBnDBvSeXu4TFMRbfrmb_yF5ndmWjHeB3qOqutKwAEhksTEZhhw80"/>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 p-8 max-w-7xl mx-auto w-full">
+<!-- Section Header -->
+<div class="mb-10 flex items-end justify-between">
+<div>
+<div class="flex items-center gap-3 mb-2">
+<span class="material-symbols-outlined text-primary text-3xl">swords</span>
+<h2 class="text-4xl font-extrabold tracking-tight text-on-surface">首領討伐紀錄</h2>
+</div>
+<p class="text-secondary font-medium ml-1">管理並記錄所有大型 Boss 戰役的掉落與分紅資訊</p>
+</div>
+<div class="flex gap-4">
+<div class="glass-card px-6 py-3 rounded-2xl flex flex-col items-center">
+<span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">本月討伐</span>
+<span class="text-2xl font-black text-primary">24</span>
+</div>
+<div class="glass-card px-6 py-3 rounded-2xl flex flex-col items-center">
+<span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">累積金幣</span>
+<span class="text-2xl font-black text-tertiary">1.2B</span>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Registration Card (Left Column) -->
+<section class="lg:col-span-2 space-y-8">
+<div class="glass-card p-8 rounded-2xl shadow-sm relative overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary-container to-transparent"></div>
+<h3 class="text-xl font-bold text-on-surface mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">edit_square</span>
+                            登記討伐
+                        </h3>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+<div class="space-y-2">
+<label class="text-xs font-bold text-slate-500 ml-1">首領名稱</label>
+<select class="w-full bg-surface-container-highest/50 border-0 border-b-2 border-transparent focus:border-primary focus:ring-0 rounded-t-lg px-4 py-3 text-on-surface font-medium transition-all">
+<option>冰龍提亞馬特</option>
+<option>地龍安塔拉斯</option>
+<option>鐮刀死神</option>
+<option>火龍巴拉卡斯</option>
+</select>
+</div>
+<div class="space-y-2">
+<label class="text-xs font-bold text-slate-500 ml-1">討伐時間</label>
+<input class="w-full bg-surface-container-highest/50 border-0 border-b-2 border-transparent focus:border-primary focus:ring-0 rounded-t-lg px-4 py-3 text-on-surface font-medium transition-all" type="datetime-local"/>
+</div>
+<div class="space-y-2">
+<label class="text-xs font-bold text-slate-500 ml-1">總拍賣金 (ADENA)</label>
+<div class="relative">
+<input class="w-full bg-surface-container-highest/50 border-0 border-b-2 border-transparent focus:border-primary focus:ring-0 rounded-t-lg pl-10 pr-4 py-3 text-on-surface font-black transition-all" placeholder="0" type="number"/>
+<span class="material-symbols-outlined absolute left-3 top-3 text-tertiary-fixed-dim text-xl">monetization_on</span>
+</div>
+</div>
+</div>
+<!-- Attendance Section -->
+<div class="mb-8">
+<div class="flex justify-between items-center mb-4">
+<h4 class="text-sm font-bold text-slate-700 uppercase tracking-wider">參與成員 (24/40)</h4>
+<button class="text-xs text-primary font-bold hover:underline">全選所有人</button>
+</div>
+<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+<!-- Member Item -->
+<label class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/50 cursor-pointer border border-transparent hover:border-outline-variant/30 transition-all">
+<input checked="" class="w-5 h-5 rounded border-slate-300 text-primary focus:ring-primary" type="checkbox"/>
+<span class="text-sm font-semibold text-slate-600">雷霆戰神</span>
+</label>
+<label class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/50 cursor-pointer border border-transparent hover:border-outline-variant/30 transition-all">
+<input checked="" class="w-5 h-5 rounded border-slate-300 text-primary focus:ring-primary" type="checkbox"/>
+<span class="text-sm font-semibold text-slate-600">小愛麗絲</span>
+</label>
+<label class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/50 cursor-pointer border border-transparent hover:border-outline-variant/30 transition-all">
+<input checked="" class="w-5 h-5 rounded border-slate-300 text-primary focus:ring-primary" type="checkbox"/>
+<span class="text-sm font-semibold text-slate-600">龍之影子</span>
+</label>
+<label class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/50 cursor-pointer border border-transparent hover:border-outline-variant/30 transition-all">
+<input class="w-5 h-5 rounded border-slate-300 text-primary focus:ring-primary" type="checkbox"/>
+<span class="text-sm font-semibold text-slate-400">暗黑祭司</span>
+</label>
+<!-- ... more members ... -->
+<div class="col-span-full py-2 flex justify-center">
+<button class="text-xs font-bold text-slate-400 hover:text-primary transition-colors flex items-center gap-1">
+                                        展開所有成員 <span class="material-symbols-outlined text-xs">expand_more</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Loot Section -->
+<div class="mb-8">
+<h4 class="text-sm font-bold text-slate-700 uppercase tracking-wider mb-4">戰利品清單</h4>
+<div class="space-y-3">
+<div class="grid grid-cols-12 gap-4">
+<div class="col-span-7">
+<input class="w-full bg-white border border-outline-variant/30 rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-0 transition-all" placeholder="輸入戰利品名稱 (例如: 冰之女王的權杖)" type="text"/>
+</div>
+<div class="col-span-4">
+<div class="relative">
+<input class="w-full bg-white border border-outline-variant/30 rounded-xl pl-10 pr-4 py-3 text-sm focus:border-primary focus:ring-0 transition-all font-bold" placeholder="拍賣價格" type="number"/>
+<span class="material-symbols-outlined absolute left-3 top-3 text-slate-400 text-xl">payments</span>
+</div>
+</div>
+<div class="col-span-1 flex items-center justify-center">
+<button class="p-2 text-error hover:bg-error-container/20 rounded-full transition-all">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+<button class="w-full py-3 border-2 border-dashed border-outline-variant/50 rounded-xl text-slate-400 text-sm font-bold hover:bg-white/50 hover:border-primary transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">add_circle</span>
+                                    新增戰利品
+                                </button>
+</div>
+</div>
+<div class="flex justify-end pt-4 border-t border-slate-100">
+<button class="px-10 py-4 bg-gradient-to-br from-primary to-primary-container text-white rounded-2xl font-black shadow-xl hover:shadow-primary-container/30 active:scale-95 transition-all flex items-center gap-2">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">swords</span>
+                                提交討伐紀錄
+                            </button>
+</div>
+</div>
+</section>
+<!-- History Table Card (Right Column + Full Width beneath) -->
+<section class="lg:col-span-3">
+<div class="glass-card p-8 rounded-2xl shadow-sm border border-white/40">
+<div class="flex items-center justify-between mb-8">
+<h3 class="text-xl font-bold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">history</span>
+                                討伐歷史
+                            </h3>
+<div class="flex gap-2">
+<button class="px-4 py-2 bg-white rounded-lg text-sm font-bold text-slate-600 border border-slate-200 hover:bg-slate-50">本月</button>
+<button class="px-4 py-2 bg-white rounded-lg text-sm font-bold text-slate-600 border border-slate-200 hover:bg-slate-50">本季</button>
+<button class="px-4 py-2 bg-primary-container/10 text-primary-container rounded-lg text-sm font-bold border border-primary-container/20">全部</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full border-separate border-spacing-y-4">
+<thead>
+<tr class="text-left text-xs font-bold text-slate-400 uppercase tracking-widest px-4">
+<th class="pb-4 pl-4">時間</th>
+<th class="pb-4">首領</th>
+<th class="pb-4">出席數</th>
+<th class="pb-4">總拍賣金</th>
+<th class="pb-4">每人分紅</th>
+<th class="pb-4 text-right pr-4">操作</th>
+</tr>
+</thead>
+<tbody>
+<!-- Table Row -->
+<tr class="group hover:scale-[1.01] transition-transform duration-300">
+<td class="bg-white/50 group-hover:bg-white rounded-l-2xl py-6 pl-4">
+<div class="flex flex-col">
+<span class="text-sm font-bold text-slate-700">2023.11.24</span>
+<span class="text-[10px] text-slate-400">22:30 PM</span>
+</div>
+</td>
+<td class="bg-white/50 group-hover:bg-white py-6">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">ac_unit</span>
+</div>
+<span class="text-sm font-black text-on-surface">冰龍提亞馬特</span>
+</div>
+</td>
+<td class="bg-white/50 group-hover:bg-white py-6">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-slate-400">groups</span>
+<span class="text-sm font-bold text-slate-600">32 人</span>
+</div>
+</td>
+<td class="bg-white/50 group-hover:bg-white py-6">
+<div class="flex items-center gap-1">
+<span class="text-sm font-black text-tertiary">320,000,000</span>
+<span class="text-[10px] font-bold text-tertiary-fixed-dim">ADENA</span>
+</div>
+</td>
+<td class="bg-white/50 group-hover:bg-white py-6">
+<div class="px-3 py-1 bg-primary-container/10 border border-primary-container/20 rounded-full inline-block">
+<span class="text-sm font-black text-primary">10,000,000</span>
+</div>
+</td>
+<td class="bg-white/50 group-hover:bg-white py-6 text-right pr-4 rounded-r-2xl">
+<div class="flex justify-end gap-2">
+<button class="p-2 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined">print</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Table Row 2 -->
+<tr class="group hover:scale-[1.01] transition-transform duration-300">
+<td class="bg-white/50 group-hover:bg-white rounded-l-2xl py-6 pl-4">
+<div class="flex flex-col">
+<span class="text-sm font-bold text-slate-700">2023.11.22</span>
+<span class="text-[10px] text-slate-400">21:15 PM</span>
+</div>
+</td>
+<td class="bg-white/50 group-hover:bg-white py-6">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">volcano</span>
+</div>
+<span class="text-sm font-black text-on-surface">地龍安塔拉斯</span>
+</div>
+</td>
+<td class="bg-white/50 group-hover:bg-white py-6">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-slate-400">groups</span>
+<span class="text-sm font-bold text-slate-600">40 人</span>
+</div>
+</td>
+<td class="bg-white/50 group-hover:bg-white py-6">
+<div class="flex items-center gap-1">
+<span class="text-sm font-black text-tertiary">800,000,000</span>
+<span class="text-[10px] font-bold text-tertiary-fixed-dim">ADENA</span>
+</div>
+</td>
+<td class="bg-white/50 group-hover:bg-white py-6">
+<div class="px-3 py-1 bg-primary-container/10 border border-primary-container/20 rounded-full inline-block">
+<span class="text-sm font-black text-primary">20,000,000</span>
+</div>
+</td>
+<td class="bg-white/50 group-hover:bg-white py-6 text-right pr-4 rounded-r-2xl">
+<div class="flex justify-end gap-2">
+<button class="p-2 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined">print</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Table Row 3 -->
+<tr class="group hover:scale-[1.01] transition-transform duration-300">
+<td class="bg-white/50 group-hover:bg-white rounded-l-2xl py-6 pl-4">
+<div class="flex flex-col">
+<span class="text-sm font-bold text-slate-700">2023.11.20</span>
+<span class="text-[10px] text-slate-400">23:00 PM</span>
+</div>
+</td>
+<td class="bg-white/50 group-hover:bg-white py-6">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-slate-200 flex items-center justify-center text-slate-700">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">skull</span>
+</div>
+<span class="text-sm font-black text-on-surface">鐮刀死神</span>
+</div>
+</td>
+<td class="bg-white/50 group-hover:bg-white py-6">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-slate-400">groups</span>
+<span class="text-sm font-bold text-slate-600">18 人</span>
+</div>
+</td>
+<td class="bg-white/50 group-hover:bg-white py-6">
+<div class="flex items-center gap-1">
+<span class="text-sm font-black text-tertiary">45,000,000</span>
+<span class="text-[10px] font-bold text-tertiary-fixed-dim">ADENA</span>
+</div>
+</td>
+<td class="bg-white/50 group-hover:bg-white py-6">
+<div class="px-3 py-1 bg-primary-container/10 border border-primary-container/20 rounded-full inline-block">
+<span class="text-sm font-black text-primary">2,500,000</span>
+</div>
+</td>
+<td class="bg-white/50 group-hover:bg-white py-6 text-right pr-4 rounded-r-2xl">
+<div class="flex justify-end gap-2">
+<button class="p-2 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined">print</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="mt-8 flex items-center justify-between">
+<span class="text-sm text-slate-400 font-medium">顯示 1 到 10 筆，共 124 筆記錄</span>
+<div class="flex gap-1">
+<button class="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-100">
+<span class="material-symbols-outlined text-sm">chevron_left</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg bg-primary text-white font-bold text-sm">1</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-600 font-bold text-sm hover:bg-slate-100">2</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-600 font-bold text-sm hover:bg-slate-100">3</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-100">
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- Footer Info / Copyright -->
+<footer class="px-8 py-10 border-t border-slate-200/40 text-center">
+<p class="text-xs text-slate-400 font-bold uppercase tracking-widest">© 2023 天堂：經典版 血盟管理系統 - Lumina Ethereal Edition</p>
+</footer>
+</div>
+<!-- Floating Tooltip / Global Actions -->
+<div class="fixed bottom-8 right-8 z-50">
+<button class="w-14 h-14 bg-primary-container text-white rounded-2xl shadow-2xl shadow-primary-container/40 flex items-center justify-center hover:scale-110 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-2xl">support_agent</span>
+</button>
+</div>
+</body></html>

@@ -1,0 +1,99 @@
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8"/>
+  <title>Layout Concept</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700;900&display=swap" rel="stylesheet">
+  
+  <style>
+      body {
+          background-color: #f0f0f0;
+          color: #111;
+          font-family: 'Space Grotesk', sans-serif;
+          background-image: radial-gradient(#ccc 1px, transparent 1px);
+          background-size: 20px 20px;
+          margin: 0;
+      }
+      .brutal-card {
+          border: 4px solid #111;
+          box-shadow: 6px 6px 0px #111;
+          background: #fff;
+      }
+      .brutal-button {
+          border: 4px solid #111;
+          box-shadow: 4px 4px 0px #111;
+          text-transform: uppercase;
+          font-weight: 900;
+          transition: transform 0.1s, box-shadow 0.1s;
+          cursor: pointer;
+      }
+      .brutal-button:active {
+          transform: translate(4px, 4px);
+          box-shadow: 0px 0px 0px #111;
+      }
+      .brutal-button-primary { background: #ff3333; color: #fff; }
+      .brutal-button-secondary { background: #ffe600; color: #111; }
+      .brutal-button-dark { background: #111; color: #fff; }
+      .brutal-input {
+          border: 4px solid #111;
+          background: #fff;
+          border-radius: 0;
+          padding: 10px 14px;
+          font-weight: 700;
+          width: 100%;
+          font-size: 14px;
+      }
+      .table-container { border: 4px solid #111; background: #fff; box-shadow: 6px 6px 0px #111; }
+      table { border-collapse: collapse; width: 100%; text-transform: uppercase; }
+      th { border-bottom: 4px solid #111; border-right: 4px solid #111; padding: 12px; font-weight: 900; font-size: 13px; background: #111; color: #fff; text-align: left; }
+      td { border-bottom: 2px solid #111; border-right: 2px solid #111; padding: 12px; font-weight: 700; font-size: 13px; }
+      .marquee {
+          white-space: nowrap; overflow: hidden; border-bottom: 4px solid #111; border-top: 4px solid #111;
+          background: #ffe600; padding: 6px 0; font-weight: 900; text-transform: uppercase;
+      }
+  </style>
+
+</head>
+<body class="min-h-screen text-[#111]">
+
+    <div class="min-h-screen p-8 bg-[#f0f0f0]">
+      <header class="mb-8 border-4 border-black bg-white p-4 flex justify-between shadow-[8px_8px_0px_#111]">
+        <h1 class="text-4xl font-black">L_AI Grid</h1>
+        <button class="brutal-button brutal-button-dark px-4">SYS.LOGIN</button>
+      </header>
+      
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-8">
+        <!-- Nav Widget -->
+        <div class="md:col-span-3 brutal-card bg-[#ffe600] p-4 flex flex-col gap-2 h-fit">
+          <h3 class="font-black border-b-4 border-black pb-2 mb-2">MODULES</h3>
+          <button class="brutal-button brutal-button-dark py-2">MEMBERS</button>
+          <button class="brutal-button bg-white py-2">BATTLES</button>
+        </div>
+        
+        <!-- Action Widget -->
+        <div class="md:col-span-4 brutal-card bg-white p-4 h-fit border-l-8 border-[#ff3333]">
+          <h3 class="font-black border-b-4 border-black pb-2 mb-4 uppercase">New Entry</h3>
+          <input type="text" class="brutal-input mb-2" placeholder="ID...">
+          <select class="brutal-input mb-4"><option>CLASS</option></select>
+          <button class="brutal-button brutal-button-primary w-full py-2">INSERT</button>
+        </div>
+
+        <!-- Stats Widget -->
+        <div class="md:col-span-5 brutal-card bg-[#111] text-white p-4 h-fit">
+          <h3 class="font-black border-b-4 border-gray-700 pb-2 mb-4 text-[#ffe600]">SYSTEM HEALTH</h3>
+          <div class="text-4xl font-black">99.9%</div>
+          <div class="text-gray-400 text-xs font-bold mt-2">ALL SYSTEMS NOMINAL</div>
+        </div>
+
+        <!-- Table Widget -->
+        <div class="md:col-span-12 table-container mt-4">
+          <table>
+            <thead><tr><th>ID</th><th>CLASS</th><th>TAGS</th></tr></thead>
+            <tbody><tr><td>Nova</td><td>Wizard</td><td>Admin</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    </body></html>

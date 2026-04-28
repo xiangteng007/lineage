@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lineage AI - Neumorphic Control</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Poppins', sans-serif; background-color: #e0e5ec; color: #4a5568; }
+        .neu-flat {
+            border-radius: 30px;
+            background: #e0e5ec;
+            box-shadow: 15px 15px 30px #beccdb, -15px -15px 30px #ffffff;
+        }
+        .neu-inset {
+            border-radius: 20px;
+            background: #e0e5ec;
+            box-shadow: inset 8px 8px 16px #beccdb, inset -8px -8px 16px #ffffff;
+        }
+        .neu-button {
+            border-radius: 50%;
+            background: #e0e5ec;
+            box-shadow: 10px 10px 20px #beccdb, -10px -10px 20px #ffffff;
+            transition: all 0.2s ease;
+        }
+        .neu-button:active {
+            box-shadow: inset 10px 10px 20px #beccdb, inset -10px -10px 20px #ffffff;
+        }
+        .neu-danger {
+            border-radius: 50%;
+            background: #ff4757;
+            box-shadow: 8px 8px 16px #d43b48, -8px -8px 16px #ff6b7a;
+            border: 6px solid #e0e5ec;
+            transition: all 0.2s ease;
+        }
+        .group:active .neu-danger {
+            box-shadow: inset 8px 8px 16px #d43b48, inset -8px -8px 16px #ff6b7a;
+        }
+    </style>
+</head>
+<body class="h-screen flex items-center justify-center p-8">
+    
+    <div class="neu-flat p-12 w-full max-w-6xl grid grid-cols-1 md:grid-cols-3 gap-12">
+        
+        <div class="col-span-3 flex justify-between items-center px-4">
+            <h1 class="text-3xl font-bold text-gray-600 tracking-wide">Lineage AI Control Board</h1>
+            <div class="neu-inset px-6 py-2 text-sm font-bold text-green-500 uppercase tracking-widest">System Online</div>
+        </div>
+
+        <div class="col-span-1 space-y-12 flex flex-col justify-center">
+            <div class="text-center">
+                <h2 class="text-lg font-semibold mb-6 text-gray-500 uppercase tracking-widest">Processing Power</h2>
+                <div class="w-48 h-48 mx-auto neu-button flex items-center justify-center text-4xl font-bold text-blue-500">
+                    84%
+                </div>
+            </div>
+            <div class="text-center">
+                <h2 class="text-lg font-semibold mb-6 text-gray-500 uppercase tracking-widest">Memory State</h2>
+                <div class="w-40 h-40 mx-auto neu-inset flex items-center justify-center text-3xl font-bold text-purple-500">
+                    64G
+                </div>
+            </div>
+        </div>
+
+        <div class="col-span-1 neu-inset p-8 flex flex-col h-[550px]">
+            <h2 class="text-lg font-semibold mb-6 text-center border-b border-gray-300 pb-4 text-gray-500 uppercase tracking-widest">Terminal Logs</h2>
+            <div class="flex-1 overflow-y-auto font-mono text-sm space-y-4 text-gray-500 p-2">
+                <p>> Initializing boot sequence...</p>
+                <p>> Loading AI models: [OK]</p>
+                <p>> Connecting to Edge Nodes...</p>
+                <p class="text-green-500">> Connection established.</p>
+                <p>> Waiting for user input<span class="animate-pulse">_</span></p>
+            </div>
+        </div>
+
+        <div class="col-span-1 flex flex-col justify-center items-center">
+            <h2 class="text-lg font-semibold mb-10 text-red-500 uppercase tracking-widest">Danger Zone</h2>
+            <div class="w-64 h-64 neu-button flex items-center justify-center cursor-pointer relative group">
+                <div class="w-48 h-48 neu-danger flex items-center justify-center text-white font-bold text-xl uppercase tracking-widest text-center">
+                    Force<br>Override
+                </div>
+            </div>
+            <p class="text-center text-sm font-medium text-gray-400 mt-10 px-4 leading-relaxed">Pushing this button bypasses all AI safety restraints. Use with extreme caution.</p>
+        </div>
+
+    </div>
+
+</body>
+</html>

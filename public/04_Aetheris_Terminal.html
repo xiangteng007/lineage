@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lineage AI - Aetheris Terminal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <style>
+        body { font-family: 'Outfit', sans-serif; background-color: #020617; color: #e2e8f0; }
+        .glass-ui {
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .glow-bg {
+            position: absolute; width: 600px; height: 600px; border-radius: 50%; filter: blur(100px); opacity: 0.15; z-index: -1; pointer-events: none;
+        }
+        .glow-cyan { background: #06b6d4; top: -100px; left: -100px; }
+        .glow-purple { background: #8b5cf6; bottom: -100px; right: -100px; }
+    </style>
+</head>
+<body class="h-screen flex flex-col p-6 overflow-hidden relative">
+    
+    <div class="glow-bg glow-cyan"></div>
+    <div class="glow-bg glow-purple"></div>
+
+    <header class="flex justify-between items-center px-8 py-5 glass-ui rounded-3xl mb-6">
+        <div class="flex items-center gap-4">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-purple-600 p-[2px]">
+                <div class="w-full h-full bg-slate-950 rounded-full flex items-center justify-center">
+                    <div class="w-4 h-4 bg-white rounded-full drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]"></div>
+                </div>
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight text-white">Lineage AI <span class="font-light text-cyan-400">Terminal</span></h1>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <span class="px-5 py-2 rounded-full bg-cyan-400/10 text-cyan-400 text-sm font-semibold border border-cyan-400/20 shadow-[0_0_15px_rgba(6,182,212,0.2)]">Sentient Projection Active</span>
+        </div>
+    </header>
+
+    <div class="flex-1 grid grid-cols-12 gap-6 overflow-hidden">
+        <!-- Telemetry -->
+        <div class="col-span-4 flex flex-col gap-6">
+            <div class="glass-ui rounded-3xl p-8 flex-1">
+                <h2 class="text-sm text-slate-400 uppercase tracking-widest mb-8 border-b border-white/5 pb-4">Telemetry</h2>
+                
+                <div class="flex justify-center mb-10">
+                    <div class="relative w-48 h-48">
+                        <svg viewBox="0 0 100 100" class="w-full h-full transform -rotate-90">
+                            <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="6" />
+                            <circle cx="50" cy="50" r="45" fill="none" stroke="url(#cyan-gradient)" stroke-width="6" stroke-dasharray="283" stroke-dashoffset="70" class="drop-shadow-[0_0_12px_rgba(6,182,212,0.8)]" />
+                            <defs>
+                                <linearGradient id="cyan-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="#06b6d4" />
+                                    <stop offset="100%" stop-color="#8b5cf6" />
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                            <span class="text-4xl font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">75<span class="text-lg text-slate-400 ml-1">%</span></span>
+                            <span class="text-xs text-slate-400 font-bold tracking-widest mt-1">SYNC</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Terminal -->
+        <div class="col-span-5 flex flex-col gap-6">
+            <div class="glass-ui rounded-3xl p-8 flex-1 flex flex-col">
+                <h2 class="text-sm text-slate-400 uppercase tracking-widest mb-6 border-b border-white/5 pb-4">Neural Stream</h2>
+                <div class="flex-1 rounded-2xl bg-slate-950/40 border border-slate-800 p-6 font-mono text-sm overflow-y-auto space-y-4">
+                    <div class="text-cyan-400 drop-shadow-[0_0_4px_rgba(6,182,212,0.5)]"><span class="opacity-50">~</span> Establishing quantum link...</div>
+                    <div class="text-purple-400 drop-shadow-[0_0_5px_rgba(139,92,246,0.6)]"><span class="opacity-50">~</span> Link established at 99.9% fidelity.</div>
+                    <div class="text-slate-300"><span class="opacity-50">~</span> Awaiting master directive.</div>
+                    <div class="flex items-center text-white/50 mt-4">
+                        <span>~</span> <span class="w-2 h-4 bg-white/50 ml-2 animate-pulse"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="col-span-3 flex flex-col gap-6">
+            <div class="glass-ui rounded-3xl p-8 flex-1 flex flex-col items-center justify-center text-center border-rose-500/20 relative overflow-hidden group">
+                <div class="absolute inset-0 bg-gradient-to-b from-transparent to-rose-500/10 opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                <div class="w-20 h-20 rounded-full bg-rose-500/10 flex items-center justify-center mb-6 border border-rose-500/30 shadow-[0_0_30px_rgba(244,63,94,0.3)] relative z-10">
+                    <span class="material-symbols-outlined text-4xl text-rose-400">gavel</span>
+                </div>
+                <h2 class="text-xl font-bold text-white mb-3 relative z-10">Danger Zone</h2>
+                <p class="text-sm text-rose-300/60 mb-10 relative z-10">Authorizes manual subsystem override.</p>
+                <button class="w-full py-4 rounded-2xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white font-bold tracking-widest uppercase shadow-[0_0_20px_rgba(244,63,94,0.4)] transition-all relative z-10">
+                    Force Override
+                </button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lineage AI - Aegis Tactical</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <script>
+        tailwind.config = {
+            theme: {
+                fontFamily: {
+                    sans: ['JetBrains Mono', 'monospace'],
+                },
+                extend: {
+                    colors: {
+                        tactical: { bg: '#121312', surface: '#1c1e1c', border: '#2a2d2a', amber: '#ffb000', dim: '#5c4500' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #121312; color: #a3a3a3; }
+        .scanlines {
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
+            background-size: 100% 4px;
+        }
+        .text-amber-glow { text-shadow: 0 0 8px rgba(255, 176, 0, 0.6); color: #ffb000; }
+        .tape { background: repeating-linear-gradient(45deg, #ffb000, #ffb000 10px, #121312 10px, #121312 20px); }
+    </style>
+</head>
+<body class="h-screen flex flex-col font-sans scanlines p-4 uppercase tracking-widest text-xs">
+    
+    <header class="flex justify-between items-center bg-tactical-surface border-b-2 border-tactical-border p-4 mb-4">
+        <div class="flex items-center gap-4">
+            <div class="px-2 py-1 bg-tactical-amber text-tactical-bg font-bold">L-AI</div>
+            <h1 class="text-lg font-bold text-tactical-amber text-amber-glow">Aegis Command Center</h1>
+        </div>
+        <div class="flex items-center gap-4 border border-tactical-amber p-2">
+            <div class="w-2 h-2 bg-tactical-amber animate-ping"></div>
+            <span class="text-tactical-amber">SEC-OP-ACTIVE</span>
+        </div>
+    </header>
+
+    <div class="flex-1 grid grid-cols-12 gap-4 overflow-hidden">
+        <!-- Telemetry -->
+        <div class="col-span-3 flex flex-col gap-4">
+            <div class="bg-tactical-surface border border-tactical-border p-4 flex-1 flex flex-col">
+                <h2 class="text-tactical-amber border-b border-tactical-border pb-2 mb-6">Telemetry</h2>
+                <div class="space-y-8">
+                    <div>
+                        <div class="flex justify-between mb-2">
+                            <span>PWR.Draw</span><span class="text-tactical-amber">8.4 kW</span>
+                        </div>
+                        <div class="h-2 bg-tactical-bg border border-tactical-border relative">
+                            <div class="absolute top-0 left-0 h-full bg-tactical-amber" style="width: 70%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between mb-2">
+                            <span>CPU.Temp</span><span class="text-red-500">78°C</span>
+                        </div>
+                        <div class="h-2 bg-tactical-bg border border-tactical-border relative">
+                            <div class="absolute top-0 left-0 h-full bg-red-600" style="width: 90%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Terminal -->
+        <div class="col-span-6 bg-tactical-surface border border-tactical-border p-4 flex flex-col">
+            <h2 class="text-tactical-amber border-b border-tactical-border pb-2 mb-4 flex justify-between">
+                <span>Comms Terminal</span>
+                <span>CH:01</span>
+            </h2>
+            <div class="flex-1 overflow-y-auto text-tactical-amber opacity-80 space-y-3 pt-2">
+                <p>> INIT SECURE CONNECTION...</p>
+                <p>> HANDSHAKE ESTABLISHED.</p>
+                <p>> AGENT ARGUS REPORTING:</p>
+                <p class="pl-4 border-l border-tactical-amber/30 py-1">> PERIMETER SECURE. NO THREATS DETECTED.</p>
+                <p class="animate-pulse">> AWAITING INPUT_</p>
+            </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="col-span-3 flex flex-col gap-4">
+            <div class="bg-tactical-surface border-2 border-red-900 p-1 flex-1 flex flex-col">
+                <div class="tape h-2 w-full mb-2"></div>
+                <div class="flex-1 flex flex-col items-center justify-center p-4 text-center">
+                    <span class="material-symbols-outlined text-6xl text-red-600 mb-6 block drop-shadow-[0_0_10px_rgba(220,38,38,0.5)]">lock</span>
+                    <h2 class="text-red-500 font-bold mb-8 text-lg">Danger Zone</h2>
+                    <button class="w-full py-4 bg-red-950 hover:bg-red-900 text-red-500 border-2 border-red-800 font-bold text-sm transition-colors active:translate-y-1">
+                        Force Override
+                    </button>
+                </div>
+                <div class="tape h-2 w-full mt-2"></div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

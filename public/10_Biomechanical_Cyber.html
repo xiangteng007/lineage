@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lineage AI | Biomechanical Cyber</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Jura:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #050a0f;
+            color: #a0c4ff;
+            font-family: 'Jura', sans-serif;
+            background-image: radial-gradient(circle at 50% 50%, #0a111a 0%, #020406 100%);
+            min-height: 100vh;
+        }
+        
+        /* Organic glowing borders */
+        .bio-panel {
+            background: rgba(10, 20, 30, 0.7);
+            border: 1px solid rgba(57, 255, 20, 0.3);
+            border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+            box-shadow: 
+                inset 0 0 20px rgba(57, 255, 20, 0.05),
+                0 0 15px rgba(57, 255, 20, 0.1);
+            backdrop-filter: blur(5px);
+            transition: border-radius 3s ease-in-out;
+            animation: morph 8s ease-in-out infinite alternate;
+        }
+
+        /* Danger variant */
+        .bio-danger {
+            border: 1px solid rgba(138, 43, 226, 0.5); /* Deep Violet */
+            box-shadow: 
+                inset 0 0 20px rgba(138, 43, 226, 0.1),
+                0 0 20px rgba(138, 43, 226, 0.2);
+            animation: morph-danger 6s ease-in-out infinite alternate;
+        }
+
+        @keyframes morph {
+            0% { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
+            100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+        }
+        
+        @keyframes morph-danger {
+            0% { border-radius: 50% 50% 50% 50% / 50% 50% 50% 50%; }
+            100% { border-radius: 30% 70% 40% 60% / 60% 40% 70% 30%; }
+        }
+
+        .neon-text-green {
+            color: #39ff14;
+            text-shadow: 0 0 8px rgba(57, 255, 20, 0.6);
+        }
+        .neon-text-purple {
+            color: #b19cd9;
+            text-shadow: 0 0 8px rgba(177, 156, 217, 0.8);
+        }
+
+        /* Organic veins/lines in background */
+        .vein {
+            position: absolute;
+            background: linear-gradient(90deg, transparent, rgba(57, 255, 20, 0.2), transparent);
+            height: 1px;
+            filter: blur(1px);
+        }
+
+        .bio-input {
+            background: rgba(0, 0, 0, 0.5);
+            border: none;
+            border-bottom: 2px solid #39ff14;
+            border-radius: 10px 10px 0 0;
+            color: #39ff14;
+        }
+        .bio-input:focus {
+            outline: none;
+            background: rgba(57, 255, 20, 0.1);
+        }
+
+        .bio-btn {
+            background: transparent;
+            border: 2px solid #b19cd9;
+            color: #b19cd9;
+            border-radius: 50px;
+            text-shadow: 0 0 5px #b19cd9;
+            box-shadow: inset 0 0 10px rgba(177,156,217,0.2), 0 0 10px rgba(177,156,217,0.2);
+            transition: all 0.3s;
+        }
+        .bio-btn:hover {
+            background: rgba(177, 156, 217, 0.2);
+            box-shadow: inset 0 0 20px rgba(177,156,217,0.5), 0 0 20px rgba(177,156,217,0.5);
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #39ff14; border-radius: 10px; }
+    </style>
+</head>
+<body class="p-6 relative overflow-hidden flex flex-col gap-6">
+    
+    <!-- Background Veins -->
+    <div class="vein w-[60%] top-[20%] left-[-10%] transform rotate-[15deg]"></div>
+    <div class="vein w-[80%] bottom-[30%] right-[-20%] transform rotate-[-20deg]"></div>
+
+    <!-- Header -->
+    <header class="flex justify-between items-center z-10 px-8 py-4 bg-black/40 rounded-full border border-[#39ff14]/30 backdrop-blur-md">
+        <h1 class="text-3xl font-bold tracking-widest">
+            <span class="neon-text-green">LINEAGE</span><span class="text-white/50">_AI_CORE</span>
+        </h1>
+        <div class="flex items-center gap-3">
+            <div class="w-16 h-1 bg-gray-800 rounded-full overflow-hidden">
+                <div class="w-full h-full bg-[#39ff14] animate-pulse"></div>
+            </div>
+            <span class="text-xs uppercase tracking-widest neon-text-green">Neural Sync 100%</span>
+        </div>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-grow z-10">
+        
+        <!-- Telemetry -->
+        <div class="lg:col-span-8 flex flex-col gap-8">
+            <div class="bio-panel p-10 flex-grow relative overflow-hidden">
+                <h2 class="text-2xl font-semibold mb-6 neon-text-green tracking-widest border-b border-[#39ff14]/20 pb-2 inline-block">Synaptic Activity</h2>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    <div class="bg-black/40 p-6 rounded-[30px] border border-[#39ff14]/20 text-center">
+                        <div class="text-[#a0c4ff] text-sm mb-2 uppercase">Frontal Cortex</div>
+                        <div class="text-4xl neon-text-green font-bold">128<span class="text-lg">T/s</span></div>
+                    </div>
+                    <div class="bg-black/40 p-6 rounded-[30px] border border-[#39ff14]/20 text-center">
+                        <div class="text-[#a0c4ff] text-sm mb-2 uppercase">Memory Hive</div>
+                        <div class="text-4xl neon-text-green font-bold">94<span class="text-lg">%</span></div>
+                    </div>
+                    <div class="bg-black/40 p-6 rounded-[30px] border border-[#39ff14]/20 text-center">
+                        <div class="text-[#a0c4ff] text-sm mb-2 uppercase">Core Temp</div>
+                        <div class="text-4xl neon-text-green font-bold">36<span class="text-lg">°C</span></div>
+                    </div>
+                </div>
+
+                <!-- Abstract DNA/Wave Chart -->
+                <div class="mt-10 h-32 flex items-center justify-center gap-1">
+                    <!-- Generate dynamic bars via CSS -->
+                    <script>
+                        for(let i=0; i<40; i++) {
+                            let height = 20 + Math.random() * 80;
+                            let delay = Math.random() * 2;
+                            document.write(`<div class="w-3 bg-gradient-to-t from-transparent to-[#39ff14] rounded-full" style="height: ${height}%; opacity: 0.6; animation: pulse 2s infinite ${delay}s alternate;"></div>`);
+                        }
+                    </script>
+                    <style>
+                        @keyframes pulse {
+                            0% { transform: scaleY(0.5); opacity: 0.3; }
+                            100% { transform: scaleY(1); opacity: 1; }
+                        }
+                    </style>
+                </div>
+            </div>
+
+            <!-- Terminal -->
+            <div class="bio-panel p-6 h-64 flex flex-col">
+                <h2 class="text-lg font-semibold mb-4 neon-text-green">Cortical Stream</h2>
+                <div class="flex-grow bg-black/60 rounded-2xl p-4 font-mono text-sm overflow-y-auto">
+                    <div class="text-[#a0c4ff]/70">> Synthesizing new thought patterns...</div>
+                    <div class="text-[#a0c4ff]/70">> Updating limbic parameters...</div>
+                    <div class="text-[#39ff14]">> Pattern recognized: User presence detected.</div>
+                    <div class="text-[#b19cd9]">> Sub-routine 'DANGER' loaded into memory.</div>
+                    <div class="text-[#39ff14] animate-pulse">> _</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="lg:col-span-4 bio-panel bio-danger p-8 flex flex-col items-center justify-center text-center relative overflow-hidden">
+            <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(138,43,226,0.1)_0%,transparent_70%)] pointer-events-none"></div>
+            
+            <svg class="w-16 h-16 text-[#b19cd9] mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+            
+            <h2 class="text-3xl font-bold mb-2 neon-text-purple tracking-widest uppercase">Genetic Mutation</h2>
+            <p class="text-[#a0c4ff]/60 text-sm mb-8 px-4">Altering core parameters can cause severe behavioral instability. Input sequence carefully.</p>
+            
+            <div class="w-full space-y-6 flex-grow flex flex-col justify-center">
+                <div class="text-left">
+                    <label class="block text-xs uppercase mb-2 neon-text-purple">Target Sequence</label>
+                    <select class="w-full bio-input p-3 text-sm">
+                        <option>Dopamine Regulation</option>
+                        <option>Memory Wipe</option>
+                        <option>Aggression Inhibitor</option>
+                    </select>
+                </div>
+                <div class="text-left">
+                    <label class="block text-xs uppercase mb-2 neon-text-purple">Sequence Key</label>
+                    <input type="password" class="w-full bio-input p-3 text-lg tracking-[0.5em] text-center" placeholder="••••••••">
+                </div>
+            </div>
+
+            <button class="w-full py-4 mt-8 bio-btn text-lg font-bold uppercase tracking-widest">
+                Inject Overwrite
+            </button>
+        </div>
+
+    </div>
+</body>
+</html>

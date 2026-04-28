@@ -1,426 +1,859 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>天堂：經典版 | 水蛇伺服器-長途夜車</title>
-  <meta name="description" content="天堂經典版 水蛇伺服器 長途夜車 血盟管理系統">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
-  <!-- Google Identity Services -->
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Lineage AI | Tactical Terminal</title>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+  
+  <style>
+      .material-symbols-outlined {
+          font-variation-settings: 'FILL' 1, 'wght' 900, 'GRAD' 0, 'opsz' 24;
+          display: inline-block;
+          vertical-align: middle;
+      }
+      body {
+          background-color: #f0f0f0;
+          color: #111;
+          font-family: 'Space Grotesk', sans-serif;
+          background-image: radial-gradient(#ccc 1px, transparent 1px);
+          background-size: 20px 20px;
+      }
+      /* Tactical Scanline Overlay */
+      body::after {
+          content: "";
+          position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+          background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+          pointer-events: none;
+          z-index: 9999;
+      }
+      /* Glitch Effect */
+      @keyframes glitch {
+          0% { transform: translate(0) }
+          20% { transform: translate(-2px, 2px) }
+          40% { transform: translate(-2px, -2px) }
+          60% { transform: translate(2px, 2px) }
+          80% { transform: translate(2px, -2px) }
+          100% { transform: translate(0) }
+      }
+      .glitch-hover:hover {
+          animation: glitch 0.2s cubic-bezier(.25, .46, .45, .94) both infinite;
+      }
+      /* Terminal Blinking Cursor */
+      @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+      .cursor-blink { display: inline-block; width: 8px; height: 14px; background-color: currentColor; animation: blink 1s step-end infinite; vertical-align: middle; margin-left: 4px; }
+      .brutal-card {
+          border: 4px solid #111;
+          box-shadow: 6px 6px 0px #111;
+          background: #fff;
+          transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease;
+      }
+      .brutal-card:hover:not(.no-hover-effect) {
+          transform: translate(-2px, -2px);
+          box-shadow: 8px 8px 0px #111;
+      }
+      .brutal-button {
+          border: 4px solid #111;
+          box-shadow: 4px 4px 0px #111;
+          text-transform: uppercase;
+          font-weight: 900;
+          transition: transform 0.1s, box-shadow 0.1s;
+          cursor: pointer;
+      }
+      .brutal-button:active {
+          transform: translate(4px, 4px);
+          box-shadow: 0px 0px 0px #111;
+      }
+      .brutal-button-primary { background: #ff3333; color: #fff; }
+      .brutal-button-secondary { background: #ffe600; color: #111; }
+      .brutal-button-dark { background: #111; color: #fff; }
+      .brutal-input {
+          border: 4px solid #111;
+          background: #fff;
+          border-radius: 0;
+          padding: 10px 14px;
+          font-weight: 700;
+          width: 100%;
+          font-size: 14px;
+          transition: background 0.2s;
+      }
+      .brutal-input:focus {
+          outline: none;
+          background: #ffe6e6;
+      }
+      select.brutal-input {
+          appearance: none;
+          cursor: pointer;
+          background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='4' stroke-linecap='square' stroke-linejoin='miter'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+          background-repeat: no-repeat;
+          background-position: right 12px center;
+          background-size: 16px;
+      }
+      ::-webkit-scrollbar { width: 12px; border-left: 2px solid #111; }
+      ::-webkit-scrollbar-thumb { background: #111; }
+      
+      .section:not(.active) { display: none !important; }
+      .section.active { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+      @keyframes slideUp { 0% { transform: translateY(15px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+      .hidden { display: none !important; }
+      
+      .nav-btn {
+          border: 4px solid transparent;
+          background: transparent;
+          font-weight: 900;
+          text-transform: uppercase;
+          color: #111;
+          transition: all 0.2s;
+      }
+      .nav-btn:hover { background: rgba(0,0,0,0.05); }
+      .nav-btn.active {
+          border: 4px solid #111;
+          background: #fff;
+          box-shadow: 4px 4px 0px #111;
+          color: #111;
+      }
+      
+      /* Mobile override for horizontal scroll layout for nav */
+      @media (max-width: 1024px) {
+          .nav-container {
+             display: flex;
+             overflow-x: auto;
+             padding-bottom: 8px;
+          }
+          .nav-btn {
+             white-space: nowrap;
+             flex-shrink: 0;
+          }
+      }
+
+      .toast {
+          position: fixed; bottom: 20px; right: 20px;
+          background: #111; color: #fff;
+          padding: 16px 24px; border: 4px solid #111; box-shadow: 8px 8px 0px #ffe600;
+          opacity: 0; transform: translateY(20px); transition: all 0.3s ease;
+          z-index: 1000; pointer-events: none; font-size: 16px; font-weight: 900; text-transform: uppercase;
+      }
+      .toast.show { opacity: 1; transform: translateY(0); }
+      
+      .attendance-grid {
+          display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px;
+          padding: 12px; background: #fff; border: 4px solid #111; overflow-y: auto;
+      }
+      .attendance-grid label { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 900; cursor: pointer; text-transform: uppercase; }
+      
+      .modal-overlay {
+          position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+          display: flex; justify-content: center; align-items: center; z-index: 9999;
+      }
+      .modal {
+          background: #fff; border: 8px solid #111; box-shadow: 12px 12px 0px #ff3333;
+          width: 95%; max-width: 600px; margin: auto; padding: 24px;
+          animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+      @keyframes modalPop {
+          0% { transform: scale(0.9) translateY(20px); opacity: 0; }
+          100% { transform: scale(1) translateY(0); opacity: 1; }
+      }
+      .scroll-hint {
+          display: none;
+          text-align: right; font-size: 10px; font-weight: 900; color: #ff3333; margin-bottom: 4px; text-transform: uppercase;
+      }
+      @media (max-width: 1024px) {
+          .scroll-hint { display: block; animation: pulse 2s infinite; }
+      }
+      @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+      .modal-sm { max-width: 400px; }
+      
+      .table-container { border: 4px solid #111; background: #fff; overflow-x: auto; box-shadow: 6px 6px 0px #111; }
+      table { border-collapse: collapse; width: 100%; text-transform: uppercase; }
+      th { border-bottom: 4px solid #111; border-right: 4px solid #111; padding: 12px; font-weight: 900; font-size: 13px; background: #111; color: #fff; white-space: nowrap; text-align: left; }
+      th:last-child { border-right: none; }
+      td { border-bottom: 2px solid #111; border-right: 2px solid #111; padding: 12px; font-weight: 700; font-size: 13px; transition: padding-left 0.2s ease, background-color 0.2s ease; }
+      td:last-child { border-right: none; }
+      tr:hover td { background: #ffe6e6; }
+      tr:hover td:first-child { padding-left: 16px; }
+      tr:last-child td { border-bottom: none; }
+
+      .loot-row { display: flex; gap: 8px; margin-bottom: 8px; }
+
+      .action-btn { padding: 4px 8px; border: 2px solid #111; font-weight: 900; background: #fff; font-size: 11px; cursor: pointer; transition: transform 0.1s; text-transform: uppercase; }
+      .action-btn:active { transform: translate(2px, 2px); }
+      .action-btn.edit { background: #ffe600; }
+      .action-btn.delete { background: #ff3333; color: white; }
+      .expandable-details { display: none; background: #fdfdfd; border-bottom: 4px solid #111; }
+      .expandable-details.expanded { display: table-row; }
+      .expand-icon { transition: transform 0.2s; display: inline-block; }
+      .expanded .expand-icon { transform: rotate(180deg); }
+      .cursor-pointer { cursor: pointer; }
+  </style>
 </head>
-<body>
-  <div class="particles" id="particles"></div>
+<body class="min-h-screen p-4 md:p-8 text-[#111] overflow-x-hidden">
 
-  <div class="app-wrapper">
+  <!-- Header -->
+  <header class="mb-8 border-4 border-black bg-white p-4 flex flex-col md:flex-row justify-between items-start md:items-center shadow-[8px_8px_0px_#111] gap-4">
+    <div class="flex items-center gap-4 w-full md:w-auto">
+        <h1 class="text-3xl md:text-4xl font-black uppercase tracking-tighter glitch-hover cursor-default">L <span class="bg-black text-white px-1">AI</span> GRID</h1>
+        <div id="memberGuestNotice" class="brutal-card bg-[#ff3333] text-white px-2 py-1 hidden text-[10px] md:text-xs font-bold uppercase shadow-none border-2">
+            <span class="material-symbols-outlined text-[12px] md:text-sm mr-1">warning</span> READ-ONLY
+        </div>
+    </div>
+    
+    <!-- Auth Area -->
+    <div id="authArea" class="flex items-center gap-2 md:gap-4 w-full md:w-auto justify-between md:justify-end">
+      <button id="loginBtn" onclick="openLoginModal()" class="brutal-button brutal-button-dark px-4 py-2 flex items-center gap-2 text-sm w-full md:w-auto justify-center">
+        <span class="material-symbols-outlined">key</span> SYS.LOGIN
+      </button>
+      
+      <div id="userInfo" class="hidden flex items-center gap-2 p-2 bg-white border-4 border-black w-full md:w-auto justify-between">
+        <div class="flex items-center gap-2">
+            <img id="userAvatar" src="" alt="avatar" class="w-8 h-8 border-2 border-black">
+            <div class="flex flex-col pr-2">
+                <span id="userName" class="text-xs font-black uppercase text-black leading-tight"></span>
+                <span id="adminBadge" class="hidden text-[9px] font-bold bg-[#ff3333] text-white px-1 mt-0.5 inline-block w-max">ADMIN</span>
+            </div>
+        </div>
+        <button onclick="logout()" class="brutal-button brutal-button-primary px-2 py-1 text-xs">OUT</button>
+      </div>
+    </div>
+  </header>
 
-    <!-- ── Header ── -->
-    <header class="site-header">
-      <div class="header-inner">
-        <div class="logo-area">
-          <div class="logo-emblem">⚔️</div>
-          <div class="logo-text">
-            <h1 class="site-title">天堂：經典版</h1>
-            <p class="site-subtitle">水蛇伺服器 · 長途夜車</p>
+  <!-- Main Grid Layout -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 max-w-[1600px] mx-auto">
+    
+    <!-- Navigation Area -->
+    <div class="lg:col-span-3 flex flex-col gap-6 lg:sticky lg:top-8 z-10">
+      <!-- Nav Widget -->
+      <div class="brutal-card bg-[#ffe600] p-4 flex flex-col gap-2 h-fit">
+        <h3 class="font-black border-b-4 border-black pb-2 mb-2 uppercase text-lg">MODULES</h3>
+        <div class="nav-container flex lg:flex-col gap-2">
+          <button class="nav-btn active px-4 py-3 flex items-center gap-3 text-left w-full text-sm" data-section="members" onclick="switchSection('members')">
+            <span class="material-symbols-outlined">group</span> Members
+          </button>
+          <button class="nav-btn px-4 py-3 flex items-center gap-3 text-left w-full text-sm" data-section="battles" onclick="switchSection('battles')">
+            <span class="material-symbols-outlined">swords</span> Battles
+          </button>
+          <button class="nav-btn px-4 py-3 flex items-center gap-3 text-left w-full text-sm" data-section="sieges" onclick="switchSection('sieges')">
+            <span class="material-symbols-outlined">fort</span> Sieges
+          </button>
+          <button class="nav-btn px-4 py-3 flex items-center gap-3 text-left w-full text-sm" data-section="alliances" onclick="switchSection('alliances')">
+            <span class="material-symbols-outlined">handshake</span> Alliances
+          </button>
+          <button class="nav-btn px-4 py-3 flex items-center gap-3 text-left w-full text-sm" data-section="treasury" onclick="switchSection('treasury')">
+            <span class="material-symbols-outlined">account_balance</span> Treasury
+          </button>
+        </div>
+      </div>
+      
+      <!-- System Info Panel -->
+      <div class="brutal-card bg-white p-5 hidden lg:flex flex-col gap-5 border-l-8 border-[#111]">
+        <div>
+          <h4 class="font-black text-[10px] uppercase text-gray-500 mb-1 border-b-2 border-gray-200 pb-1">Uplink Status</h4>
+          <div class="font-mono text-sm font-black text-[#ff3333] flex items-center gap-2 mt-2">
+            <span class="w-3 h-3 rounded-full bg-[#ff3333] inline-block animate-pulse border-2 border-black"></span>
+            CONNECTED
           </div>
         </div>
-        <div class="header-right">
-          <!-- Admin login area -->
-          <div id="authArea">
-            <div id="loginBtn" class="google-login-btn" onclick="openLoginModal()">
-              <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-              <span>管理員登入</span>
+        <div>
+          <h4 class="font-black text-[10px] uppercase text-gray-500 mb-1 border-b-2 border-gray-200 pb-1">Sys_Time</h4>
+          <div id="sysClockDisplay" class="font-mono text-2xl font-black tracking-tighter mt-2 text-black">00:00:00</div>
+        </div>
+        <div>
+          <h4 class="font-black text-[10px] uppercase text-gray-500 mb-1 border-b-2 border-gray-200 pb-1">Global Metrics</h4>
+          <div class="mt-2 space-y-1">
+            <div class="flex justify-between text-xs font-black uppercase">
+              <span>Members</span>
+              <span id="globalMemberCount" class="text-[#ff3333]">0</span>
             </div>
-            <div id="userInfo" class="user-info hidden">
-              <img id="userAvatar" src="" alt="avatar" class="user-avatar">
-              <div class="user-details">
-                <span id="userName" class="user-name"></span>
-                <span id="adminBadge" class="admin-badge hidden">管理員</span>
-              </div>
-              <button class="btn-logout" onclick="logout()">登出</button>
+            <div class="flex justify-between text-xs font-black uppercase">
+              <span>Alliances</span>
+              <span id="globalAllianceCount" class="text-[#4285F4]">0</span>
             </div>
+            <div class="flex justify-between text-xs font-black uppercase">
+              <span>Total Ops</span>
+              <span id="globalOpsCount" class="text-[#ffe600] bg-black px-1">0</span>
+            </div>
+            <div class="flex justify-between text-xs font-black uppercase">
+              <span>Net Dist.</span>
+              <span id="globalNetDist" class="text-[#34A853]">0</span>
+            </div>
+          </div>
+        </div>
+        <div class="mt-auto pt-4 border-t-2 border-gray-200">
+          <h4 class="font-black text-[10px] uppercase text-gray-500 mb-2">Terminal Output</h4>
+          <div id="terminalLog" class="bg-black text-[#ffe600] p-2 font-mono text-[9px] uppercase h-24 overflow-y-auto border-2 border-black flex flex-col gap-1">
+            <span>> SYS.INIT OK<span class="cursor-blink"></span></span>
           </div>
         </div>
       </div>
-    </header>
+    </div>
 
-    <!-- ── Navigation ── -->
-    <nav class="main-nav">
-      <div class="nav-inner">
-        <button class="nav-btn active" data-section="members" onclick="switchSection('members')">
-          <span class="nav-icon">🛡️</span><span>血盟成員</span>
-        </button>
-        <button class="nav-btn" data-section="battles" onclick="switchSection('battles')">
-          <span class="nav-icon">⚔️</span><span>首領討伐</span>
-        </button>
-        <button class="nav-btn" data-section="sieges" onclick="switchSection('sieges')">
-          <span class="nav-icon">🏰</span><span>攻城戰</span>
-        </button>
-        <button class="nav-btn" data-section="alliances" onclick="switchSection('alliances')">
-          <span class="nav-icon">🤝</span><span>聯盟名單</span>
-        </button>
-      </div>
-    </nav>
+    <!-- Dynamic Content Area -->
+    <div class="lg:col-span-9">
 
-    <!-- ── Main Content ── -->
-    <main class="main-content">
-
-      <!-- ── Members ── -->
+      <!-- SECTION: MEMBERS -->
       <section id="members" class="section active">
-        <div class="section-header">
-          <h2>🛡️ 血盟成員管理</h2>
-          <div class="member-count-badge" id="memberCountBadge">讀取中...</div>
-        </div>
-
-        <!-- Admin-only add form -->
-        <div class="card admin-only hidden" id="memberAddCard">
-          <div class="card-title">＋ 新增成員</div>
-          <div class="form-grid cols-3">
-            <div class="field-group">
-              <label>角色名稱 *</label>
-              <input type="text" id="mName" placeholder="輸入角色名稱">
-            </div>
-            <div class="field-group">
-              <label>職業 *</label>
-              <select id="mJob">
-                <option value="" disabled selected>選擇職業</option>
-                <option value="王族">👑 王族</option>
-                <option value="騎士">🗡️ 騎士</option>
-                <option value="妖精">🌿 妖精</option>
-                <option value="法師">🔮 法師</option>
-                <option value="黑妖">🌑 黑妖</option>
-              </select>
-            </div>
-            <div class="field-group">
-              <label>備註（職業特性）</label>
-              <input type="text" id="mNotes" placeholder="例：力量騎士、火屬性、有特殊魔法書">
-            </div>
-          </div>
-          <div class="form-actions">
-            <button class="btn btn-primary" onclick="addMember()">＋ 加入血盟</button>
-          </div>
-        </div>
-
-        <!-- Guest prompt -->
-        <div class="guest-notice hidden" id="memberGuestNotice">
-          <span>🔒 如需新增或修改成員，請以管理員帳號登入</span>
-        </div>
-
-        <div class="card">
-          <div class="card-title">成員列表</div>
-          <div class="table-wrap">
-            <table id="membersTable">
-              <thead>
-                <tr>
-                  <th>角色名稱</th>
-                  <th>職業</th>
-                  <th>備註 / 職業特性</th>
-                  <th class="admin-col hidden">操作</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- ── Battles ── -->
-      <section id="battles" class="section">
-        <div class="section-header">
-          <h2>⚔️ 首領討伐紀錄</h2>
-        </div>
-
-        <div class="card admin-only hidden" id="battleAddCard">
-          <div class="card-title">登記討伐</div>
-          <div class="form-grid cols-3">
-            <div class="field-group">
-              <label>討伐首領 *</label>
-              <select id="bBossSelect" onchange="handleBossSelect(this)">
-                <optgroup label="🐉 龍族 BOSS">
-                  <option value="冰龍提亞馬特">🐉 冰龍提亞馬特 (Tiamat)</option>
-                  <option value="地龍安塔拉斯">🌋 地龍安塔拉斯 (Antharas)</option>
-                  <option value="火龍瓦拉卡斯">🔥 火龍瓦拉卡斯 (Valakas)</option>
-                  <option value="風龍林德維姆">💨 風龍林德維姆 (Lindvior)</option>
-                </optgroup>
-                <optgroup label="⚔️ 高難度 BOSS">
-                  <option value="傑卡斯">🏴‍☠️ 傑卡斯 (Zaken)</option>
-                  <option value="貝利斯">👑 貝利斯 (Beleth)</option>
-                  <option value="哈帝斯">⚰️ 哈帝斯 (Hades)</option>
-                  <option value="奧法神">🌊 奧法神 (Orfen)</option>
-                  <option value="沙帝達">🌑 沙帝達 (Core)</option>
-                  <option value="巫妖王">💀 巫妖王 (Lich King)</option>
-                </optgroup>
-                <optgroup label="👿 一般 BOSS">
-                  <option value="死亡騎士">💀 死亡騎士 (Death Knight)</option>
-                  <option value="克特">🐱 克特 (Kat)</option>
-                  <option value="大惡魔">😈 大惡魔 (Demon Lord)</option>
-                  <option value="巴風特">🐐 巴風特 (Baphomet)</option>
-                  <option value="蜥蜴王">🦎 蜥蜴王 (Lizard King)</option>
-                  <option value="草地蜥蜴王">🌿 草地蜥蜴王</option>
-                  <option value="沼澤蜥蜴王">🌊 沼澤蜥蜴王</option>
-                  <option value="吸血蝙蝠王">🦇 吸血蝙蝠王 (Bat Queen)</option>
-                  <option value="巨型蜘蛛">🕷️ 巨型蜘蛛 (Giant Spider)</option>
-                  <option value="骷髏龍">🐲 骷髏龍 (Bone Dragon)</option>
-                  <option value="法蘭肯">🧟 法蘭肯 (Franken)</option>
-                  <option value="幽靈騎士">👻 幽靈騎士 (Ghost Knight)</option>
-                  <option value="闇黑薩曼達">🌑 闇黑薩曼達 (Dark Samanda)</option>
-                  <option value="狼人王">🐺 狼人王 (Werewolf King)</option>
-                  <option value="冰女巫">🧊 冰女巫 (Ice Witch)</option>
-                  <option value="哥布林王">👺 哥布林王 (Goblin King)</option>
-                  <option value="精靈王">🧝 精靈王 (Elf King)</option>
-                  <option value="水晶守護者">💎 水晶守護者 (Crystal Guardian)</option>
-                  <option value="暗騎士王">🖤 暗騎士王 (Dark Knight King)</option>
-                </optgroup>
-                <optgroup label="✏️ 其他">
-                  <option value="__custom__">✏️ 自訂首領名稱...</option>
-                </optgroup>
-              </select>
-            </div>
-            <div class="field-group" id="bCustomBossGroup" style="display:none;">
-              <label>自訂首領名稱 *</label>
-              <input type="text" id="bBossCustom" placeholder="輸入首領名稱">
-            </div>
-            <div class="field-group">
-              <label>戰鬥時間</label>
-              <input type="datetime-local" id="bTime">
-            </div>
-            <div class="field-group">
-              <label>拍賣總金額（天幣）</label>
-              <input type="number" id="bAuctionPool" placeholder="0">
-            </div>
-          </div>
-
-          <div class="field-group mt-1">
-            <label>出席成員</label>
-            <div class="attendance-grid" id="bAttendance"></div>
-          </div>
-
-          <div class="field-group mt-1">
-            <label>戰利品明細（選填）</label>
-            <div id="bDropsList">
-              <div class="loot-row">
-                <input type="text" placeholder="物品名稱" class="loot-name">
-                <input type="number" placeholder="拍出天幣" class="loot-price">
-                <button class="btn-icon" onclick="removeLootRow(this)">✕</button>
+        <div class="flex flex-col gap-6 lg:gap-8">
+          
+          <!-- Top Row: Stats & Action Form -->
+          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8 items-start">
+            <!-- Stats Widget -->
+            <div class="xl:col-span-2 brutal-card bg-[#111] text-white p-6 relative overflow-hidden flex flex-col md:flex-row gap-4 stagger-1 h-full">
+              <div class="absolute -right-4 -bottom-4 opacity-20 pointer-events-none">
+                 <span class="material-symbols-outlined" style="font-size: 180px;">monitoring</span>
+              </div>
+              <div class="flex-1 z-10 relative flex flex-col justify-between">
+                  <div>
+                      <h3 class="font-black border-b-4 border-gray-700 pb-2 mb-4 text-[#ffe600] uppercase text-lg inline-block pr-4">System Health</h3>
+                      <div class="flex justify-between items-end mb-4">
+                         <div class="text-sm font-bold text-gray-400 uppercase tracking-widest">Total Members</div>
+                         <div class="text-6xl font-black text-white leading-none" id="memberCountBadge">...</div>
+                      </div>
+                  </div>
+                  <div class="text-gray-400 text-xs font-bold mt-2 uppercase border-t-2 border-gray-800 pt-2 relative z-10 font-mono">
+                     > DB SYNC: <span id="syncStatusTime" class="text-white">WAITING...</span><br>
+                     <span class="text-[#ffe600]">> DATA STREAM ACTIVE<span class="cursor-blink"></span></span>
+                  </div>
+              </div>
+              <div class="w-full md:w-[160px] h-[160px] relative z-10 flex items-center justify-center bg-black border-4 border-gray-800 p-2">
+                  <canvas id="classChart"></canvas>
               </div>
             </div>
-            <button class="btn btn-ghost mt-1" onclick="addLootRow()">＋ 新增戰利品</button>
+
+            <!-- Action Widget (Admin) -->
+            <div class="xl:col-span-1 stagger-3 h-full">
+              <div id="memberAddCard" class="w-full brutal-card bg-white p-6 flex flex-col border-t-8 border-[#ff3333] h-full">
+                <h3 class="font-black border-b-4 border-black pb-2 mb-4 uppercase text-lg">Append Record</h3>
+                <div class="flex flex-col gap-4 mb-4 flex-1">
+                  <div>
+                    <label class="block font-black uppercase text-xs mb-1 text-gray-600">Character ID</label>
+                    <input type="text" id="mName" class="brutal-input" placeholder="ID...">
+                  </div>
+                  <div>
+                    <label class="block font-black uppercase text-xs mb-1 text-gray-600">Class</label>
+                    <select id="mJob" class="brutal-input">
+                      <option value="" disabled selected>Select...</option>
+                      <option value="王族">Prince</option>
+                      <option value="騎士">Knight</option>
+                      <option value="妖精">Elf</option>
+                      <option value="法師">Wizard</option>
+                      <option value="黑妖">Dark Elf</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block font-black uppercase text-xs mb-1 text-gray-600">Tier / 分級</label>
+                    <select id="mTier" class="brutal-input">
+                      <option value="核心">⭐ 核心成員 (Core)</option>
+                      <option value="一般" selected>○ 一般成員 (Regular)</option>
+                      <option value="試煉">△ 試煉成員 (Trial)</option>
+                      <option value="外交">◇ 外交成員 (Diplomat)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block font-black uppercase text-xs mb-1 text-gray-600">Metadata Tags</label>
+                    <input type="text" id="mNotes" class="brutal-input" placeholder="Role, Team, etc...">
+                  </div>
+                </div>
+                <button onclick="addMember()" class="brutal-button brutal-button-primary w-full py-3 mt-auto flex items-center justify-center gap-2">
+                  <span class="material-symbols-outlined text-sm">add_circle</span> EXECUTE.INSERT()
+                </button>
+              </div>
+            </div>
           </div>
 
-          <div class="form-actions">
-            <button class="btn btn-primary" onclick="addBattle()">⚔️ 提交討伐紀錄</button>
+          <!-- Bottom Row: Table -->
+          <div class="w-full stagger-2">
+            <div class="flex justify-between items-end mb-2 gap-2 flex-wrap">
+              <div class="flex items-center gap-4 flex-wrap">
+                <h2 class="text-2xl font-black uppercase tracking-tight inline-block bg-[#ffe600] px-4 py-1 border-4 border-black shadow-[4px_4px_0px_#111]">MEMBERS_DB</h2>
+                <input type="text" id="membersSearch" placeholder="SEARCH MEMBERS..." class="brutal-input max-w-xs text-xs py-1 px-2" oninput="setFilter('members', this.value)">
+              </div>
+              <button class="brutal-button bg-white px-3 py-1 text-xs flex items-center gap-1 h-fit" onclick="exportToCSV('members')">
+                  <span class="material-symbols-outlined text-[14px]">download</span> EXPORT .CSV
+              </button>
+            </div>
+            <div class="scroll-hint">&larr; Scroll Horizontally &rarr;</div>
+            <div class="table-container">
+              <table id="membersTable">
+                <thead>
+                  <tr>
+                    <th>Character ID</th>
+                    <th>Class</th>
+                    <th class="text-center">Tier</th>
+                    <th>Metadata</th>
+                    <th class="text-center">LINE</th>
+                    <th class="admin-col hidden text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
           </div>
-        </div>
 
-        <div class="card">
-          <div class="card-title">討伐歷史</div>
-          <div class="table-wrap">
-            <table id="battlesTable">
-              <thead>
-                <tr>
-                  <th>時間</th>
-                  <th>首領</th>
-                  <th>出席數</th>
-                  <th>總拍賣金</th>
-                  <th>每人分紅</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
         </div>
       </section>
 
-      <!-- ── Sieges ── -->
+      <!-- SECTION: BATTLES -->
+      <section id="battles" class="section">
+        <div class="flex flex-col gap-6 lg:gap-8">
+          
+          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8 items-start">
+            <div class="xl:col-span-2 brutal-card bg-white p-6 border-l-8 border-[#ffe600] relative overflow-hidden stagger-1 h-full flex flex-col justify-center">
+               <div class="absolute -right-4 -bottom-4 opacity-10 pointer-events-none text-black">
+                   <span class="material-symbols-outlined" style="font-size: 180px;">swords</span>
+                </div>
+               <h3 class="font-black border-b-4 border-black pb-2 mb-4 uppercase text-lg relative z-10 inline-block pr-4">Battle Protocol</h3>
+               <p class="font-bold text-sm leading-relaxed mb-4 uppercase relative z-10">Log all encounters and loot valuations promptly to ensure accurate dividend distribution.</p>
+               <div class="bg-[#111] p-4 text-[#ffe600] font-mono text-xs uppercase space-y-2 border-4 border-black relative z-10 w-fit">
+                   <p id="battleStatusText">> AWAITING NEW LOGS...</p>
+                   <p>> SYNCING WITH LEDGER...</p>
+                   <p class="text-white">> STATUS: NOMINAL<span class="cursor-blink"></span></p>
+               </div>
+            </div>
+
+            <div class="xl:col-span-1 stagger-3 h-full">
+              <div id="battleAddCard" class="auth-required hidden w-full brutal-card bg-[#ffe600] p-6 flex flex-col border-t-8 border-black h-full">
+                <h3 class="font-black border-b-4 border-black pb-2 mb-4 uppercase text-lg">Log Encounter</h3>
+                <div class="flex flex-col gap-4 flex-1">
+                  <div>
+                    <label class="block font-black uppercase text-xs mb-1">Target *</label>
+                    <select id="bBossSelect" class="brutal-input bg-white" onchange="handleBossSelect(this)">
+                      <option value="死亡騎士">Death Knight</option>
+                      <option value="克特">Kurtz</option>
+                      <option value="大惡魔">Demon</option>
+                      <option value="巴風特">Baphomet</option>
+                      <option value="__custom__">CUSTOM_INPUT</option>
+                    </select>
+                    <div id="bCustomBossGroup" style="display:none;" class="mt-2">
+                      <input type="text" id="bBossCustom" class="brutal-input bg-white" placeholder="Custom Target...">
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block font-black uppercase text-xs mb-1">Timestamp</label>
+                    <input type="datetime-local" id="bTime" class="brutal-input bg-white">
+                  </div>
+                  <div>
+                    <label class="block font-black uppercase text-xs mb-1">Pool Value (Adena)</label>
+                    <input type="number" id="bAuctionPool" class="brutal-input bg-white" placeholder="0">
+                  </div>
+                  <div>
+                    <label class="block font-black uppercase text-xs mb-1">Participants</label>
+                    <div id="bAttendance" class="attendance-grid max-h-[150px] bg-white border-4 border-black p-2"></div>
+                  </div>
+                  <div class="flex flex-col h-full border-t-4 border-black pt-4 mt-2">
+                    <label class="block font-black uppercase text-xs mb-2 flex justify-between items-center">
+                      Loot Drops
+                      <button onclick="addLootRow()" class="brutal-button px-2 py-1 text-[10px] bg-black text-[#ffe600] flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">add</span> ADD</button>
+                    </label>
+                    <div id="bDropsList" class="space-y-2 max-h-[120px] overflow-y-auto pr-1 flex-1">
+                      <div class="loot-row flex gap-2">
+                        <input type="text" placeholder="Item Name" class="brutal-input bg-white flex-1 text-xs">
+                        <input type="number" placeholder="Value" class="brutal-input bg-white w-20 text-xs">
+                        <button class="brutal-button brutal-button-primary px-2" onclick="removeLootRow(this)"><span class="material-symbols-outlined text-sm">close</span></button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <button onclick="addBattle()" class="brutal-button brutal-button-dark w-full py-3 mt-4 flex items-center justify-center gap-2">
+                  <span class="material-symbols-outlined text-sm">save</span> EXECUTE.LOG_BATTLE()
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="w-full stagger-2">
+            <div class="flex justify-between items-end mb-2 gap-2 flex-wrap">
+              <div class="flex items-center gap-4 flex-wrap">
+                <h2 class="text-2xl font-black uppercase tracking-tight inline-block bg-black text-white px-4 py-1 border-4 border-black shadow-[4px_4px_0px_#ff3333]">BATTLES_LOG</h2>
+                <input type="text" id="battlesSearch" placeholder="SEARCH BATTLES..." class="brutal-input max-w-xs text-xs py-1 px-2" oninput="setFilter('battles', this.value)">
+              </div>
+              <button class="brutal-button bg-white px-3 py-1 text-xs flex items-center gap-1 h-fit" onclick="exportToCSV('battles')">
+                  <span class="material-symbols-outlined text-[14px]">download</span> EXPORT .CSV
+              </button>
+            </div>
+            <div class="scroll-hint">&larr; Scroll Horizontally &rarr;</div>
+            <div class="table-container">
+              <table id="battlesTable">
+                <thead>
+                  <tr>
+                    <th>Time</th><th>Target</th><th>Pax</th><th>Pool</th><th class="text-[#ff3333]">Dividend</th><th class="admin-col hidden text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- SECTION: SIEGES -->
       <section id="sieges" class="section">
-        <div class="section-header">
-          <h2>🏰 攻城戰紀錄</h2>
-        </div>
+        <div class="flex flex-col gap-6 lg:gap-8">
+          
+          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8 items-start">
+            <div class="xl:col-span-2 brutal-card bg-[#ff3333] text-white p-6 border-r-8 border-black relative overflow-hidden stagger-1 h-full flex flex-col justify-center">
+               <div class="absolute -right-4 -bottom-4 opacity-20 pointer-events-none text-black">
+                   <span class="material-symbols-outlined" style="font-size: 180px;">fort</span>
+                </div>
+               <h3 class="font-black border-b-4 border-black pb-2 mb-4 uppercase text-lg relative z-10 inline-block pr-4 text-black bg-[#ffe600] px-2 shadow-[4px_4px_0px_#111]">Siege Ops</h3>
+               <p class="font-bold text-sm leading-relaxed mb-4 uppercase relative z-10">Critical war operations. Ensure all participating allies are logged accurately for ledger calculations.</p>
+               <div class="bg-black text-white p-4 font-mono text-xs uppercase space-y-2 relative z-10 border-4 border-black shadow-[4px_4px_0px_rgba(255,255,255,0.5)] w-fit">
+                   <p id="siegeStatusText">> MONITORING CASTLE STATUS...</p>
+                   <p class="text-[#ffe600]">> READY FOR DEPLOYMENT<span class="cursor-blink"></span></p>
+               </div>
+            </div>
 
-        <div class="card admin-only hidden" id="siegeAddCard">
-          <div class="card-title">登記攻城</div>
-          <div class="form-grid cols-3">
-            <div class="field-group">
-              <label>日期</label>
-              <input type="datetime-local" id="sDate">
-            </div>
-            <div class="field-group">
-              <label>城堡</label>
-              <select id="sCastle">
-                <option value="肯特城">🏰 肯特城</option>
-                <option value="妖魔堡壘">🔥 妖魔堡壘</option>
-                <option value="風木城">🌲 風木城</option>
-                <option value="海音城">🌊 海音城</option>
-                <option value="奇岩城">⛰️ 奇岩城</option>
-                <option value="歐倫城">⚡ 歐倫城</option>
-                <option value="銀蕨城">🌿 銀蕨城</option>
-                <option value="拉奎城">🏔️ 拉奎城</option>
-              </select>
-            </div>
-            <div class="field-group">
-              <label>發放總獎金（天幣）</label>
-              <input type="number" id="sReward" placeholder="0">
+            <div class="xl:col-span-1 stagger-3 h-full">
+              <div id="siegeAddCard" class="auth-required hidden w-full brutal-card bg-white p-6 flex flex-col border-t-8 border-[#111] h-full">
+                <h3 class="font-black border-b-4 border-black pb-2 mb-4 uppercase text-lg">Log Siege</h3>
+                <div class="flex flex-col gap-4 flex-1">
+                  <div>
+                    <label class="block font-black uppercase text-xs mb-1">Timestamp</label>
+                    <input type="datetime-local" id="sDate" class="brutal-input text-black">
+                  </div>
+                  <div>
+                    <label class="block font-black uppercase text-xs mb-1">Castle</label>
+                    <select id="sCastle" class="brutal-input text-black">
+                      <option value="肯特城">Kent Castle</option>
+                      <option value="妖魔堡壘">Orc Fortress</option>
+                      <option value="風木城">Windawood Castle</option>
+                      <option value="奇岩城">Giran Castle</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block font-black uppercase text-xs mb-1">Total Reward (Adena)</label>
+                    <input type="number" id="sReward" class="brutal-input text-black" placeholder="0">
+                  </div>
+                  <div class="flex-1 min-h-[150px]">
+                    <label class="block font-black uppercase text-xs mb-1">Participants</label>
+                    <div id="sAttendance" class="attendance-grid h-full max-h-[250px] text-black border-black p-2 bg-gray-50"></div>
+                  </div>
+                </div>
+                <button onclick="addSiege()" class="brutal-button brutal-button-primary w-full py-3 mt-4 flex items-center justify-center gap-2">
+                  <span class="material-symbols-outlined text-sm">flag</span> EXECUTE.LOG_SIEGE()
+                </button>
+              </div>
             </div>
           </div>
-          <div class="field-group mt-1">
-            <label>出席成員</label>
-            <div class="attendance-grid" id="sAttendance"></div>
-          </div>
-          <div class="form-actions">
-            <button class="btn btn-primary" onclick="addSiege()">🏰 提交攻城紀錄</button>
-          </div>
-        </div>
 
-        <div class="card">
-          <div class="card-title">攻城歷史</div>
-          <div class="table-wrap">
-            <table id="siegesTable">
-              <thead>
-                <tr><th>時間</th><th>城堡</th><th>出席數</th><th>總獎金</th><th>每人分紅</th></tr>
-              </thead>
-              <tbody></tbody>
-            </table>
+          <div class="w-full stagger-2">
+            <div class="flex justify-between items-end mb-2 gap-2 flex-wrap">
+              <div class="flex items-center gap-4 flex-wrap">
+                <h2 class="text-2xl font-black uppercase tracking-tight inline-block bg-[#ff3333] text-white px-4 py-1 border-4 border-black shadow-[4px_4px_0px_#111]">SIEGES_LOG</h2>
+                <input type="text" id="siegesSearch" placeholder="SEARCH SIEGES..." class="brutal-input max-w-xs text-xs py-1 px-2" oninput="setFilter('sieges', this.value)">
+              </div>
+              <button class="brutal-button bg-white px-3 py-1 text-xs flex items-center gap-1 h-fit" onclick="exportToCSV('sieges')">
+                  <span class="material-symbols-outlined text-[14px]">download</span> EXPORT .CSV
+              </button>
+            </div>
+            <div class="scroll-hint">&larr; Scroll Horizontally &rarr;</div>
+            <div class="table-container">
+              <table id="siegesTable">
+                <thead>
+                  <tr>
+                    <th>Time</th><th>Castle</th><th>Pax</th><th>Pool</th><th class="text-[#ff3333]">Dividend</th><th class="admin-col hidden text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
           </div>
+
         </div>
       </section>
 
-      <!-- ── Alliances ── -->
+      <!-- SECTION: ALLIANCES -->
       <section id="alliances" class="section">
-        <div class="section-header">
-          <h2>🤝 聯盟管理</h2>
-        </div>
+        <div class="flex flex-col gap-6 lg:gap-8">
+          
+          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8 items-start">
+            <div class="xl:col-span-2 brutal-card bg-white p-6 border-b-8 border-black relative overflow-hidden stagger-1 h-full flex flex-col justify-center">
+               <div class="absolute -right-4 -bottom-4 opacity-10 pointer-events-none text-black">
+                   <span class="material-symbols-outlined" style="font-size: 180px;">handshake</span>
+                </div>
+               <h3 class="font-black border-b-4 border-black pb-2 mb-4 uppercase text-lg relative z-10 inline-block pr-4">Diplomacy</h3>
+               <p class="font-bold text-sm leading-relaxed uppercase relative z-10 text-gray-600">Registered external allies. These units are eligible for participation in joint operations and dividend pools.</p>
+            </div>
 
-        <div class="card admin-only hidden" id="allianceAddCard">
-          <div class="card-title">新增聯盟玩家</div>
-          <div class="form-grid cols-3">
-            <div class="field-group">
-              <label>角色名稱 *</label>
-              <input type="text" id="aName" placeholder="輸入角色名稱">
-            </div>
-            <div class="field-group">
-              <label>職業 *</label>
-              <select id="aJob">
-                <option value="" disabled selected>選擇職業</option>
-                <option value="王族">👑 王族</option>
-                <option value="騎士">🗡️ 騎士</option>
-                <option value="妖精">🌿 妖精</option>
-                <option value="法師">🔮 法師</option>
-                <option value="黑妖">🌑 黑妖</option>
-              </select>
-            </div>
-            <div class="field-group">
-              <label>備註</label>
-              <input type="text" id="aNotes" placeholder="備註（選填）">
+            <div class="xl:col-span-1 stagger-3 h-full">
+              <div id="allianceAddCard" class="admin-only hidden w-full brutal-card bg-[#f0f0f0] p-6 flex flex-col border-t-8 border-black h-full">
+                <h3 class="font-black border-b-4 border-black pb-2 mb-4 uppercase text-lg">Append Ally</h3>
+                <div class="flex flex-col gap-4 flex-1">
+                  <div>
+                    <label class="block font-black uppercase text-xs mb-1 text-gray-600">Character ID *</label>
+                    <input type="text" id="aName" class="brutal-input bg-white" placeholder="ID...">
+                  </div>
+                  <div>
+                    <label class="block font-black uppercase text-xs mb-1 text-gray-600">Class *</label>
+                    <select id="aJob" class="brutal-input bg-white">
+                      <option value="王族">Prince</option>
+                      <option value="騎士">Knight</option>
+                      <option value="妖精">Elf</option>
+                      <option value="法師">Wizard</option>
+                      <option value="黑妖">Dark Elf</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block font-black uppercase text-xs mb-1 text-gray-600">Metadata</label>
+                    <input type="text" id="aNotes" class="brutal-input bg-white" placeholder="Tags...">
+                  </div>
+                </div>
+                <button onclick="addAlliance()" class="brutal-button brutal-button-dark w-full py-3 mt-4 flex items-center justify-center gap-2">
+                  <span class="material-symbols-outlined text-sm">person_add</span> EXECUTE.INSERT_ALLY()
+                </button>
+              </div>
             </div>
           </div>
-          <div class="form-actions">
-            <button class="btn btn-primary" onclick="addAlliance()">＋ 加入聯盟</button>
-          </div>
-        </div>
 
-        <div class="card">
-          <div class="card-title">聯盟列表</div>
-          <div class="table-wrap">
-            <table id="alliancesTable">
-              <thead>
-                <tr>
-                  <th>角色名稱</th><th>職業</th><th>備註</th>
-                  <th class="admin-col hidden">操作</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
+          <div class="w-full stagger-2">
+            <div class="flex justify-between items-end mb-2 gap-2 flex-wrap">
+              <div class="flex items-center gap-4 flex-wrap">
+                <h2 class="text-2xl font-black uppercase tracking-tight inline-block bg-white px-4 py-1 border-4 border-black shadow-[4px_4px_0px_#111]">ALLIANCES_DB</h2>
+                <input type="text" id="alliancesSearch" placeholder="SEARCH ALLIANCES..." class="brutal-input max-w-xs text-xs py-1 px-2" oninput="setFilter('alliances', this.value)">
+              </div>
+              <button class="brutal-button bg-white px-3 py-1 text-xs flex items-center gap-1 h-fit" onclick="exportToCSV('alliances')">
+                  <span class="material-symbols-outlined text-[14px]">download</span> EXPORT .CSV
+              </button>
+            </div>
+            <div class="scroll-hint">&larr; Scroll Horizontally &rarr;</div>
+            <div class="table-container">
+              <table id="alliancesTable">
+                <thead>
+                  <tr>
+                    <th>Character ID</th><th>Class</th><th>Metadata</th><th class="admin-col hidden text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
           </div>
+
         </div>
       </section>
-    </main>
 
-    <footer class="site-footer">
-      <p>⚔️ 天堂：經典版 · 水蛇伺服器-長途夜車 · Firebase Cloud 驅動</p>
-    </footer>
+      <!-- SECTION: TREASURY -->
+      <section id="treasury" class="section">
+        <div class="flex flex-col gap-6 lg:gap-8">
+          
+          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8 items-start">
+            <div class="xl:col-span-2 w-full brutal-card p-6 bg-black text-white shadow-[8px_8px_0px_#ffe600] relative overflow-hidden stagger-1 h-full flex flex-col justify-center">
+               <div class="absolute -right-4 -top-8 opacity-10 pointer-events-none text-white">
+                  <span class="material-symbols-outlined" style="font-size: 200px;">account_balance</span>
+               </div>
+               <h3 class="text-2xl font-black uppercase mb-4 text-[#ffe600] border-b-4 border-gray-700 pb-2 relative z-10 inline-block pr-8">Treasury Engine</h3>
+               <p class="font-bold mb-4 text-gray-300 text-sm leading-relaxed relative z-10">
+                 SYSTEM AUTO-AGGREGATES ALL BATTLE AND SIEGE RECORDS TO COMPUTE PER-MEMBER DIVIDENDS. ALL VALUES ARE IN ADENA.
+               </p>
+               <div class="p-4 bg-[#111] border-4 border-gray-800 text-xs text-gray-400 font-bold uppercase mt-4 space-y-2 relative z-10 w-fit">
+                 <p>> ALLIANCES INCLUDED IN DIVIDENDS</p>
+                 <p class="text-white text-lg bg-[#ff3333] px-2 py-1 inline-block mt-1 border-2 border-black">> (POOL_VALUE / PAX_COUNT)</p>
+                 <p class="mt-2">> ROUNDED DOWN PER OPERATION.<span class="cursor-blink"></span></p>
+               </div>
+            </div>
+
+            <div class="xl:col-span-1 stagger-3 h-full">
+               <!-- Treasury Chart Container -->
+               <div class="brutal-card bg-white p-6 h-full min-h-[300px] border-t-8 border-[#ffe600] flex flex-col">
+                   <h3 class="font-black border-b-4 border-black pb-2 mb-4 uppercase text-lg">Net Distribution</h3>
+                   <div class="flex-1 relative min-h-[250px]">
+                      <canvas id="treasuryChart"></canvas>
+                   </div>
+               </div>
+            </div>
+          </div>
+
+          <div class="w-full stagger-2">
+            <div class="flex justify-between items-end mb-2 gap-2 flex-wrap">
+              <div class="flex items-center gap-4 flex-wrap">
+                <h2 class="text-2xl font-black uppercase tracking-tight inline-block bg-[#111] text-white px-4 py-1 border-4 border-black shadow-[4px_4px_0px_#ffe600]">LEDGER_CALC</h2>
+                <input type="text" id="treasurySearch" placeholder="SEARCH TREASURY..." class="brutal-input max-w-xs text-xs py-1 px-2" oninput="setFilter('treasury', this.value)">
+              </div>
+              <button class="brutal-button bg-white px-3 py-1 text-xs flex items-center gap-1 h-fit" onclick="exportToCSV('treasury')">
+                  <span class="material-symbols-outlined text-[14px]">download</span> EXPORT .CSV
+              </button>
+            </div>
+            <div class="scroll-hint">&larr; Scroll Horizontally &rarr;</div>
+            <div class="table-container">
+              <table id="treasuryTable">
+                <thead>
+                  <tr>
+                    <th>Character ID</th><th class="text-center">Ops Count</th><th class="text-right">Battle Div</th><th class="text-right">Siege Div</th><th class="text-right text-[#ffe600] font-black">Net Total</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </div>
   </div>
 
-  <!-- ── Edit Member Modal ── -->
+  <!-- MODALS -->
   <div class="modal-overlay hidden" id="editMemberModal" onclick="closeEditModal(event)">
     <div class="modal">
-      <div class="modal-header">
-        <h3>✏️ 編輯成員</h3>
-        <button class="modal-close" onclick="closeEditModal()">✕</button>
+      <div class="flex justify-between items-start mb-6 border-b-4 border-black pb-4">
+        <h3 class="text-2xl font-black uppercase">MUTATE_MEMBER</h3>
+        <button class="brutal-button bg-white px-2 py-1 text-sm" onclick="closeEditModal()">X</button>
       </div>
-      <div class="modal-body">
-        <input type="hidden" id="editMemberId">
-        <div class="form-grid cols-2">
-          <div class="field-group">
-            <label>角色名稱 *</label>
-            <input type="text" id="editMemberName" placeholder="角色名稱">
-          </div>
-          <div class="field-group">
-            <label>職業 *</label>
-            <select id="editMemberJob">
-              <option value="王族">👑 王族</option>
-              <option value="騎士">🗡️ 騎士</option>
-              <option value="妖精">🌿 妖精</option>
-              <option value="法師">🔮 法師</option>
-              <option value="黑妖">🌑 黑妖</option>
-            </select>
-          </div>
+      <input type="hidden" id="editMemberId">
+      <div class="flex flex-col gap-4 mb-6">
+        <div>
+          <label class="block font-black uppercase text-xs mb-1">Character ID</label>
+          <input type="text" id="editMemberName" class="brutal-input">
         </div>
-        <div class="field-group mt-1">
-          <label>備註 / 職業特性</label>
-          <input type="text" id="editMemberNotes" placeholder="例：力量騎士、火屬性妖精、有特殊魔法書、質騎士...">
+        <div>
+          <label class="block font-black uppercase text-xs mb-1">Class</label>
+          <select id="editMemberJob" class="brutal-input">
+            <option value="王族">Prince</option>
+            <option value="騎士">Knight</option>
+            <option value="妖精">Elf</option>
+            <option value="法師">Wizard</option>
+            <option value="黑妖">Dark Elf</option>
+          </select>
+        </div>
+        <div>
+          <label class="block font-black uppercase text-xs mb-1">Metadata</label>
+          <input type="text" id="editMemberNotes" class="brutal-input">
+        </div>
+        <div>
+          <label class="block font-black uppercase text-xs mb-1">Tier / 分級</label>
+          <select id="editMemberTier" class="brutal-input">
+            <option value="核心">⭐ 核心成員 (Core)</option>
+            <option value="一般">○ 一般成員 (Regular)</option>
+            <option value="試煉">△ 試煉成員 (Trial)</option>
+            <option value="外交">◇ 外交成員 (Diplomat)</option>
+          </select>
         </div>
       </div>
-      <div class="modal-footer">
-        <button class="btn btn-ghost" onclick="closeEditModal()">取消</button>
-        <button class="btn btn-primary" onclick="updateMember()">💾 儲存變更</button>
+      <div class="flex flex-col md:flex-row justify-end gap-3">
+        <button class="brutal-button bg-white px-6 py-2 text-sm" onclick="closeEditModal()">ABORT</button>
+        <button class="brutal-button brutal-button-primary px-6 py-2 text-sm" onclick="updateMember()">COMMIT_CHANGES</button>
       </div>
     </div>
   </div>
 
-  <!-- ── Google Login Modal ── -->
+  <div class="modal-overlay hidden" id="editAllianceModal" onclick="closeEditAllianceModal(event)">
+    <div class="modal">
+      <div class="flex justify-between items-start mb-6 border-b-4 border-black pb-4">
+        <h3 class="text-2xl font-black uppercase">MUTATE_ALLY</h3>
+        <button class="brutal-button bg-white px-2 py-1 text-sm" onclick="closeEditAllianceModal()">X</button>
+      </div>
+      <input type="hidden" id="editAllianceId">
+      <div class="flex flex-col gap-4 mb-6">
+        <div>
+          <label class="block font-black uppercase text-xs mb-1">Character ID</label>
+          <input type="text" id="editAllianceName" class="brutal-input">
+        </div>
+        <div>
+          <label class="block font-black uppercase text-xs mb-1">Class</label>
+          <select id="editAllianceJob" class="brutal-input">
+            <option value="王族">Prince</option>
+            <option value="騎士">Knight</option>
+            <option value="妖精">Elf</option>
+            <option value="法師">Wizard</option>
+            <option value="黑妖">Dark Elf</option>
+          </select>
+        </div>
+        <div>
+          <label class="block font-black uppercase text-xs mb-1">Metadata</label>
+          <input type="text" id="editAllianceNotes" class="brutal-input">
+        </div>
+      </div>
+      <div class="flex flex-col md:flex-row justify-end gap-3">
+        <button class="brutal-button bg-white px-6 py-2 text-sm" onclick="closeEditAllianceModal()">ABORT</button>
+        <button class="brutal-button brutal-button-primary px-6 py-2 text-sm" onclick="updateAlliance()">COMMIT_CHANGES</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="detailModal" onclick="closeDetailModal(event)">
+    <div class="modal max-h-[90vh] flex flex-col">
+      <div class="flex justify-between items-start mb-4 border-b-4 border-black pb-4 flex-shrink-0">
+        <h3 id="detailModalTitle" class="text-2xl font-black uppercase">LOG_DETAIL</h3>
+        <button class="brutal-button bg-white px-2 py-1 text-sm" onclick="closeDetailModal()">X</button>
+      </div>
+      
+      <div class="overflow-y-auto flex-1 pr-2 pb-4">
+        <div class="mb-6">
+          <label class="block font-black uppercase text-xs mb-2 bg-[#ffe600] inline-block px-2 py-1 border-2 border-black">PAX_LIST (<span id="detailAttendanceCount">0</span>)</label>
+          <div id="detailAttendanceList" class="attendance-grid mt-2"></div>
+        </div>
+        <div id="detailDropsGroup" class="hidden mb-6">
+          <label class="block font-black uppercase text-xs mb-2 bg-black text-white inline-block px-2 py-1 border-2 border-black">LOOT_TABLE</label>
+          <div class="table-container mt-2">
+            <table>
+              <thead>
+                <tr><th>ITEM_ID</th><th class="text-right">VAL_ADENA</th></tr>
+              </thead>
+              <tbody id="detailDropsList"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      
+      <div class="flex justify-end flex-shrink-0 pt-4 border-t-4 border-black mt-auto">
+        <button class="brutal-button bg-white px-6 py-2 text-sm" onclick="closeDetailModal()">CLOSE</button>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-overlay hidden" id="loginModal" onclick="closeLoginModal(event)">
-    <div class="modal modal-sm">
-      <div class="modal-header">
-        <h3>🔐 管理員登入</h3>
-        <button class="modal-close" onclick="closeLoginModal()">✕</button>
+    <div class="modal modal-sm text-center border-8 border-[#ff3333] shadow-[8px_8px_0px_#111]">
+      <div class="flex justify-between items-start mb-6 border-b-4 border-black pb-4">
+        <h3 class="text-2xl font-black uppercase">SYS_AUTH</h3>
+        <button class="brutal-button bg-white px-2 py-1 text-sm" onclick="closeLoginModal()">X</button>
       </div>
-      <div class="modal-body" style="text-align:center;padding:32px 24px;">
-        <p style="color:var(--text-soft);margin-bottom:24px;font-size:14px;">僅限授權管理員帳號登入<br>以進行新增、編輯、刪除等操作</p>
-        <div id="googleSignInDiv"></div>
-        <div id="loginError" class="login-error hidden"></div>
+      <div class="bg-black text-white p-3 mb-6 font-bold uppercase tracking-widest border-2 border-black text-[10px]">
+        WARNING: AUTHENTICATION REQUIRED. ALL LOGIN ATTEMPTS ARE LOGGED.
       </div>
+      <div id="googleSignInDiv" class="flex justify-center mb-4 min-h-[44px]"></div>
+      <div id="loginError" class="text-[#ff3333] font-black uppercase hidden mt-4 bg-[#ffe6e6] p-2 border-2 border-[#ff3333] text-xs"></div>
     </div>
   </div>
 
-  <!-- Toast -->
   <div id="toast" class="toast"></div>
+
+  <span id="sectionTitle" class="hidden"></span>
 
   <script src="app.js"></script>
   <script>
-    // Particles
-    const container = document.getElementById('particles');
-    for (let i = 0; i < 30; i++) {
-      const p = document.createElement('div');
-      p.className = 'particle';
-      p.style.left = Math.random() * 100 + '%';
-      p.style.animationDelay = Math.random() * 15 + 's';
-      p.style.animationDuration = (12 + Math.random() * 10) + 's';
-      p.style.opacity = Math.random() * 0.4 + 0.1;
-      container.appendChild(p);
+    const originalSwitchSection = window.switchSection;
+    if (typeof originalSwitchSection === 'function') {
+        window.switchSection = function(sectionId) {
+            originalSwitchSection(sectionId);
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                if (btn.getAttribute('data-section') === sectionId) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        };
     }
 
-    // Google One Tap callback
+    function updateClock() {
+        const clockEl = document.getElementById('sysClockDisplay');
+        if(clockEl) {
+            const now = new Date();
+            clockEl.textContent = now.toLocaleTimeString('en-GB', { hour12: false });
+        }
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
     function handleGoogleCredential(response) {
       window.handleGoogleLogin(response.credential);
     }
-
-    // Init Google Sign-In button when GSI loaded
     window.addEventListener('load', () => {
       const clientId = window.GOOGLE_CLIENT_ID || '';
-      if (!clientId) return; // Skip if no client ID configured
-
+      if (!clientId) return;
       if (window.google && window.google.accounts) {
         google.accounts.id.initialize({
           client_id: clientId,
@@ -430,5 +863,116 @@
       }
     });
   </script>
+
+  <!-- ── LINE Broadcast Modal ────────────────────── -->
+  <div id="lineBroadcastModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onclick="closeBroadcastModal(event)">
+    <div class="brutal-card bg-white p-6 w-full max-w-lg border-l-8 border-[#06c755]">
+      <div class="flex justify-between items-start mb-4">
+        <div>
+          <h3 class="font-black uppercase text-lg">LINE 召集令</h3>
+          <p id="broadcastTargetName" class="font-bold text-[#ff3333] uppercase text-sm mt-1"></p>
+        </div>
+        <button onclick="document.getElementById('lineBroadcastModal').classList.add('hidden')" class="font-black text-xl leading-none">&times;</button>
+      </div>
+
+      <!-- 推送路線選擇 -->
+      <div class="mb-4">
+        <label class="block font-black uppercase text-xs mb-2">📡 推送路線</label>
+        <div class="grid grid-cols-1 gap-2">
+          <label class="flex items-start gap-3 p-3 border-4 border-[#111] cursor-pointer has-[:checked]:bg-[#111] has-[:checked]:text-white transition-colors">
+            <input type="radio" name="broadcastMode" value="all" class="mt-0.5 accent-[#ffe600]" onchange="updateBroadcastUI()">
+            <div>
+              <div class="font-black uppercase text-sm">🌐 全部廣播</div>
+              <div class="text-xs opacity-60 font-bold uppercase">發送給所有關注 Bot 的使用者</div>
+            </div>
+          </label>
+          <label class="flex items-start gap-3 p-3 border-4 border-[#111] cursor-pointer has-[:checked]:bg-[#111] has-[:checked]:text-white transition-colors">
+            <input type="radio" name="broadcastMode" value="bound" checked class="mt-0.5 accent-[#ffe600]" onchange="updateBroadcastUI()">
+            <div>
+              <div class="font-black uppercase text-sm">🔗 所有已綁定成員</div>
+              <div class="text-xs opacity-60 font-bold uppercase">只發送給已綁定 LINE 帳號的血盟成員</div>
+            </div>
+          </label>
+          <label class="flex items-start gap-3 p-3 border-4 border-[#111] cursor-pointer has-[:checked]:bg-[#111] has-[:checked]:text-white transition-colors">
+            <input type="radio" name="broadcastMode" value="tier" class="mt-0.5 accent-[#ffe600]" onchange="updateBroadcastUI()">
+            <div class="flex-1">
+              <div class="font-black uppercase text-sm">⭐ 依分級推送</div>
+              <div class="text-xs opacity-60 font-bold uppercase">按成員分級精準對象</div>
+              <!-- Tier checkboxes - shown when tier mode selected -->
+              <div id="tierCheckboxes" class="hidden mt-3 flex flex-wrap gap-2">
+                <label class="flex items-center gap-1.5 bg-[#ffe600] border-2 border-[#111] px-2 py-1 cursor-pointer text-[#111]">
+                  <input type="checkbox" value="核心" checked class="accent-[#111]"> <span class="font-black text-xs uppercase">⭐ 核心</span>
+                </label>
+                <label class="flex items-center gap-1.5 bg-white border-2 border-[#111] px-2 py-1 cursor-pointer">
+                  <input type="checkbox" value="一般" class="accent-[#111]"> <span class="font-black text-xs uppercase">○ 一般</span>
+                </label>
+                <label class="flex items-center gap-1.5 bg-white border-2 border-[#111] px-2 py-1 cursor-pointer">
+                  <input type="checkbox" value="試煉" class="accent-[#111]"> <span class="font-black text-xs uppercase">△ 試煉</span>
+                </label>
+                <label class="flex items-center gap-1.5 bg-white border-2 border-[#111] px-2 py-1 cursor-pointer">
+                  <input type="checkbox" value="外交" class="accent-[#111]"> <span class="font-black text-xs uppercase">◇ 外交</span>
+                </label>
+              </div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- 預覽筆數 -->
+      <div id="broadcastPreview" class="bg-[#f0f0f0] border-4 border-[#111] px-3 py-2 mb-3 font-mono text-xs font-bold uppercase hidden">
+        <span id="broadcastPreviewText"></span>
+      </div>
+
+      <div class="space-y-3 mb-4">
+        <div>
+          <label class="block font-black uppercase text-xs mb-1">集結時間</label>
+          <input type="datetime-local" id="broadcastTime" class="brutal-input w-full">
+        </div>
+        <div>
+          <label class="block font-black uppercase text-xs mb-1">備註指令 <span class="text-gray-400 font-bold">(Optional)</span></label>
+          <input type="text" id="broadcastNotes" class="brutal-input w-full" placeholder="全員備戰！">
+        </div>
+      </div>
+
+      <p id="broadcastResult" class="font-black text-sm uppercase mb-3"></p>
+      <div class="flex gap-3">
+        <button onclick="document.getElementById('lineBroadcastModal').classList.add('hidden')" class="brutal-button bg-white flex-1 py-2 text-sm uppercase">取消</button>
+        <button id="broadcastSendBtn" onclick="sendBroadcast()" class="brutal-button flex-1 py-2 text-sm uppercase font-black" style="background:#06c755;color:#fff;border-color:#111;">&#x1F4E2; 發送 LINE 召集令</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── LINE Binding Modal ────────────────────────── -->
+  <div id="lineBindModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onclick="closeLineBindModal(event)">
+    <div class="brutal-card bg-white p-6 w-full max-w-sm border-l-8 border-[#06c755]">
+      <div class="flex justify-between items-start mb-4">
+        <div>
+          <h3 class="font-black uppercase text-lg">LINE 帳號綁定</h3>
+          <p id="bindMemberName" class="font-bold text-[#111] uppercase text-sm mt-1"></p>
+        </div>
+        <button onclick="document.getElementById('lineBindModal').classList.add('hidden')" class="font-black text-xl leading-none">&times;</button>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <label class="block font-black uppercase text-xs mb-1">LINE User ID</label>
+          <input type="text" id="bindLineUserId" class="brutal-input w-full font-mono" placeholder="Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+          <p class="text-gray-500 text-xs mt-1 font-bold uppercase">成員傳送「綁定」給 Bot 即可取得此 ID</p>
+        </div>
+        <div class="bg-[#f0f0f0] p-3 border-4 border-[#111] text-xs font-mono space-y-1">
+          <p class="font-black uppercase">Bot 指令小抄</p>
+          <p>&gt; 「綁定」→ 取得 LINE User ID</p>
+          <p>&gt; 「我的資料」→ 個人出席統計</p>
+          <p>&gt; 「拍賣」→ 最新首領戰分紅</p>
+        </div>
+        <p class="text-gray-400 text-xs font-bold uppercase">留空則解除綁定</p>
+        <p id="bindResult" class="font-black text-sm"></p>
+      </div>
+      <div class="flex gap-3 mt-5">
+        <button onclick="document.getElementById('lineBindModal').classList.add('hidden')" class="brutal-button bg-white flex-1 py-2 text-sm uppercase">取消</button>
+        <button onclick="saveLineBinding()" class="brutal-button flex-1 py-2 text-sm uppercase font-black" style="background:#06c755;color:#fff;border-color:#111;">&#x1F517; 存儲綁定</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lineage AI - Carbon Copper V5</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                fontFamily: {
+                    sans: ['Inter', 'sans-serif'],
+                },
+                extend: {
+                    colors: {
+                        carbon: { 900: '#171717', 800: '#262626', 700: '#404040' },
+                        copper: { 500: '#b87333', 400: '#d98f4e' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #0a0a0a; color: #f5f5f5; }
+        .bevel { border-top: 1px solid rgba(255,255,255,0.08); border-bottom: 1px solid rgba(0,0,0,0.8); }
+        .shadow-carbon { box-shadow: 0 10px 30px -10px rgba(0,0,0,0.8); }
+    </style>
+</head>
+<body class="h-screen flex flex-col p-6">
+    
+    <header class="flex justify-between items-center bg-carbon-900 rounded-xl p-5 shadow-carbon border border-carbon-800 bevel mb-6">
+        <div class="flex items-center gap-4">
+            <div class="w-10 h-10 rounded-lg bg-carbon-800 border border-carbon-700 flex items-center justify-center shadow-inner">
+                <div class="w-4 h-4 bg-copper-500 rounded-sm"></div>
+            </div>
+            <h1 class="text-xl font-bold tracking-tight text-white">Lineage AI <span class="text-carbon-700 font-light mx-2">|</span> <span class="text-gray-400 font-medium">Carbon Copper</span></h1>
+        </div>
+        <div class="bg-carbon-800 px-4 py-2 rounded-lg border border-carbon-700 text-sm font-semibold text-copper-400 shadow-inner">
+            System Nominal
+        </div>
+    </header>
+
+    <div class="flex-1 grid grid-cols-12 gap-6 overflow-hidden">
+        <!-- Telemetry -->
+        <div class="col-span-3 flex flex-col gap-6">
+            <div class="bg-carbon-900 rounded-xl border border-carbon-800 p-6 flex-1 shadow-carbon bevel flex flex-col">
+                <h2 class="text-xs uppercase font-bold text-carbon-700 tracking-widest mb-6">Telemetry</h2>
+                <div class="space-y-6">
+                    <div class="bg-carbon-800 p-5 rounded-xl border border-carbon-700 shadow-inner">
+                        <div class="text-xs text-gray-500 font-medium mb-1 uppercase tracking-wider">Process Core</div>
+                        <div class="text-3xl font-bold text-white">1.82 <span class="text-sm font-semibold text-copper-500 ml-1">TFLOPS</span></div>
+                    </div>
+                    <div class="bg-carbon-800 p-5 rounded-xl border border-carbon-700 shadow-inner">
+                        <div class="text-xs text-gray-500 font-medium mb-1 uppercase tracking-wider">Active Memory</div>
+                        <div class="text-3xl font-bold text-white">64.0 <span class="text-sm font-semibold text-copper-500 ml-1">GB</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Terminal -->
+        <div class="col-span-6 bg-carbon-900 rounded-xl border border-carbon-800 p-6 flex flex-col shadow-carbon bevel">
+            <h2 class="text-xs uppercase font-bold text-carbon-700 tracking-widest mb-6">Command Terminal</h2>
+            <div class="flex-1 bg-carbon-800/50 rounded-xl border border-carbon-800 p-5 font-mono text-sm text-gray-400 overflow-y-auto space-y-3 shadow-inner">
+                <div><span class="text-carbon-700 font-bold">[SYS]</span> Connection to GCP authenticated.</div>
+                <div><span class="text-carbon-700 font-bold">[SYS]</span> Triple Fusion engine engaged.</div>
+                <div class="text-copper-400 font-medium"><span class="text-copper-500/50 font-bold">[AGENT]</span> Ready for processing requests.</div>
+            </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="col-span-3 flex flex-col gap-6">
+            <div class="bg-carbon-900 rounded-xl border border-red-900/40 p-6 flex-1 flex flex-col shadow-carbon bevel relative overflow-hidden group">
+                <div class="absolute top-0 left-0 w-full h-1 bg-red-600"></div>
+                <div class="absolute inset-0 bg-red-900/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <h2 class="text-xs uppercase font-bold text-red-500 tracking-widest mb-6 relative z-10">Danger Zone</h2>
+                
+                <div class="flex-1 flex flex-col items-center justify-center relative z-10">
+                    <p class="text-sm text-gray-500 font-medium text-center mb-8 px-4 leading-relaxed">Caution: Action will override active neural safeties.</p>
+                    <button class="w-full bg-carbon-800 hover:bg-red-950/50 text-red-400 border border-red-900/60 py-4 rounded-xl font-bold tracking-wider uppercase transition-all shadow-md hover:shadow-red-900/20">
+                        Force Override
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

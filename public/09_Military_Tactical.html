@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lineage AI | Tactical Military</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #1a1e1a; /* Dark olive drab */
+            color: #d4a373; /* Muted amber/khaki */
+            font-family: 'JetBrains Mono', monospace;
+            background-image: 
+                linear-gradient(rgba(212, 163, 115, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(212, 163, 115, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .tactical-border {
+            border: 2px solid #5a6650;
+            background-color: rgba(20, 25, 20, 0.8);
+            position: relative;
+        }
+        /* Corner markers */
+        .tactical-border::before, .tactical-border::after {
+            content: ''; position: absolute; width: 10px; height: 10px; border: 2px solid #d4a373;
+        }
+        .tactical-border::before { top: -2px; left: -2px; border-right: none; border-bottom: none; }
+        .tactical-border::after { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+        
+        .tactical-inner-corner {
+            position: absolute; width: 10px; height: 10px; border: 2px solid #d4a373;
+        }
+        .tic-top-right { top: -2px; right: -2px; border-left: none; border-bottom: none; }
+        .tic-bottom-left { bottom: -2px; left: -2px; border-right: none; border-top: none; }
+
+        .scanline {
+            width: 100%;
+            height: 100px;
+            z-index: 50;
+            position: absolute;
+            pointer-events: none;
+            background: linear-gradient(0deg, rgba(0,0,0,0) 0%, rgba(212,163,115,0.1) 50%, rgba(0,0,0,0) 100%);
+            animation: scan 6s linear infinite;
+        }
+        @keyframes scan {
+            0% { top: -100px; }
+            100% { top: 100%; }
+        }
+
+        .btn-tactical {
+            background-color: #2b332b;
+            border: 1px solid #5a6650;
+            color: #d4a373;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            transition: all 0.2s;
+        }
+        .btn-tactical:hover {
+            background-color: #d4a373;
+            color: #1a1e1a;
+        }
+        .btn-danger {
+            background-color: #4a1c1c;
+            border: 1px solid #ff4d4d;
+            color: #ff4d4d;
+        }
+        .btn-danger:hover {
+            background-color: #ff4d4d;
+            color: #1a1e1a;
+        }
+        .text-glow {
+            text-shadow: 0 0 5px rgba(212, 163, 115, 0.5);
+        }
+        .grid-overlay {
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.2) 2px, rgba(0,0,0,0.2) 4px);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 flex flex-col gap-4 relative overflow-hidden">
+    <div class="scanline"></div>
+    <div class="absolute inset-0 grid-overlay z-50"></div>
+
+    <!-- Header -->
+    <header class="tactical-border p-4 flex justify-between items-center z-10">
+        <div class="tic-top-right"></div>
+        <div class="tic-bottom-left"></div>
+        <div class="flex items-end gap-4">
+            <h1 class="text-3xl font-bold uppercase tracking-widest text-glow">L-AI COMAND</h1>
+            <span class="text-xs opacity-70 pb-1">V.9.4.2 // SECURE</span>
+        </div>
+        <div class="flex items-center gap-6 text-sm">
+            <div class="flex flex-col">
+                <span class="text-[10px] opacity-50">UPLINK</span>
+                <span class="font-bold">STABLE</span>
+            </div>
+            <div class="flex flex-col">
+                <span class="text-[10px] opacity-50">ENCRYPTION</span>
+                <span class="font-bold">AES-256</span>
+            </div>
+            <div class="h-8 w-8 rounded-full border-2 border-[#d4a373] flex items-center justify-center animate-pulse">
+                <div class="w-4 h-4 bg-[#d4a373] rounded-full"></div>
+            </div>
+        </div>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 flex-grow z-10">
+        
+        <!-- Telemetry -->
+        <div class="lg:col-span-3 flex flex-col gap-4">
+            <div class="tactical-border p-6 flex-grow flex flex-col">
+                <div class="tic-top-right"></div>
+                <div class="tic-bottom-left"></div>
+                <div class="flex justify-between items-center border-b border-[#5a6650] pb-2 mb-4">
+                    <h2 class="text-xl font-bold tracking-widest text-glow">TELEMETRY_DATALINK</h2>
+                    <span class="text-xs bg-[#2b332b] px-2 py-1">LIVE</span>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-[#2b332b] p-3 border-l-4 border-[#d4a373]">
+                        <div class="text-[10px] opacity-70 mb-1">UNIT_01 LOAD</div>
+                        <div class="text-2xl font-bold">45.2%</div>
+                    </div>
+                    <div class="bg-[#2b332b] p-3 border-l-4 border-[#d4a373]">
+                        <div class="text-[10px] opacity-70 mb-1">THERMAL_SIG</div>
+                        <div class="text-2xl font-bold">NORMAL</div>
+                    </div>
+                    <div class="bg-[#2b332b] p-3 border-l-4 border-[#d4a373]">
+                        <div class="text-[10px] opacity-70 mb-1">BANDWIDTH_TX</div>
+                        <div class="text-2xl font-bold">940 MB/s</div>
+                    </div>
+                    <div class="bg-[#2b332b] p-3 border-l-4 border-[#ff4d4d] text-[#ff4d4d]">
+                        <div class="text-[10px] opacity-70 mb-1">HOSTILE_PING</div>
+                        <div class="text-2xl font-bold animate-pulse">DETECTED</div>
+                    </div>
+                </div>
+
+                <!-- Tactical Map / Radar Placeholder -->
+                <div class="flex-grow border border-[#5a6650] bg-[#1a1e1a] relative flex items-center justify-center overflow-hidden">
+                    <!-- Concentric circles -->
+                    <div class="absolute w-[600px] h-[600px] border border-[#5a6650] rounded-full opacity-30"></div>
+                    <div class="absolute w-[400px] h-[400px] border border-[#5a6650] rounded-full opacity-30"></div>
+                    <div class="absolute w-[200px] h-[200px] border border-[#5a6650] rounded-full opacity-30"></div>
+                    <!-- Crosshair -->
+                    <div class="absolute w-full h-[1px] bg-[#5a6650] opacity-50"></div>
+                    <div class="absolute h-full w-[1px] bg-[#5a6650] opacity-50"></div>
+                    
+                    <!-- Blips -->
+                    <div class="absolute top-[30%] left-[40%] w-2 h-2 bg-[#d4a373] shadow-[0_0_8px_#d4a373]">
+                        <span class="absolute left-4 top-[-10px] text-[10px]">ALLIED_A</span>
+                    </div>
+                    <div class="absolute top-[60%] left-[70%] w-2 h-2 bg-[#ff4d4d] shadow-[0_0_8px_#ff4d4d] animate-ping">
+                        <span class="absolute left-4 top-[-10px] text-[10px]">UNKNOWN_CONTACT</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Terminal -->
+            <div class="tactical-border p-4 h-48 flex flex-col">
+                <div class="tic-top-right"></div>
+                <div class="tic-bottom-left"></div>
+                <h2 class="text-sm font-bold border-b border-[#5a6650] pb-1 mb-2 text-glow">SYS.LOG</h2>
+                <div class="flex-grow bg-[#111411] p-2 text-xs overflow-y-auto font-mono">
+                    <div>> [14:00:00] INITIALIZING TACTICAL OVERVIEW...</div>
+                    <div>> [14:00:02] RADAR SYNC COMPLETE.</div>
+                    <div>> [14:00:05] WARNING: UNKNOWN CONTACT IN SECTOR 4.</div>
+                    <div>> [14:00:06] TRACKING TARGET...</div>
+                    <div class="animate-pulse">> _</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="tactical-border p-6 flex flex-col relative">
+            <div class="tic-top-right"></div>
+            <div class="tic-bottom-left"></div>
+            <h2 class="text-2xl font-bold text-[#ff4d4d] border-b-2 border-[#ff4d4d] pb-2 mb-4 tracking-widest">DANGER ZONE</h2>
+            <p class="text-[11px] mb-6 opacity-80 leading-relaxed uppercase">Authorization required. Executing overrides will bypass fail-safes. Stand clear.</p>
+            
+            <div class="space-y-4 flex-grow">
+                <div>
+                    <label class="block text-[10px] opacity-70 mb-1">SELECT PROTOCOL</label>
+                    <select class="w-full bg-[#111411] border border-[#5a6650] text-[#d4a373] p-2 text-sm outline-none">
+                        <option>WEAPON_RELEASE</option>
+                        <option>CORE_VENT</option>
+                        <option>SELF_DESTRUCT</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] opacity-70 mb-1">AUTH CODE</label>
+                    <input type="password" class="w-full bg-[#111411] border border-[#5a6650] text-[#d4a373] p-2 text-sm outline-none tracking-[0.3em]" placeholder="XXXX-XXXX">
+                </div>
+                
+                <div class="mt-4 border border-[#ff4d4d] p-3 bg-[#2b1111]">
+                    <div class="text-[10px] text-[#ff4d4d] font-bold mb-2">VERIFICATION</div>
+                    <div class="flex gap-2">
+                        <input type="checkbox" class="mt-1 accent-[#ff4d4d]">
+                        <span class="text-[10px] text-[#ff4d4d]">I CONFIRM AUTHORIZATION AND ACCEPT CONSEQUENCES</span>
+                    </div>
+                </div>
+            </div>
+
+            <button class="w-full py-4 mt-6 btn-tactical btn-danger text-lg font-bold">
+                ENGAGE
+            </button>
+        </div>
+
+    </div>
+</body>
+</html>
