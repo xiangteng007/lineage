@@ -415,12 +415,13 @@ async function addMember() {
   const name = document.getElementById('mName').value.trim();
   const job = document.getElementById('mJob').value;
   const notes = document.getElementById('mNotes').value.trim();
+  const tier = document.getElementById('mTier')?.value || '一般';
   if (!name || !job) { showToast('請填寫角色名稱與職業', 'error'); return; }
 
   try {
     const res = await fetch(`${API_BASE}/members`, {
       method: 'POST', headers: authHeaders(),
-      body: JSON.stringify({ name, job, notes })
+      body: JSON.stringify({ name, job, notes, tier })
     });
     if (res.status === 401) { showToast('請先登入管理員帳號', 'error'); openLoginModal(); return; }
     if (res.status === 403) { showToast('您的帳號非授權管理員', 'error'); return; }
@@ -917,7 +918,7 @@ function renderTreasury() {
   if (!tbody) return;
   
   if (state.members.length === 0 && state.alliances.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-slate-400 font-bold uppercase py-8">尚無人員紀錄，無法結算</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-slate-400 font-bold uppercase py-8">尚無人員紀錄，無法結算</td></tr>';
     return;
   }
 
@@ -975,8 +976,19 @@ function renderTreasury() {
     });
   });
 
-  // Generate HTML
-  const rows = Object.values(treasuryMap)
+  // Generate HTML — apply treasury search filter
+  let treasuryEntries = Object.values(treasuryMap);
+  if (filters.treasury) {
+    const q = filters.treasury;
+    treasuryEntries = treasuryEntries.filter(t => t.name.toLowerCase().includes(q));
+  }
+  
+  if (treasuryEntries.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-500 font-bold uppercase py-8">查無符合結果</td></tr>';
+    return;
+  }
+  
+  const rows = treasuryEntries
     // Sort by Total Revenue (descending)
     .sort((a, b) => (b.battleRev + b.siegeRev) - (a.battleRev + a.siegeRev))
     .map(t => {
@@ -1206,11 +1218,11 @@ function exportToCSV(moduleName) {
   // Create CSV string (with BOM for Excel)
   const csvContent = [
     headers.join(','),
-    ...data.map(row => row.map(cell => \`"\${String(cell).replace(/"/g, '""')}"\`).join(','))
-  ].join('\\n');
+    ...data.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+  ].join('\n');
 
   // Trigger download
-  const blob = new Blob(['\\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
   link.setAttribute('href', url);
