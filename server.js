@@ -230,6 +230,15 @@ app.get('/api/config', (req, res) => {
   });
 });
 
+// ── System Status Endpoint ────────────────────────
+app.get('/api/status', (req, res) => {
+  res.json({
+    ok: true,
+    storageMode: firebase.getStorageMode(),
+    timestamp: new Date().toISOString()
+  });
+});
+
 // ── Auth Endpoints ───────────────────────────────
 app.post('/api/auth/verify', async (req, res) => {
   const { token } = req.body;
@@ -484,6 +493,42 @@ app.put('/api/alliances/:id', requireAdmin, async (req, res) => {
 app.delete('/api/alliances/:id', requireAdmin, async (req, res) => {
   await firebase.deleteData('Alliances', req.params.id);
   res.json({ ok: true });
+});
+
+// ── Custom Data API (ChromaDB) ───────────────────
+const chroma = require('./chroma');
+
+app.post('/api/chroma/collection', requireAdmin, async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name) return res.status(400).json({ error: '缺少 collection name' });
+    const collection = await chroma.getOrCreateCollection(name);
+    res.json({ ok: true, name: collection.name });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/chroma/add', requireAdmin, async (req, res) => {
+  try {
+    const { collectionName, ids, documents, metadatas } = req.body;
+    if (!collectionName || !ids || !documents) return res.status(400).json({ error: '缺少必要參數' });
+    await chroma.addData(collectionName, ids, documents, metadatas);
+    res.json({ ok: true, count: ids.length });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/chroma/search', requireAuth, async (req, res) => {
+  try {
+    const { collectionName, queryTexts, nResults } = req.body;
+    if (!collectionName || !queryTexts) return res.status(400).json({ error: '缺少必要參數' });
+    const results = await chroma.queryData(collectionName, queryTexts, nResults || 5);
+    res.json({ ok: true, results });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // ── Serve frontend ───────────────────────────────

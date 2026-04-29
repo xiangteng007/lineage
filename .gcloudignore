@@ -1,0 +1,27 @@
+.gcloudignore
+.git
+.gitignore
+
+# 敏感金鑰（絕對不能上傳！）
+serviceAccountKey.json
+*.json.key
+
+# 環境變數
+.env
+.env.local
+.env.production
+
+# 依賴套件
+node_modules/
+
+# 本機資料
+data/
+qa_test.js
+
+# 系統檔
+.DS_Store
+Thumbs.db
+
+# 日誌
+*.log
+npm-debug.log*

@@ -5,386 +5,145 @@
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
   <title>Lineage AI | Tactical Terminal</title>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700;900&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-  
-  <style>
-      .material-symbols-outlined {
-          font-variation-settings: 'FILL' 1, 'wght' 900, 'GRAD' 0, 'opsz' 24;
-          display: inline-block;
-          vertical-align: middle;
-      }
-      body {
-          background-color: #f0f0f0;
-          color: #111;
-          font-family: 'Space Grotesk', sans-serif;
-          background-image: radial-gradient(#ccc 1px, transparent 1px);
-          background-size: 20px 20px;
-      }
-      /* Tactical Scanline Overlay */
-      body::after {
-          content: "";
-          position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-          background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
-          pointer-events: none;
-          z-index: 9999;
-      }
-      /* Glitch Effect */
-      @keyframes glitch {
-          0% { transform: translate(0) }
-          20% { transform: translate(-2px, 2px) }
-          40% { transform: translate(-2px, -2px) }
-          60% { transform: translate(2px, 2px) }
-          80% { transform: translate(2px, -2px) }
-          100% { transform: translate(0) }
-      }
-      .glitch-hover:hover {
-          animation: glitch 0.2s cubic-bezier(.25, .46, .45, .94) both infinite;
-      }
-      /* Terminal Blinking Cursor */
-      @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-      .cursor-blink { display: inline-block; width: 8px; height: 14px; background-color: currentColor; animation: blink 1s step-end infinite; vertical-align: middle; margin-left: 4px; }
-      .brutal-card {
-          border: 4px solid #111;
-          box-shadow: 6px 6px 0px #111;
-          background: #fff;
-          transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease;
-      }
-      .brutal-card:hover:not(.no-hover-effect) {
-          transform: translate(-2px, -2px);
-          box-shadow: 8px 8px 0px #111;
-      }
-      .brutal-button {
-          border: 4px solid #111;
-          box-shadow: 4px 4px 0px #111;
-          text-transform: uppercase;
-          font-weight: 900;
-          transition: transform 0.1s, box-shadow 0.1s;
-          cursor: pointer;
-      }
-      .brutal-button:active {
-          transform: translate(4px, 4px);
-          box-shadow: 0px 0px 0px #111;
-      }
-      .brutal-button-primary { background: #ff3333; color: #fff; }
-      .brutal-button-secondary { background: #ffe600; color: #111; }
-      .brutal-button-dark { background: #111; color: #fff; }
-      .brutal-input {
-          border: 4px solid #111;
-          background: #fff;
-          border-radius: 0;
-          padding: 10px 14px;
-          font-weight: 700;
-          width: 100%;
-          font-size: 14px;
-          transition: background 0.2s;
-      }
-      .brutal-input:focus {
-          outline: none;
-          background: #ffe6e6;
-      }
-      select.brutal-input {
-          appearance: none;
-          cursor: pointer;
-          background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='4' stroke-linecap='square' stroke-linejoin='miter'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-          background-repeat: no-repeat;
-          background-position: right 12px center;
-          background-size: 16px;
-      }
-      ::-webkit-scrollbar { width: 12px; border-left: 2px solid #111; }
-      ::-webkit-scrollbar-thumb { background: #111; }
-      
-      .section:not(.active) { display: none !important; }
-      .section.active { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-      @keyframes slideUp { 0% { transform: translateY(15px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
-      .hidden { display: none !important; }
-      
-      .nav-btn {
-          border: 4px solid transparent;
-          background: transparent;
-          font-weight: 900;
-          text-transform: uppercase;
-          color: #111;
-          transition: all 0.2s;
-      }
-      .nav-btn:hover { background: rgba(0,0,0,0.05); }
-      .nav-btn.active {
-          border: 4px solid #111;
-          background: #fff;
-          box-shadow: 4px 4px 0px #111;
-          color: #111;
-      }
-      
-      /* Mobile override for horizontal scroll layout for nav */
-      @media (max-width: 1024px) {
-          .nav-container {
-             display: flex;
-             overflow-x: auto;
-             padding-bottom: 8px;
-          }
-          .nav-btn {
-             white-space: nowrap;
-             flex-shrink: 0;
-          }
-      }
-
-      .toast {
-          position: fixed; bottom: 20px; right: 20px;
-          background: #111; color: #fff;
-          padding: 16px 24px; border: 4px solid #111; box-shadow: 8px 8px 0px #ffe600;
-          opacity: 0; transform: translateY(20px); transition: all 0.3s ease;
-          z-index: 1000; pointer-events: none; font-size: 16px; font-weight: 900; text-transform: uppercase;
-      }
-      .toast.show { opacity: 1; transform: translateY(0); }
-      
-      .attendance-grid {
-          display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px;
-          padding: 12px; background: #fff; border: 4px solid #111; overflow-y: auto;
-      }
-      .attendance-grid label { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 900; cursor: pointer; text-transform: uppercase; }
-      
-      .modal-overlay {
-          position: fixed; inset: 0; background: rgba(0,0,0,0.8);
-          display: flex; justify-content: center; align-items: center; z-index: 9999;
-      }
-      .modal {
-          background: #fff; border: 8px solid #111; box-shadow: 12px 12px 0px #ff3333;
-          width: 95%; max-width: 600px; margin: auto; padding: 24px;
-          animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      }
-      @keyframes modalPop {
-          0% { transform: scale(0.9) translateY(20px); opacity: 0; }
-          100% { transform: scale(1) translateY(0); opacity: 1; }
-      }
-      .scroll-hint {
-          display: none;
-          text-align: right; font-size: 10px; font-weight: 900; color: #ff3333; margin-bottom: 4px; text-transform: uppercase;
-      }
-      @media (max-width: 1024px) {
-          .scroll-hint { display: block; animation: pulse 2s infinite; }
-      }
-      @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-      .modal-sm { max-width: 400px; }
-      
-      .table-container { border: 4px solid #111; background: #fff; overflow-x: auto; box-shadow: 6px 6px 0px #111; }
-      table { border-collapse: collapse; width: 100%; text-transform: uppercase; }
-      th { border-bottom: 4px solid #111; border-right: 4px solid #111; padding: 12px; font-weight: 900; font-size: 13px; background: #111; color: #fff; white-space: nowrap; text-align: left; }
-      th:last-child { border-right: none; }
-      td { border-bottom: 2px solid #111; border-right: 2px solid #111; padding: 12px; font-weight: 700; font-size: 13px; transition: padding-left 0.2s ease, background-color 0.2s ease; }
-      td:last-child { border-right: none; }
-      tr:hover td { background: #ffe6e6; }
-      tr:hover td:first-child { padding-left: 16px; }
-      tr:last-child td { border-bottom: none; }
-
-      .loot-row { display: flex; gap: 8px; margin-bottom: 8px; }
-
-      .action-btn { padding: 4px 8px; border: 2px solid #111; font-weight: 900; background: #fff; font-size: 11px; cursor: pointer; transition: transform 0.1s; text-transform: uppercase; }
-      .action-btn:active { transform: translate(2px, 2px); }
-      .action-btn.edit { background: #ffe600; }
-      .action-btn.delete { background: #ff3333; color: white; }
-      .expandable-details { display: none; background: #fdfdfd; border-bottom: 4px solid #111; }
-      .expandable-details.expanded { display: table-row; }
-      .expand-icon { transition: transform 0.2s; display: inline-block; }
-      .expanded .expand-icon { transform: rotate(180deg); }
-      .cursor-pointer { cursor: pointer; }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
-<body class="min-h-screen p-4 md:p-8 text-[#111] overflow-x-hidden">
-
-  <!-- Header -->
-  <header class="mb-8 border-4 border-black bg-white p-4 flex flex-col md:flex-row justify-between items-start md:items-center shadow-[8px_8px_0px_#111] gap-4">
-    <div class="flex items-center gap-4 w-full md:w-auto">
-        <h1 class="text-3xl md:text-4xl font-black uppercase tracking-tighter glitch-hover cursor-default">L <span class="bg-black text-white px-1">AI</span> GRID</h1>
-        <div id="memberGuestNotice" class="brutal-card bg-[#ff3333] text-white px-2 py-1 hidden text-[10px] md:text-xs font-bold uppercase shadow-none border-2">
-            <span class="material-symbols-outlined text-[12px] md:text-sm mr-1">warning</span> READ-ONLY
+<body>
+  <div class="dashboard">
+    <!-- Sidebar: Column 1 -->
+    <aside class="sidebar">
+      <div class="brand-section">
+        <div class="brand-logo">
+          <span></span>
+          Lineage AI
         </div>
-    </div>
-    
-    <!-- Auth Area -->
-    <div id="authArea" class="flex items-center gap-2 md:gap-4 w-full md:w-auto justify-between md:justify-end">
-      <button id="loginBtn" onclick="openLoginModal()" class="brutal-button brutal-button-dark px-4 py-2 flex items-center gap-2 text-sm w-full md:w-auto justify-center">
-        <span class="material-symbols-outlined">key</span> SYS.LOGIN
-      </button>
+        <p class="brand-tagline">Tactical Terminal</p>
+      </div>
+
+      <nav class="nav-section">
+        <button class="nav-item active" data-section="members" onclick="switchSection('members')">
+          <i class="material-symbols-outlined">group</i>
+          Members
+        </button>
+        <button class="nav-item" data-section="battles" onclick="switchSection('battles')">
+          <i class="material-symbols-outlined">swords</i>
+          Battles
+        </button>
+        <button class="nav-item" data-section="sieges" onclick="switchSection('sieges')">
+          <i class="material-symbols-outlined">fort</i>
+          Sieges
+        </button>
+        <button class="nav-item" data-section="alliances" onclick="switchSection('alliances')">
+          <i class="material-symbols-outlined">handshake</i>
+          Alliances
+        </button>
+        <button class="nav-item" data-section="treasury" onclick="switchSection('treasury')">
+          <i class="material-symbols-outlined">account_balance</i>
+          Treasury
+        </button>
+      </nav>
+
+      <div class="user-section mt-auto pt-8 border-t border-white/5">
+        <div id="userInfo" class="hidden">
+          <div class="flex items-center gap-3 p-3 bg-surface-container-low rounded-lg mb-4">
+            <img id="userAvatar" src="" class="w-10 h-10 rounded-full border-2 border-copper-dim cursor-pointer" onclick="logout()">
+            <div class="flex flex-col">
+              <span id="userName" class="text-xs font-bold uppercase tracking-tight">...</span>
+              <span id="adminBadge" class="hidden text-[8px] font-bold text-copper-primary uppercase">Sys_Admin</span>
+            </div>
+          </div>
+        </div>
+        <button id="loginBtn" class="btn btn-primary w-full" onclick="openLoginModal()">
+          <i class="material-symbols-outlined">login</i>
+          Auth Required
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Stage: Column 2 -->
+    <main class="main-stage">
+      <div class="ambient-glow"></div>
       
-      <div id="userInfo" class="hidden flex items-center gap-2 p-2 bg-white border-4 border-black w-full md:w-auto justify-between">
-        <div class="flex items-center gap-2">
-            <img id="userAvatar" src="" alt="avatar" class="w-8 h-8 border-2 border-black">
-            <div class="flex flex-col pr-2">
-                <span id="userName" class="text-xs font-black uppercase text-black leading-tight"></span>
-                <span id="adminBadge" class="hidden text-[9px] font-bold bg-[#ff3333] text-white px-1 mt-0.5 inline-block w-max">ADMIN</span>
-            </div>
-        </div>
-        <button onclick="logout()" class="brutal-button brutal-button-primary px-2 py-1 text-xs">OUT</button>
-      </div>
-    </div>
-  </header>
-
-  <!-- Main Grid Layout -->
-  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 max-w-[1600px] mx-auto">
-    
-    <!-- Navigation Area -->
-    <div class="lg:col-span-3 flex flex-col gap-6 lg:sticky lg:top-8 z-10">
-      <!-- Nav Widget -->
-      <div class="brutal-card bg-[#ffe600] p-4 flex flex-col gap-2 h-fit">
-        <h3 class="font-black border-b-4 border-black pb-2 mb-2 uppercase text-lg">MODULES</h3>
-        <div class="nav-container flex lg:flex-col gap-2">
-          <button class="nav-btn active px-4 py-3 flex items-center gap-3 text-left w-full text-sm" data-section="members" onclick="switchSection('members')">
-            <span class="material-symbols-outlined">group</span> Members
-          </button>
-          <button class="nav-btn px-4 py-3 flex items-center gap-3 text-left w-full text-sm" data-section="battles" onclick="switchSection('battles')">
-            <span class="material-symbols-outlined">swords</span> Battles
-          </button>
-          <button class="nav-btn px-4 py-3 flex items-center gap-3 text-left w-full text-sm" data-section="sieges" onclick="switchSection('sieges')">
-            <span class="material-symbols-outlined">fort</span> Sieges
-          </button>
-          <button class="nav-btn px-4 py-3 flex items-center gap-3 text-left w-full text-sm" data-section="alliances" onclick="switchSection('alliances')">
-            <span class="material-symbols-outlined">handshake</span> Alliances
-          </button>
-          <button class="nav-btn px-4 py-3 flex items-center gap-3 text-left w-full text-sm" data-section="treasury" onclick="switchSection('treasury')">
-            <span class="material-symbols-outlined">account_balance</span> Treasury
-          </button>
-        </div>
-      </div>
-      
-      <!-- System Info Panel -->
-      <div class="brutal-card bg-white p-5 hidden lg:flex flex-col gap-5 border-l-8 border-[#111]">
-        <div>
-          <h4 class="font-black text-[10px] uppercase text-gray-500 mb-1 border-b-2 border-gray-200 pb-1">Uplink Status</h4>
-          <div class="font-mono text-sm font-black text-[#ff3333] flex items-center gap-2 mt-2">
-            <span class="w-3 h-3 rounded-full bg-[#ff3333] inline-block animate-pulse border-2 border-black"></span>
-            CONNECTED
-          </div>
-        </div>
-        <div>
-          <h4 class="font-black text-[10px] uppercase text-gray-500 mb-1 border-b-2 border-gray-200 pb-1">Sys_Time</h4>
-          <div id="sysClockDisplay" class="font-mono text-2xl font-black tracking-tighter mt-2 text-black">00:00:00</div>
-        </div>
-        <div>
-          <h4 class="font-black text-[10px] uppercase text-gray-500 mb-1 border-b-2 border-gray-200 pb-1">Global Metrics</h4>
-          <div class="mt-2 space-y-1">
-            <div class="flex justify-between text-xs font-black uppercase">
-              <span>Members</span>
-              <span id="globalMemberCount" class="text-[#ff3333]">0</span>
-            </div>
-            <div class="flex justify-between text-xs font-black uppercase">
-              <span>Alliances</span>
-              <span id="globalAllianceCount" class="text-[#4285F4]">0</span>
-            </div>
-            <div class="flex justify-between text-xs font-black uppercase">
-              <span>Total Ops</span>
-              <span id="globalOpsCount" class="text-[#ffe600] bg-black px-1">0</span>
-            </div>
-            <div class="flex justify-between text-xs font-black uppercase">
-              <span>Net Dist.</span>
-              <span id="globalNetDist" class="text-[#34A853]">0</span>
-            </div>
-          </div>
-        </div>
-        <div class="mt-auto pt-4 border-t-2 border-gray-200">
-          <h4 class="font-black text-[10px] uppercase text-gray-500 mb-2">Terminal Output</h4>
-          <div id="terminalLog" class="bg-black text-[#ffe600] p-2 font-mono text-[9px] uppercase h-24 overflow-y-auto border-2 border-black flex flex-col gap-1">
-            <span>> SYS.INIT OK<span class="cursor-blink"></span></span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Dynamic Content Area -->
-    <div class="lg:col-span-9">
-
-      <!-- SECTION: MEMBERS -->
+      <!-- Section: Members -->
       <section id="members" class="section active">
-        <div class="flex flex-col gap-6 lg:gap-8">
-          
-          <!-- Top Row: Stats & Action Form -->
-          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8 items-start">
-            <!-- Stats Widget -->
-            <div class="xl:col-span-2 brutal-card bg-[#111] text-white p-6 relative overflow-hidden flex flex-col md:flex-row gap-4 stagger-1 h-full">
-              <div class="absolute -right-4 -bottom-4 opacity-20 pointer-events-none">
-                 <span class="material-symbols-outlined" style="font-size: 180px;">monitoring</span>
-              </div>
-              <div class="flex-1 z-10 relative flex flex-col justify-between">
-                  <div>
-                      <h3 class="font-black border-b-4 border-gray-700 pb-2 mb-4 text-[#ffe600] uppercase text-lg inline-block pr-4">System Health</h3>
-                      <div class="flex justify-between items-end mb-4">
-                         <div class="text-sm font-bold text-gray-400 uppercase tracking-widest">Total Members</div>
-                         <div class="text-6xl font-black text-white leading-none" id="memberCountBadge">...</div>
-                      </div>
-                  </div>
-                  <div class="text-gray-400 text-xs font-bold mt-2 uppercase border-t-2 border-gray-800 pt-2 relative z-10 font-mono">
-                     > DB SYNC: <span id="syncStatusTime" class="text-white">WAITING...</span><br>
-                     <span class="text-[#ffe600]">> DATA STREAM ACTIVE<span class="cursor-blink"></span></span>
-                  </div>
-              </div>
-              <div class="w-full md:w-[160px] h-[160px] relative z-10 flex items-center justify-center bg-black border-4 border-gray-800 p-2">
-                  <canvas id="classChart"></canvas>
-              </div>
-            </div>
+        <div class="header-bar">
+          <div class="page-title">
+            <h2>Members</h2>
+            <p>Blood Pledge Personnel Directory</p>
+          </div>
+          <div class="flex gap-3">
+             <input type="text" id="membersSearch" placeholder="Filter records..." class="atelier-input text-xs w-64" oninput="setFilter('members', this.value)">
+             <button class="btn btn-outline" onclick="exportToCSV('members')">
+                <i class="material-symbols-outlined">download</i>
+                Export
+             </button>
+          </div>
+        </div>
 
-            <!-- Action Widget (Admin) -->
-            <div class="xl:col-span-1 stagger-3 h-full">
-              <div id="memberAddCard" class="w-full brutal-card bg-white p-6 flex flex-col border-t-8 border-[#ff3333] h-full">
-                <h3 class="font-black border-b-4 border-black pb-2 mb-4 uppercase text-lg">Append Record</h3>
-                <div class="flex flex-col gap-4 mb-4 flex-1">
-                  <div>
-                    <label class="block font-black uppercase text-xs mb-1 text-gray-600">Character ID</label>
-                    <input type="text" id="mName" class="brutal-input" placeholder="ID...">
-                  </div>
-                  <div>
-                    <label class="block font-black uppercase text-xs mb-1 text-gray-600">Class</label>
-                    <select id="mJob" class="brutal-input">
-                      <option value="" disabled selected>Select...</option>
-                      <option value="王族">Prince</option>
-                      <option value="騎士">Knight</option>
-                      <option value="妖精">Elf</option>
-                      <option value="法師">Wizard</option>
-                      <option value="黑妖">Dark Elf</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label class="block font-black uppercase text-xs mb-1 text-gray-600">Tier / 分級</label>
-                    <select id="mTier" class="brutal-input">
-                      <option value="核心">⭐ 核心成員 (Core)</option>
-                      <option value="一般" selected>○ 一般成員 (Regular)</option>
-                      <option value="試煉">△ 試煉成員 (Trial)</option>
-                      <option value="外交">◇ 外交成員 (Diplomat)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label class="block font-black uppercase text-xs mb-1 text-gray-600">Metadata Tags</label>
-                    <input type="text" id="mNotes" class="brutal-input" placeholder="Role, Team, etc...">
-                  </div>
-                </div>
-                <button onclick="addMember()" class="brutal-button brutal-button-primary w-full py-3 mt-auto flex items-center justify-center gap-2">
-                  <span class="material-symbols-outlined text-sm">add_circle</span> EXECUTE.INSERT()
-                </button>
+        <div class="atelier-grid">
+          <div class="atelier-card bevel shadow-carbon col-span-12 xl:col-span-8">
+            <span class="card-label">System Health</span>
+            <div class="flex justify-between items-end">
+              <div>
+                <span class="stat-value" id="memberCountBadge">0</span>
+                <span class="stat-unit">Total Population</span>
+              </div>
+              <div class="w-48 h-48">
+                <canvas id="classChart"></canvas>
               </div>
             </div>
           </div>
 
-          <!-- Bottom Row: Table -->
-          <div class="w-full stagger-2">
-            <div class="flex justify-between items-end mb-2 gap-2 flex-wrap">
-              <div class="flex items-center gap-4 flex-wrap">
-                <h2 class="text-2xl font-black uppercase tracking-tight inline-block bg-[#ffe600] px-4 py-1 border-4 border-black shadow-[4px_4px_0px_#111]">MEMBERS_DB</h2>
-                <input type="text" id="membersSearch" placeholder="SEARCH MEMBERS..." class="brutal-input max-w-xs text-xs py-1 px-2" oninput="setFilter('members', this.value)">
+          <div id="memberAddCard" class="atelier-card bevel shadow-carbon col-span-12 xl:col-span-4 auth-required hidden">
+            <span class="card-label">Append Record</span>
+            <div class="space-y-4">
+              <div>
+                <label>Character ID</label>
+                <input type="text" id="mName" class="atelier-input" placeholder="ID...">
               </div>
-              <button class="brutal-button bg-white px-3 py-1 text-xs flex items-center gap-1 h-fit" onclick="exportToCSV('members')">
-                  <span class="material-symbols-outlined text-[14px]">download</span> EXPORT .CSV
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label>Class</label>
+                  <select id="mJob" class="atelier-input">
+                    <option value="" disabled selected>Select...</option>
+                    <option value="王族">Prince</option>
+                    <option value="騎士">Knight</option>
+                    <option value="妖精">Elf</option>
+                    <option value="法師">Wizard</option>
+                    <option value="黑妖">Dark Elf</option>
+                  </select>
+                </div>
+                <div>
+                  <label>Tier</label>
+                  <select id="mTier" class="atelier-input">
+                    <option value="核心">Core</option>
+                    <option value="一般" selected>Regular</option>
+                    <option value="試煉">Trial</option>
+                    <option value="外交">Diplomat</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label>Metadata</label>
+                <input type="text" id="mNotes" class="atelier-input" placeholder="Role, squad, notes...">
+              </div>
+              <button onclick="addMember()" class="btn btn-primary w-full mt-4">
+                Execute.Insert()
               </button>
             </div>
-            <div class="scroll-hint">&larr; Scroll Horizontally &rarr;</div>
+          </div>
+
+          <div class="col-span-12">
             <div class="table-container">
               <table id="membersTable">
                 <thead>
                   <tr>
                     <th>Character ID</th>
                     <th>Class</th>
-                    <th class="text-center">Tier</th>
+                    <th>Tier</th>
                     <th>Metadata</th>
-                    <th class="text-center">LINE</th>
+                    <th>LINE</th>
                     <th class="admin-col hidden text-right">Actions</th>
                   </tr>
                 </thead>
@@ -392,368 +151,432 @@
               </table>
             </div>
           </div>
-
         </div>
       </section>
 
-      <!-- SECTION: BATTLES -->
+      <!-- Section: Battles -->
       <section id="battles" class="section">
-        <div class="flex flex-col gap-6 lg:gap-8">
-          
-          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8 items-start">
-            <div class="xl:col-span-2 brutal-card bg-white p-6 border-l-8 border-[#ffe600] relative overflow-hidden stagger-1 h-full flex flex-col justify-center">
-               <div class="absolute -right-4 -bottom-4 opacity-10 pointer-events-none text-black">
-                   <span class="material-symbols-outlined" style="font-size: 180px;">swords</span>
-                </div>
-               <h3 class="font-black border-b-4 border-black pb-2 mb-4 uppercase text-lg relative z-10 inline-block pr-4">Battle Protocol</h3>
-               <p class="font-bold text-sm leading-relaxed mb-4 uppercase relative z-10">Log all encounters and loot valuations promptly to ensure accurate dividend distribution.</p>
-               <div class="bg-[#111] p-4 text-[#ffe600] font-mono text-xs uppercase space-y-2 border-4 border-black relative z-10 w-fit">
-                   <p id="battleStatusText">> AWAITING NEW LOGS...</p>
-                   <p>> SYNCING WITH LEDGER...</p>
-                   <p class="text-white">> STATUS: NOMINAL<span class="cursor-blink"></span></p>
-               </div>
-            </div>
+        <div class="header-bar">
+          <div class="page-title">
+            <h2>Battles</h2>
+            <p>Encounter Logs & Loot Valuation</p>
+          </div>
+          <div class="flex gap-3">
+             <input type="text" id="battlesSearch" placeholder="Filter encounters..." class="atelier-input text-xs w-64" oninput="setFilter('battles', this.value)">
+             <button class="btn btn-outline" onclick="exportToCSV('battles')">
+                <i class="material-symbols-outlined">download</i>
+                Export
+             </button>
+          </div>
+        </div>
 
-            <div class="xl:col-span-1 stagger-3 h-full">
-              <div id="battleAddCard" class="auth-required hidden w-full brutal-card bg-[#ffe600] p-6 flex flex-col border-t-8 border-black h-full">
-                <h3 class="font-black border-b-4 border-black pb-2 mb-4 uppercase text-lg">Log Encounter</h3>
-                <div class="flex flex-col gap-4 flex-1">
-                  <div>
-                    <label class="block font-black uppercase text-xs mb-1">Target *</label>
-                    <select id="bBossSelect" class="brutal-input bg-white" onchange="handleBossSelect(this)">
-                      <option value="死亡騎士">Death Knight</option>
-                      <option value="克特">Kurtz</option>
-                      <option value="大惡魔">Demon</option>
-                      <option value="巴風特">Baphomet</option>
-                      <option value="__custom__">CUSTOM_INPUT</option>
-                    </select>
-                    <div id="bCustomBossGroup" style="display:none;" class="mt-2">
-                      <input type="text" id="bBossCustom" class="brutal-input bg-white" placeholder="Custom Target...">
-                    </div>
-                  </div>
-                  <div>
-                    <label class="block font-black uppercase text-xs mb-1">Timestamp</label>
-                    <input type="datetime-local" id="bTime" class="brutal-input bg-white">
-                  </div>
-                  <div>
-                    <label class="block font-black uppercase text-xs mb-1">Pool Value (Adena)</label>
-                    <input type="number" id="bAuctionPool" class="brutal-input bg-white" placeholder="0">
-                  </div>
-                  <div>
-                    <label class="block font-black uppercase text-xs mb-1">Participants</label>
-                    <div id="bAttendance" class="attendance-grid max-h-[150px] bg-white border-4 border-black p-2"></div>
-                  </div>
-                  <div class="flex flex-col h-full border-t-4 border-black pt-4 mt-2">
-                    <label class="block font-black uppercase text-xs mb-2 flex justify-between items-center">
-                      Loot Drops
-                      <button onclick="addLootRow()" class="brutal-button px-2 py-1 text-[10px] bg-black text-[#ffe600] flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">add</span> ADD</button>
-                    </label>
-                    <div id="bDropsList" class="space-y-2 max-h-[120px] overflow-y-auto pr-1 flex-1">
-                      <div class="loot-row flex gap-2">
-                        <input type="text" placeholder="Item Name" class="brutal-input bg-white flex-1 text-xs">
-                        <input type="number" placeholder="Value" class="brutal-input bg-white w-20 text-xs">
-                        <button class="brutal-button brutal-button-primary px-2" onclick="removeLootRow(this)"><span class="material-symbols-outlined text-sm">close</span></button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <button onclick="addBattle()" class="brutal-button brutal-button-dark w-full py-3 mt-4 flex items-center justify-center gap-2">
-                  <span class="material-symbols-outlined text-sm">save</span> EXECUTE.LOG_BATTLE()
-                </button>
-              </div>
+        <div class="atelier-grid">
+          <div class="atelier-card bevel shadow-carbon col-span-12 xl:col-span-8">
+            <span class="card-label">Protocol Status</span>
+            <div class="flex flex-col justify-center h-full min-h-[200px]">
+               <h3 class="card-title text-2xl">Battle Protocol Active</h3>
+               <p class="text-secondary text-sm mb-6 max-w-lg">Log all encounters and loot valuations promptly to ensure accurate dividend distribution across the blood pledge.</p>
+               <div class="bg-surface-container-high p-4 rounded-lg font-mono text-[11px] border border-copper-dim/10">
+                  <p id="battleStatusText" class="text-copper-primary">> AWAITING NEW LOGS...</p>
+                  <p class="text-white/40">> STATUS: NOMINAL</p>
+               </div>
             </div>
           </div>
 
-          <div class="w-full stagger-2">
-            <div class="flex justify-between items-end mb-2 gap-2 flex-wrap">
-              <div class="flex items-center gap-4 flex-wrap">
-                <h2 class="text-2xl font-black uppercase tracking-tight inline-block bg-black text-white px-4 py-1 border-4 border-black shadow-[4px_4px_0px_#ff3333]">BATTLES_LOG</h2>
-                <input type="text" id="battlesSearch" placeholder="SEARCH BATTLES..." class="brutal-input max-w-xs text-xs py-1 px-2" oninput="setFilter('battles', this.value)">
+          <div id="battleAddCard" class="atelier-card bevel shadow-carbon col-span-12 xl:col-span-4 auth-required hidden">
+            <span class="card-label">Log Encounter</span>
+            <div class="space-y-4">
+              <div>
+                <label>Target</label>
+                <select id="bBossSelect" class="atelier-input" onchange="handleBossSelect(this)">
+                  <option value="死亡騎士">Death Knight</option>
+                  <option value="克特">Kurtz</option>
+                  <option value="大惡魔">Demon</option>
+                  <option value="巴風特">Baphomet</option>
+                  <option value="__custom__">Custom...</option>
+                </select>
+                <div id="bCustomBossGroup" style="display:none;" class="mt-2">
+                  <input type="text" id="bBossCustom" class="atelier-input" placeholder="Enter target...">
+                </div>
               </div>
-              <button class="brutal-button bg-white px-3 py-1 text-xs flex items-center gap-1 h-fit" onclick="exportToCSV('battles')">
-                  <span class="material-symbols-outlined text-[14px]">download</span> EXPORT .CSV
+              <div>
+                <label>Timestamp</label>
+                <input type="datetime-local" id="bTime" class="atelier-input">
+              </div>
+              <div>
+                <label>Pool Value (Adena)</label>
+                <input type="number" id="bAuctionPool" class="atelier-input" placeholder="0">
+              </div>
+              <div>
+                <label>Attendance</label>
+                <div id="bAttendance" class="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar"></div>
+              </div>
+              <div class="pt-4 border-t border-white/5">
+                <div class="flex justify-between items-center mb-4">
+                   <label class="mb-0">Loot Drops</label>
+                   <button onclick="addLootRow()" class="btn btn-outline py-1 px-3 text-[10px]">Add Item</button>
+                </div>
+                <div id="bDropsList" class="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                   <div class="loot-row flex gap-2">
+                     <input type="text" placeholder="Item" class="atelier-input py-2 text-xs flex-1">
+                     <input type="number" placeholder="Value" class="atelier-input py-2 text-xs w-24">
+                   </div>
+                </div>
+              </div>
+              <button onclick="addBattle()" class="btn btn-primary w-full mt-4">
+                Execute.Log()
               </button>
             </div>
-            <div class="scroll-hint">&larr; Scroll Horizontally &rarr;</div>
+          </div>
+
+          <div class="col-span-12">
             <div class="table-container">
               <table id="battlesTable">
                 <thead>
                   <tr>
-                    <th>Time</th><th>Target</th><th>Pax</th><th>Pool</th><th class="text-[#ff3333]">Dividend</th><th class="admin-col hidden text-right">Actions</th>
+                    <th>Time</th>
+                    <th>Target</th>
+                    <th>Pax</th>
+                    <th>Pool</th>
+                    <th>Dividend</th>
+                    <th class="admin-col hidden text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody></tbody>
               </table>
             </div>
           </div>
-
         </div>
       </section>
 
-      <!-- SECTION: SIEGES -->
+      <!-- Section: Sieges -->
       <section id="sieges" class="section">
-        <div class="flex flex-col gap-6 lg:gap-8">
-          
-          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8 items-start">
-            <div class="xl:col-span-2 brutal-card bg-[#ff3333] text-white p-6 border-r-8 border-black relative overflow-hidden stagger-1 h-full flex flex-col justify-center">
-               <div class="absolute -right-4 -bottom-4 opacity-20 pointer-events-none text-black">
-                   <span class="material-symbols-outlined" style="font-size: 180px;">fort</span>
-                </div>
-               <h3 class="font-black border-b-4 border-black pb-2 mb-4 uppercase text-lg relative z-10 inline-block pr-4 text-black bg-[#ffe600] px-2 shadow-[4px_4px_0px_#111]">Siege Ops</h3>
-               <p class="font-bold text-sm leading-relaxed mb-4 uppercase relative z-10">Critical war operations. Ensure all participating allies are logged accurately for ledger calculations.</p>
-               <div class="bg-black text-white p-4 font-mono text-xs uppercase space-y-2 relative z-10 border-4 border-black shadow-[4px_4px_0px_rgba(255,255,255,0.5)] w-fit">
-                   <p id="siegeStatusText">> MONITORING CASTLE STATUS...</p>
-                   <p class="text-[#ffe600]">> READY FOR DEPLOYMENT<span class="cursor-blink"></span></p>
-               </div>
-            </div>
+        <div class="header-bar">
+          <div class="page-title">
+            <h2>Sieges</h2>
+            <p>War Operations & Reward Distribution</p>
+          </div>
+          <div class="flex gap-3">
+             <input type="text" id="siegesSearch" placeholder="Filter operations..." class="atelier-input text-xs w-64" oninput="setFilter('sieges', this.value)">
+             <button class="btn btn-outline" onclick="exportToCSV('sieges')">
+                <i class="material-symbols-outlined">download</i>
+                Export
+             </button>
+          </div>
+        </div>
 
-            <div class="xl:col-span-1 stagger-3 h-full">
-              <div id="siegeAddCard" class="auth-required hidden w-full brutal-card bg-white p-6 flex flex-col border-t-8 border-[#111] h-full">
-                <h3 class="font-black border-b-4 border-black pb-2 mb-4 uppercase text-lg">Log Siege</h3>
-                <div class="flex flex-col gap-4 flex-1">
-                  <div>
-                    <label class="block font-black uppercase text-xs mb-1">Timestamp</label>
-                    <input type="datetime-local" id="sDate" class="brutal-input text-black">
-                  </div>
-                  <div>
-                    <label class="block font-black uppercase text-xs mb-1">Castle</label>
-                    <select id="sCastle" class="brutal-input text-black">
-                      <option value="肯特城">Kent Castle</option>
-                      <option value="妖魔堡壘">Orc Fortress</option>
-                      <option value="風木城">Windawood Castle</option>
-                      <option value="奇岩城">Giran Castle</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label class="block font-black uppercase text-xs mb-1">Total Reward (Adena)</label>
-                    <input type="number" id="sReward" class="brutal-input text-black" placeholder="0">
-                  </div>
-                  <div class="flex-1 min-h-[150px]">
-                    <label class="block font-black uppercase text-xs mb-1">Participants</label>
-                    <div id="sAttendance" class="attendance-grid h-full max-h-[250px] text-black border-black p-2 bg-gray-50"></div>
-                  </div>
-                </div>
-                <button onclick="addSiege()" class="brutal-button brutal-button-primary w-full py-3 mt-4 flex items-center justify-center gap-2">
-                  <span class="material-symbols-outlined text-sm">flag</span> EXECUTE.LOG_SIEGE()
-                </button>
-              </div>
+        <div class="atelier-grid">
+          <div class="atelier-card bevel shadow-carbon col-span-12 xl:col-span-8">
+            <span class="card-label">Operational Status</span>
+            <div class="flex flex-col justify-center h-full min-h-[200px]">
+               <h3 class="card-title text-2xl">Siege Protocols Engaged</h3>
+               <p class="text-secondary text-sm mb-6 max-w-lg">Critical war operations. Ensure all participating allies are logged accurately for ledger calculations.</p>
+               <div class="bg-surface-container-high p-4 rounded-lg font-mono text-[11px] border border-danger/10">
+                  <p id="siegeStatusText" class="text-danger">> MONITORING CASTLE STATUS...</p>
+                  <p class="text-white/40">> READY FOR DEPLOYMENT</p>
+               </div>
             </div>
           </div>
 
-          <div class="w-full stagger-2">
-            <div class="flex justify-between items-end mb-2 gap-2 flex-wrap">
-              <div class="flex items-center gap-4 flex-wrap">
-                <h2 class="text-2xl font-black uppercase tracking-tight inline-block bg-[#ff3333] text-white px-4 py-1 border-4 border-black shadow-[4px_4px_0px_#111]">SIEGES_LOG</h2>
-                <input type="text" id="siegesSearch" placeholder="SEARCH SIEGES..." class="brutal-input max-w-xs text-xs py-1 px-2" oninput="setFilter('sieges', this.value)">
+          <div id="siegeAddCard" class="atelier-card bevel shadow-carbon col-span-12 xl:col-span-4 auth-required hidden">
+            <span class="card-label">Log Siege</span>
+            <div class="space-y-4">
+              <div>
+                <label>Timestamp</label>
+                <input type="datetime-local" id="sDate" class="atelier-input">
               </div>
-              <button class="brutal-button bg-white px-3 py-1 text-xs flex items-center gap-1 h-fit" onclick="exportToCSV('sieges')">
-                  <span class="material-symbols-outlined text-[14px]">download</span> EXPORT .CSV
+              <div>
+                <label>Castle</label>
+                <select id="sCastle" class="atelier-input">
+                  <option value="肯特城">Kent Castle</option>
+                  <option value="妖魔堡壘">Orc Fortress</option>
+                  <option value="風木城">Windawood Castle</option>
+                  <option value="奇岩城">Giran Castle</option>
+                </select>
+              </div>
+              <div>
+                <label>Reward (Adena)</label>
+                <input type="number" id="sReward" class="atelier-input" placeholder="0">
+              </div>
+              <div>
+                <label>Attendance</label>
+                <div id="sAttendance" class="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar"></div>
+              </div>
+              <button onclick="addSiege()" class="btn btn-primary w-full mt-4 bg-danger border-none text-white">
+                Execute.Log()
               </button>
             </div>
-            <div class="scroll-hint">&larr; Scroll Horizontally &rarr;</div>
+          </div>
+
+          <div class="col-span-12">
             <div class="table-container">
               <table id="siegesTable">
                 <thead>
                   <tr>
-                    <th>Time</th><th>Castle</th><th>Pax</th><th>Pool</th><th class="text-[#ff3333]">Dividend</th><th class="admin-col hidden text-right">Actions</th>
+                    <th>Time</th>
+                    <th>Castle</th>
+                    <th>Pax</th>
+                    <th>Reward</th>
+                    <th>Dividend</th>
+                    <th class="admin-col hidden text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody></tbody>
               </table>
             </div>
           </div>
-
         </div>
       </section>
 
-      <!-- SECTION: ALLIANCES -->
+      <!-- Section: Alliances -->
       <section id="alliances" class="section">
-        <div class="flex flex-col gap-6 lg:gap-8">
-          
-          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8 items-start">
-            <div class="xl:col-span-2 brutal-card bg-white p-6 border-b-8 border-black relative overflow-hidden stagger-1 h-full flex flex-col justify-center">
-               <div class="absolute -right-4 -bottom-4 opacity-10 pointer-events-none text-black">
-                   <span class="material-symbols-outlined" style="font-size: 180px;">handshake</span>
-                </div>
-               <h3 class="font-black border-b-4 border-black pb-2 mb-4 uppercase text-lg relative z-10 inline-block pr-4">Diplomacy</h3>
-               <p class="font-bold text-sm leading-relaxed uppercase relative z-10 text-gray-600">Registered external allies. These units are eligible for participation in joint operations and dividend pools.</p>
-            </div>
+        <div class="header-bar">
+          <div class="page-title">
+            <h2>Alliances</h2>
+            <p>External Allied Units & Treaties</p>
+          </div>
+          <div class="flex gap-3">
+             <input type="text" id="alliancesSearch" placeholder="Search allies..." class="atelier-input text-xs w-64" oninput="setFilter('alliances', this.value)">
+             <button class="btn btn-outline" onclick="exportToCSV('alliances')">
+                <i class="material-symbols-outlined">download</i>
+                Export
+             </button>
+          </div>
+        </div>
 
-            <div class="xl:col-span-1 stagger-3 h-full">
-              <div id="allianceAddCard" class="admin-only hidden w-full brutal-card bg-[#f0f0f0] p-6 flex flex-col border-t-8 border-black h-full">
-                <h3 class="font-black border-b-4 border-black pb-2 mb-4 uppercase text-lg">Append Ally</h3>
-                <div class="flex flex-col gap-4 flex-1">
-                  <div>
-                    <label class="block font-black uppercase text-xs mb-1 text-gray-600">Character ID *</label>
-                    <input type="text" id="aName" class="brutal-input bg-white" placeholder="ID...">
-                  </div>
-                  <div>
-                    <label class="block font-black uppercase text-xs mb-1 text-gray-600">Class *</label>
-                    <select id="aJob" class="brutal-input bg-white">
-                      <option value="王族">Prince</option>
-                      <option value="騎士">Knight</option>
-                      <option value="妖精">Elf</option>
-                      <option value="法師">Wizard</option>
-                      <option value="黑妖">Dark Elf</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label class="block font-black uppercase text-xs mb-1 text-gray-600">Metadata</label>
-                    <input type="text" id="aNotes" class="brutal-input bg-white" placeholder="Tags...">
-                  </div>
-                </div>
-                <button onclick="addAlliance()" class="brutal-button brutal-button-dark w-full py-3 mt-4 flex items-center justify-center gap-2">
-                  <span class="material-symbols-outlined text-sm">person_add</span> EXECUTE.INSERT_ALLY()
-                </button>
-              </div>
+        <div class="atelier-grid">
+          <div class="atelier-card bevel shadow-carbon col-span-12 xl:col-span-8">
+            <span class="card-label">Diplomacy Protocol</span>
+            <div class="flex flex-col justify-center h-full min-h-[200px]">
+               <h3 class="card-title text-2xl">Diplomatic Ties</h3>
+               <p class="text-secondary text-sm mb-6 max-w-lg">Registered external allies. These units are eligible for participation in joint operations and dividend pools.</p>
+               <div class="bg-surface-container-high p-4 rounded-lg font-mono text-[11px] border border-info/10">
+                  <p class="text-info">> SCANNING ALLIED NETWORKS...</p>
+                  <p class="text-white/40">> STATUS: TRUSTED_NODE</p>
+               </div>
             </div>
           </div>
 
-          <div class="w-full stagger-2">
-            <div class="flex justify-between items-end mb-2 gap-2 flex-wrap">
-              <div class="flex items-center gap-4 flex-wrap">
-                <h2 class="text-2xl font-black uppercase tracking-tight inline-block bg-white px-4 py-1 border-4 border-black shadow-[4px_4px_0px_#111]">ALLIANCES_DB</h2>
-                <input type="text" id="alliancesSearch" placeholder="SEARCH ALLIANCES..." class="brutal-input max-w-xs text-xs py-1 px-2" oninput="setFilter('alliances', this.value)">
+          <div id="allianceAddCard" class="atelier-card bevel shadow-carbon col-span-12 xl:col-span-4 auth-required hidden">
+            <span class="card-label">Append Ally</span>
+            <div class="space-y-4">
+              <div>
+                <label>Character ID</label>
+                <input type="text" id="aName" class="atelier-input" placeholder="ID...">
               </div>
-              <button class="brutal-button bg-white px-3 py-1 text-xs flex items-center gap-1 h-fit" onclick="exportToCSV('alliances')">
-                  <span class="material-symbols-outlined text-[14px]">download</span> EXPORT .CSV
+              <div>
+                <label>Class</label>
+                <select id="aJob" class="atelier-input">
+                  <option value="王族">Prince</option>
+                  <option value="騎士">Knight</option>
+                  <option value="妖精">Elf</option>
+                  <option value="法師">Wizard</option>
+                  <option value="黑妖">Dark Elf</option>
+                </select>
+              </div>
+              <div>
+                <label>Metadata</label>
+                <input type="text" id="aNotes" class="atelier-input" placeholder="Notes...">
+              </div>
+              <button onclick="addAlliance()" class="btn btn-primary w-full mt-4">
+                Execute.Insert()
               </button>
             </div>
-            <div class="scroll-hint">&larr; Scroll Horizontally &rarr;</div>
+          </div>
+
+          <div class="col-span-12">
             <div class="table-container">
               <table id="alliancesTable">
                 <thead>
                   <tr>
-                    <th>Character ID</th><th>Class</th><th>Metadata</th><th class="admin-col hidden text-right">Actions</th>
+                    <th>Character ID</th>
+                    <th>Class</th>
+                    <th>Metadata</th>
+                    <th class="admin-col hidden text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody></tbody>
               </table>
             </div>
           </div>
-
         </div>
       </section>
 
-      <!-- SECTION: TREASURY -->
+      <!-- Section: Treasury -->
       <section id="treasury" class="section">
-        <div class="flex flex-col gap-6 lg:gap-8">
-          
-          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8 items-start">
-            <div class="xl:col-span-2 w-full brutal-card p-6 bg-black text-white shadow-[8px_8px_0px_#ffe600] relative overflow-hidden stagger-1 h-full flex flex-col justify-center">
-               <div class="absolute -right-4 -top-8 opacity-10 pointer-events-none text-white">
-                  <span class="material-symbols-outlined" style="font-size: 200px;">account_balance</span>
-               </div>
-               <h3 class="text-2xl font-black uppercase mb-4 text-[#ffe600] border-b-4 border-gray-700 pb-2 relative z-10 inline-block pr-8">Treasury Engine</h3>
-               <p class="font-bold mb-4 text-gray-300 text-sm leading-relaxed relative z-10">
-                 SYSTEM AUTO-AGGREGATES ALL BATTLE AND SIEGE RECORDS TO COMPUTE PER-MEMBER DIVIDENDS. ALL VALUES ARE IN ADENA.
-               </p>
-               <div class="p-4 bg-[#111] border-4 border-gray-800 text-xs text-gray-400 font-bold uppercase mt-4 space-y-2 relative z-10 w-fit">
-                 <p>> ALLIANCES INCLUDED IN DIVIDENDS</p>
-                 <p class="text-white text-lg bg-[#ff3333] px-2 py-1 inline-block mt-1 border-2 border-black">> (POOL_VALUE / PAX_COUNT)</p>
-                 <p class="mt-2">> ROUNDED DOWN PER OPERATION.<span class="cursor-blink"></span></p>
-               </div>
-            </div>
+        <div class="header-bar">
+          <div class="page-title">
+            <h2>Treasury</h2>
+            <p>Dividend Aggregation & Distribution</p>
+          </div>
+          <div class="flex gap-3">
+             <input type="text" id="treasurySearch" placeholder="Search ledger..." class="atelier-input text-xs w-64" oninput="setFilter('treasury', this.value)">
+             <button class="btn btn-outline" onclick="exportToCSV('treasury')">
+                <i class="material-symbols-outlined">download</i>
+                Export
+             </button>
+          </div>
+        </div>
 
-            <div class="xl:col-span-1 stagger-3 h-full">
-               <!-- Treasury Chart Container -->
-               <div class="brutal-card bg-white p-6 h-full min-h-[300px] border-t-8 border-[#ffe600] flex flex-col">
-                   <h3 class="font-black border-b-4 border-black pb-2 mb-4 uppercase text-lg">Net Distribution</h3>
-                   <div class="flex-1 relative min-h-[250px]">
-                      <canvas id="treasuryChart"></canvas>
-                   </div>
+        <div class="atelier-grid">
+          <div class="atelier-card bevel shadow-carbon col-span-12 xl:col-span-8">
+            <span class="card-label">Treasury Engine</span>
+            <div class="flex flex-col justify-center h-full min-h-[200px]">
+               <h3 class="card-title text-2xl">Ledger Auto-Aggregation</h3>
+               <p class="text-secondary text-sm mb-6 max-w-lg">The system automatically computes per-member dividends based on battle and siege records. All values are in Adena.</p>
+               <div class="grid grid-cols-2 gap-4">
+                  <div class="p-4 bg-surface-container-high rounded-lg border border-white/5">
+                     <span class="block text-[10px] text-tertiary uppercase font-bold mb-1">Total Distributed</span>
+                     <span class="text-xl font-bold" id="totalDistDisplay">0</span>
+                  </div>
+                  <div class="p-4 bg-surface-container-high rounded-lg border border-white/5">
+                     <span class="block text-[10px] text-tertiary uppercase font-bold mb-1">Active Accounts</span>
+                     <span class="text-xl font-bold" id="activeAcctsDisplay">0</span>
+                  </div>
                </div>
             </div>
           </div>
 
-          <div class="w-full stagger-2">
-            <div class="flex justify-between items-end mb-2 gap-2 flex-wrap">
-              <div class="flex items-center gap-4 flex-wrap">
-                <h2 class="text-2xl font-black uppercase tracking-tight inline-block bg-[#111] text-white px-4 py-1 border-4 border-black shadow-[4px_4px_0px_#ffe600]">LEDGER_CALC</h2>
-                <input type="text" id="treasurySearch" placeholder="SEARCH TREASURY..." class="brutal-input max-w-xs text-xs py-1 px-2" oninput="setFilter('treasury', this.value)">
-              </div>
-              <button class="brutal-button bg-white px-3 py-1 text-xs flex items-center gap-1 h-fit" onclick="exportToCSV('treasury')">
-                  <span class="material-symbols-outlined text-[14px]">download</span> EXPORT .CSV
-              </button>
-            </div>
-            <div class="scroll-hint">&larr; Scroll Horizontally &rarr;</div>
+          <div class="atelier-card bevel shadow-carbon col-span-12 xl:col-span-4">
+             <span class="card-label">Net Distribution</span>
+             <div class="h-48">
+                <canvas id="treasuryChart"></canvas>
+             </div>
+          </div>
+
+          <div class="col-span-12">
             <div class="table-container">
               <table id="treasuryTable">
                 <thead>
                   <tr>
-                    <th>Character ID</th><th class="text-center">Ops Count</th><th class="text-right">Battle Div</th><th class="text-right">Siege Div</th><th class="text-right text-[#ffe600] font-black">Net Total</th>
+                    <th>Character ID</th>
+                    <th>Ops</th>
+                    <th>Battle Div</th>
+                    <th>Siege Div</th>
+                    <th class="text-copper-primary">Net Total</th>
                   </tr>
                 </thead>
                 <tbody></tbody>
               </table>
             </div>
           </div>
-
         </div>
       </section>
+    </main>
 
-    </div>
+    <!-- Event Horizon: Column 3 -->
+    <aside class="event-horizon">
+      <div class="feed-title">Event Horizon</div>
+      
+      <div class="flex-1 overflow-hidden flex flex-col">
+        <!-- Live Clock -->
+        <div class="p-6 bg-surface-container-low rounded-xl border border-copper-dim/10 mb-8">
+          <span class="text-[10px] font-bold text-tertiary uppercase tracking-widest mb-1 block">Live_Clock_UTC</span>
+          <div id="sysClockDisplay" class="text-4xl font-mono font-bold text-copper-primary tracking-tighter">00:00:00</div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto no-scrollbar">
+           <ul class="activity-feed" id="activityFeed">
+              <!-- Populated by app.js -->
+           </ul>
+        </div>
+      </div>
+
+      <div class="mt-8 pt-8 border-t border-white/5">
+         <button class="btn btn-outline w-full" onclick="fetchData()">
+            <i class="material-symbols-outlined">sync</i>
+            Data_Sync.Run()
+         </button>
+      </div>
+    </aside>
   </div>
+
+  <!-- Mobile Navigation -->
+  <nav class="mobile-nav">
+    <button class="mobile-nav-item active" data-section="members" onclick="switchSection('members')">
+      <i class="material-symbols-outlined">group</i>
+      <span>Members</span>
+    </button>
+    <button class="mobile-nav-item" data-section="battles" onclick="switchSection('battles')">
+      <i class="material-symbols-outlined">swords</i>
+      <span>Battles</span>
+    </button>
+    <button class="mobile-nav-item" data-section="sieges" onclick="switchSection('sieges')">
+      <i class="material-symbols-outlined">fort</i>
+      <span>Sieges</span>
+    </button>
+    <button class="mobile-nav-item" data-section="alliances" onclick="switchSection('alliances')">
+      <i class="material-symbols-outlined">handshake</i>
+      <span>Alliances</span>
+    </button>
+    <button class="mobile-nav-item" data-section="treasury" onclick="switchSection('treasury')">
+      <i class="material-symbols-outlined">account_balance</i>
+      <span>Treasury</span>
+    </button>
+  </nav>
 
   <!-- MODALS -->
   <div class="modal-overlay hidden" id="editMemberModal" onclick="closeEditModal(event)">
-    <div class="modal">
-      <div class="flex justify-between items-start mb-6 border-b-4 border-black pb-4">
-        <h3 class="text-2xl font-black uppercase">MUTATE_MEMBER</h3>
-        <button class="brutal-button bg-white px-2 py-1 text-sm" onclick="closeEditModal()">X</button>
+    <div class="modal w-full max-w-md">
+      <div class="modal-header">
+        <h3 class="text-xl font-bold text-copper-primary">Mutate Member</h3>
+        <button class="text-tertiary hover:text-white" onclick="closeEditModal()"><i class="material-symbols-outlined">close</i></button>
       </div>
-      <input type="hidden" id="editMemberId">
-      <div class="flex flex-col gap-4 mb-6">
+      <div class="modal-body space-y-5">
+        <input type="hidden" id="editMemberId">
         <div>
-          <label class="block font-black uppercase text-xs mb-1">Character ID</label>
-          <input type="text" id="editMemberName" class="brutal-input">
+          <label>Character ID</label>
+          <input type="text" id="editMemberName" class="atelier-input">
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label>Class</label>
+            <select id="editMemberJob" class="atelier-input">
+              <option value="王族">Prince</option>
+              <option value="騎士">Knight</option>
+              <option value="妖精">Elf</option>
+              <option value="法師">Wizard</option>
+              <option value="黑妖">Dark Elf</option>
+            </select>
+          </div>
+          <div>
+            <label>Tier</label>
+            <select id="editMemberTier" class="atelier-input">
+              <option value="核心">Core</option>
+              <option value="一般">Regular</option>
+              <option value="試煉">Trial</option>
+              <option value="外交">Diplomat</option>
+            </select>
+          </div>
         </div>
         <div>
-          <label class="block font-black uppercase text-xs mb-1">Class</label>
-          <select id="editMemberJob" class="brutal-input">
-            <option value="王族">Prince</option>
-            <option value="騎士">Knight</option>
-            <option value="妖精">Elf</option>
-            <option value="法師">Wizard</option>
-            <option value="黑妖">Dark Elf</option>
-          </select>
-        </div>
-        <div>
-          <label class="block font-black uppercase text-xs mb-1">Metadata</label>
-          <input type="text" id="editMemberNotes" class="brutal-input">
-        </div>
-        <div>
-          <label class="block font-black uppercase text-xs mb-1">Tier / 分級</label>
-          <select id="editMemberTier" class="brutal-input">
-            <option value="核心">⭐ 核心成員 (Core)</option>
-            <option value="一般">○ 一般成員 (Regular)</option>
-            <option value="試煉">△ 試煉成員 (Trial)</option>
-            <option value="外交">◇ 外交成員 (Diplomat)</option>
-          </select>
+          <label>Metadata</label>
+          <input type="text" id="editMemberNotes" class="atelier-input">
         </div>
       </div>
-      <div class="flex flex-col md:flex-row justify-end gap-3">
-        <button class="brutal-button bg-white px-6 py-2 text-sm" onclick="closeEditModal()">ABORT</button>
-        <button class="brutal-button brutal-button-primary px-6 py-2 text-sm" onclick="updateMember()">COMMIT_CHANGES</button>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeEditModal()">Abort</button>
+        <button class="btn btn-primary" onclick="updateMember()">Commit_Changes</button>
       </div>
     </div>
   </div>
 
+  <!-- Alliance Edit Modal -->
   <div class="modal-overlay hidden" id="editAllianceModal" onclick="closeEditAllianceModal(event)">
-    <div class="modal">
-      <div class="flex justify-between items-start mb-6 border-b-4 border-black pb-4">
-        <h3 class="text-2xl font-black uppercase">MUTATE_ALLY</h3>
-        <button class="brutal-button bg-white px-2 py-1 text-sm" onclick="closeEditAllianceModal()">X</button>
+    <div class="modal w-full max-w-md">
+      <div class="modal-header">
+        <h3 class="text-xl font-bold text-info">Mutate Ally</h3>
+        <button class="text-tertiary hover:text-white" onclick="closeEditAllianceModal()"><i class="material-symbols-outlined">close</i></button>
       </div>
-      <input type="hidden" id="editAllianceId">
-      <div class="flex flex-col gap-4 mb-6">
+      <div class="modal-body space-y-5">
+        <input type="hidden" id="editAllianceId">
         <div>
-          <label class="block font-black uppercase text-xs mb-1">Character ID</label>
-          <input type="text" id="editAllianceName" class="brutal-input">
+          <label>Character ID</label>
+          <input type="text" id="editAllianceName" class="atelier-input">
         </div>
         <div>
-          <label class="block font-black uppercase text-xs mb-1">Class</label>
-          <select id="editAllianceJob" class="brutal-input">
+          <label>Class</label>
+          <select id="editAllianceJob" class="atelier-input">
             <option value="王族">Prince</option>
             <option value="騎士">Knight</option>
             <option value="妖精">Elf</option>
@@ -762,82 +585,140 @@
           </select>
         </div>
         <div>
-          <label class="block font-black uppercase text-xs mb-1">Metadata</label>
-          <input type="text" id="editAllianceNotes" class="brutal-input">
+          <label>Metadata</label>
+          <input type="text" id="editAllianceNotes" class="atelier-input">
         </div>
       </div>
-      <div class="flex flex-col md:flex-row justify-end gap-3">
-        <button class="brutal-button bg-white px-6 py-2 text-sm" onclick="closeEditAllianceModal()">ABORT</button>
-        <button class="brutal-button brutal-button-primary px-6 py-2 text-sm" onclick="updateAlliance()">COMMIT_CHANGES</button>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeEditAllianceModal()">Abort</button>
+        <button class="btn btn-primary bg-info border-none text-white" onclick="updateAlliance()">Commit_Changes</button>
       </div>
     </div>
   </div>
 
+  <!-- Detail Modal -->
   <div class="modal-overlay hidden" id="detailModal" onclick="closeDetailModal(event)">
-    <div class="modal max-h-[90vh] flex flex-col">
-      <div class="flex justify-between items-start mb-4 border-b-4 border-black pb-4 flex-shrink-0">
-        <h3 id="detailModalTitle" class="text-2xl font-black uppercase">LOG_DETAIL</h3>
-        <button class="brutal-button bg-white px-2 py-1 text-sm" onclick="closeDetailModal()">X</button>
+    <div class="modal w-full max-w-2xl">
+      <div class="modal-header">
+        <h3 id="detailModalTitle" class="text-xl font-bold text-copper-primary">Log Detail</h3>
+        <button class="text-tertiary hover:text-white" onclick="closeDetailModal()"><i class="material-symbols-outlined">close</i></button>
       </div>
-      
-      <div class="overflow-y-auto flex-1 pr-2 pb-4">
-        <div class="mb-6">
-          <label class="block font-black uppercase text-xs mb-2 bg-[#ffe600] inline-block px-2 py-1 border-2 border-black">PAX_LIST (<span id="detailAttendanceCount">0</span>)</label>
-          <div id="detailAttendanceList" class="attendance-grid mt-2"></div>
+      <div class="modal-body">
+        <div class="mb-8">
+          <label class="mb-4">Participants (<span id="detailAttendanceCount">0</span>)</label>
+          <div id="detailAttendanceList" class="grid grid-cols-3 gap-2"></div>
         </div>
-        <div id="detailDropsGroup" class="hidden mb-6">
-          <label class="block font-black uppercase text-xs mb-2 bg-black text-white inline-block px-2 py-1 border-2 border-black">LOOT_TABLE</label>
-          <div class="table-container mt-2">
+        <div id="detailDropsGroup" class="hidden">
+          <label class="mb-4">Loot Table</label>
+          <div class="table-container">
             <table>
               <thead>
-                <tr><th>ITEM_ID</th><th class="text-right">VAL_ADENA</th></tr>
+                <tr><th>Item</th><th class="text-right">Value (Adena)</th></tr>
               </thead>
               <tbody id="detailDropsList"></tbody>
             </table>
           </div>
         </div>
       </div>
-      
-      <div class="flex justify-end flex-shrink-0 pt-4 border-t-4 border-black mt-auto">
-        <button class="brutal-button bg-white px-6 py-2 text-sm" onclick="closeDetailModal()">CLOSE</button>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeDetailModal()">Close View</button>
       </div>
     </div>
   </div>
 
+  <!-- Login Modal -->
   <div class="modal-overlay hidden" id="loginModal" onclick="closeLoginModal(event)">
-    <div class="modal modal-sm text-center border-8 border-[#ff3333] shadow-[8px_8px_0px_#111]">
-      <div class="flex justify-between items-start mb-6 border-b-4 border-black pb-4">
-        <h3 class="text-2xl font-black uppercase">SYS_AUTH</h3>
-        <button class="brutal-button bg-white px-2 py-1 text-sm" onclick="closeLoginModal()">X</button>
+    <div class="modal w-full max-w-sm text-center">
+      <div class="modal-header border-none pb-0 justify-center">
+        <h3 class="text-xl font-bold text-danger">System Auth</h3>
       </div>
-      <div class="bg-black text-white p-3 mb-6 font-bold uppercase tracking-widest border-2 border-black text-[10px]">
-        WARNING: AUTHENTICATION REQUIRED. ALL LOGIN ATTEMPTS ARE LOGGED.
+      <div class="modal-body">
+        <p class="text-xs text-tertiary uppercase tracking-widest font-bold mb-8">Authentication required. All login attempts are logged.</p>
+        <div id="googleSignInDiv" class="flex justify-center min-h-[44px]"></div>
+        <div id="loginError" class="hidden mt-6 p-4 bg-danger/10 border border-danger/20 text-danger text-[10px] font-bold uppercase"></div>
       </div>
-      <div id="googleSignInDiv" class="flex justify-center mb-4 min-h-[44px]"></div>
-      <div id="loginError" class="text-[#ff3333] font-black uppercase hidden mt-4 bg-[#ffe6e6] p-2 border-2 border-[#ff3333] text-xs"></div>
     </div>
   </div>
 
-  <div id="toast" class="toast"></div>
+  <!-- LINE Broadcast Modal -->
+  <div id="lineBroadcastModal" class="modal-overlay hidden" onclick="closeBroadcastModal(event)">
+    <div class="modal w-full max-w-lg border-l-4 border-[#06c755]">
+      <div class="modal-header">
+        <div>
+          <h3 class="text-xl font-bold text-[#06c755]">LINE Broadcast</h3>
+          <p id="broadcastTargetName" class="text-[10px] text-danger font-bold uppercase tracking-widest mt-1"></p>
+        </div>
+        <button onclick="document.getElementById('lineBroadcastModal').classList.add('hidden')" class="text-tertiary hover:text-white"><i class="material-symbols-outlined">close</i></button>
+      </div>
+      <div class="modal-body">
+        <div class="space-y-6 mb-8">
+           <div>
+             <label class="text-[10px] tracking-widest mb-4 block uppercase font-bold text-tertiary">Broadcast Route</label>
+             <div class="space-y-2">
+               <label class="flex items-start gap-4 p-4 rounded-lg bg-surface-container-low border border-white/5 cursor-pointer hover:border-[#06c755]/30 transition-all">
+                 <input type="radio" name="broadcastMode" value="all" class="mt-1 accent-[#06c755]" onchange="updateBroadcastUI()">
+                 <div>
+                   <div class="font-bold text-sm">Global Broadcast</div>
+                   <div class="text-[10px] text-tertiary uppercase mt-1">Send to all bot followers</div>
+                 </div>
+               </label>
+               <label class="flex items-start gap-4 p-4 rounded-lg bg-surface-container-low border border-white/5 cursor-pointer hover:border-[#06c755]/30 transition-all">
+                 <input type="radio" name="broadcastMode" value="bound" checked class="mt-1 accent-[#06c755]" onchange="updateBroadcastUI()">
+                 <div>
+                   <div class="font-bold text-sm">Bound Members Only</div>
+                   <div class="text-[10px] text-tertiary uppercase mt-1">Send to linked LINE accounts</div>
+                 </div>
+               </label>
+               <label class="flex items-start gap-4 p-4 rounded-lg bg-surface-container-low border border-white/5 cursor-pointer hover:border-[#06c755]/30 transition-all">
+                 <input type="radio" name="broadcastMode" value="tier" class="mt-1 accent-[#06c755]" onchange="updateBroadcastUI()">
+                 <div class="flex-1">
+                   <div class="font-bold text-sm">Precision Tiering</div>
+                   <div class="text-[10px] text-tertiary uppercase mt-1">Target specific member tiers</div>
+                   <div id="tierCheckboxes" class="hidden mt-4 flex flex-wrap gap-2">
+                     <label class="flex items-center gap-2 bg-copper-glow border border-copper-dim/20 px-3 py-1 rounded text-copper-primary">
+                       <input type="checkbox" value="核心" checked class="accent-copper-primary"> <span class="text-[10px] font-bold">CORE</span>
+                     </label>
+                     <label class="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1 rounded text-white/50">
+                       <input type="checkbox" value="一般" class="accent-white"> <span class="text-[10px] font-bold">REGULAR</span>
+                     </label>
+                   </div>
+                 </div>
+               </label>
+             </div>
+           </div>
 
-  <span id="sectionTitle" class="hidden"></span>
+           <!-- Preview -->
+           <div id="broadcastPreview" class="bg-black/40 border border-white/5 p-3 rounded font-mono text-[10px] text-secondary hidden">
+             <span id="broadcastPreviewText"></span>
+           </div>
+
+           <!-- Content -->
+           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <div>
+               <label class="block font-black uppercase text-[10px] mb-2 text-tertiary tracking-widest">Assembly Time</label>
+               <input type="datetime-local" id="broadcastTime" class="atelier-input text-xs w-full">
+             </div>
+             <div>
+               <label class="block font-black uppercase text-[10px] mb-2 text-tertiary tracking-widest">Op Commands</label>
+               <input type="text" id="broadcastNotes" class="atelier-input text-xs w-full" placeholder="ALL UNITS STANDBY!">
+             </div>
+           </div>
+
+           <p id="broadcastResult" class="font-black text-[10px] uppercase text-center min-h-[1em]"></p>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-6 border-t border-white/5">
+           <button class="btn btn-outline" onclick="document.getElementById('lineBroadcastModal').classList.add('hidden')">ABORT</button>
+           <button id="broadcastSendBtn" class="btn btn-primary bg-[#06c755] border-none text-surface-lowest px-8" onclick="sendBroadcast()">EXECUTE.DISPATCH()</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 rounded-lg bg-copper-primary text-surface-lowest font-bold text-sm shadow-2xl transition-all duration-500 opacity-0 pointer-events-none translate-y-4 z-[2000]"></div>
 
   <script src="app.js"></script>
   <script>
-    const originalSwitchSection = window.switchSection;
-    if (typeof originalSwitchSection === 'function') {
-        window.switchSection = function(sectionId) {
-            originalSwitchSection(sectionId);
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                if (btn.getAttribute('data-section') === sectionId) {
-                    btn.classList.add('active');
-                } else {
-                    btn.classList.remove('active');
-                }
-            });
-        };
-    }
-
     function updateClock() {
         const clockEl = document.getElementById('sysClockDisplay');
         if(clockEl) {
@@ -864,112 +745,36 @@
     });
   </script>
 
-  <!-- ── LINE Broadcast Modal ────────────────────── -->
-  <div id="lineBroadcastModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onclick="closeBroadcastModal(event)">
-    <div class="brutal-card bg-white p-6 w-full max-w-lg border-l-8 border-[#06c755]">
-      <div class="flex justify-between items-start mb-4">
+  <!-- LINE Binding Modal -->
+  <div id="lineBindModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onclick="closeLineBindModal(event)">
+    <div class="modal max-w-sm border-l-4 border-[#06c755]">
+      <div class="flex justify-between items-start mb-6 border-b border-white/10 pb-4">
         <div>
-          <h3 class="font-black uppercase text-lg">LINE 召集令</h3>
-          <p id="broadcastTargetName" class="font-bold text-[#ff3333] uppercase text-sm mt-1"></p>
+          <h3 class="text-xl font-headline font-black uppercase text-[#06c755]">LINE Binding</h3>
+          <p id="bindMemberName" class="font-bold text-white uppercase text-[10px] mt-1 tracking-widest"></p>
         </div>
-        <button onclick="document.getElementById('lineBroadcastModal').classList.add('hidden')" class="font-black text-xl leading-none">&times;</button>
+        <button onclick="document.getElementById('lineBindModal').classList.add('hidden')" class="text-slate-500 hover:text-white"><span class="material-symbols-outlined">close</span></button>
       </div>
-
-      <!-- 推送路線選擇 -->
-      <div class="mb-4">
-        <label class="block font-black uppercase text-xs mb-2">📡 推送路線</label>
-        <div class="grid grid-cols-1 gap-2">
-          <label class="flex items-start gap-3 p-3 border-4 border-[#111] cursor-pointer has-[:checked]:bg-[#111] has-[:checked]:text-white transition-colors">
-            <input type="radio" name="broadcastMode" value="all" class="mt-0.5 accent-[#ffe600]" onchange="updateBroadcastUI()">
-            <div>
-              <div class="font-black uppercase text-sm">🌐 全部廣播</div>
-              <div class="text-xs opacity-60 font-bold uppercase">發送給所有關注 Bot 的使用者</div>
-            </div>
-          </label>
-          <label class="flex items-start gap-3 p-3 border-4 border-[#111] cursor-pointer has-[:checked]:bg-[#111] has-[:checked]:text-white transition-colors">
-            <input type="radio" name="broadcastMode" value="bound" checked class="mt-0.5 accent-[#ffe600]" onchange="updateBroadcastUI()">
-            <div>
-              <div class="font-black uppercase text-sm">🔗 所有已綁定成員</div>
-              <div class="text-xs opacity-60 font-bold uppercase">只發送給已綁定 LINE 帳號的血盟成員</div>
-            </div>
-          </label>
-          <label class="flex items-start gap-3 p-3 border-4 border-[#111] cursor-pointer has-[:checked]:bg-[#111] has-[:checked]:text-white transition-colors">
-            <input type="radio" name="broadcastMode" value="tier" class="mt-0.5 accent-[#ffe600]" onchange="updateBroadcastUI()">
-            <div class="flex-1">
-              <div class="font-black uppercase text-sm">⭐ 依分級推送</div>
-              <div class="text-xs opacity-60 font-bold uppercase">按成員分級精準對象</div>
-              <!-- Tier checkboxes - shown when tier mode selected -->
-              <div id="tierCheckboxes" class="hidden mt-3 flex flex-wrap gap-2">
-                <label class="flex items-center gap-1.5 bg-[#ffe600] border-2 border-[#111] px-2 py-1 cursor-pointer text-[#111]">
-                  <input type="checkbox" value="核心" checked class="accent-[#111]"> <span class="font-black text-xs uppercase">⭐ 核心</span>
-                </label>
-                <label class="flex items-center gap-1.5 bg-white border-2 border-[#111] px-2 py-1 cursor-pointer">
-                  <input type="checkbox" value="一般" class="accent-[#111]"> <span class="font-black text-xs uppercase">○ 一般</span>
-                </label>
-                <label class="flex items-center gap-1.5 bg-white border-2 border-[#111] px-2 py-1 cursor-pointer">
-                  <input type="checkbox" value="試煉" class="accent-[#111]"> <span class="font-black text-xs uppercase">△ 試煉</span>
-                </label>
-                <label class="flex items-center gap-1.5 bg-white border-2 border-[#111] px-2 py-1 cursor-pointer">
-                  <input type="checkbox" value="外交" class="accent-[#111]"> <span class="font-black text-xs uppercase">◇ 外交</span>
-                </label>
-              </div>
-            </div>
-          </label>
-        </div>
-      </div>
-
-      <!-- 預覽筆數 -->
-      <div id="broadcastPreview" class="bg-[#f0f0f0] border-4 border-[#111] px-3 py-2 mb-3 font-mono text-xs font-bold uppercase hidden">
-        <span id="broadcastPreviewText"></span>
-      </div>
-
-      <div class="space-y-3 mb-4">
+      <div class="space-y-4">
         <div>
-          <label class="block font-black uppercase text-xs mb-1">集結時間</label>
-          <input type="datetime-local" id="broadcastTime" class="brutal-input w-full">
+          <label class="block font-black uppercase text-[10px] mb-1 text-tertiary tracking-widest">LINE User ID</label>
+          <input type="text" id="bindLineUserId" class="atelier-input w-full font-mono text-xs" placeholder="Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+          <p class="text-tertiary text-[9px] mt-2 font-bold uppercase tracking-wider">Members send "BIND" to Bot to obtain ID</p>
         </div>
-        <div>
-          <label class="block font-black uppercase text-xs mb-1">備註指令 <span class="text-gray-400 font-bold">(Optional)</span></label>
-          <input type="text" id="broadcastNotes" class="brutal-input w-full" placeholder="全員備戰！">
+        <div class="bg-black/40 p-4 border border-white/5 font-mono text-[9px] space-y-2 text-secondary uppercase tracking-widest">
+          <p class="font-black text-white mb-2 underline">BOT_COMMAND_CHEAT_SHEET</p>
+          <p>&gt; "BIND" &rarr; OBTAIN LINE_ID</p>
+          <p>&gt; "STATS" &rarr; PERSONAL_RECORDS</p>
+          <p>&gt; "DIVIDEND" &rarr; RECENT_PAYOUTS</p>
         </div>
+        <p class="text-slate-600 text-[9px] font-bold uppercase tracking-tighter">LEAVE EMPTY TO UNBIND RECORD</p>
+        <p id="bindResult" class="font-black text-[10px] uppercase text-center min-h-[1em]"></p>
       </div>
-
-      <p id="broadcastResult" class="font-black text-sm uppercase mb-3"></p>
-      <div class="flex gap-3">
-        <button onclick="document.getElementById('lineBroadcastModal').classList.add('hidden')" class="brutal-button bg-white flex-1 py-2 text-sm uppercase">取消</button>
-        <button id="broadcastSendBtn" onclick="sendBroadcast()" class="brutal-button flex-1 py-2 text-sm uppercase font-black" style="background:#06c755;color:#fff;border-color:#111;">&#x1F4E2; 發送 LINE 召集令</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── LINE Binding Modal ────────────────────────── -->
-  <div id="lineBindModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onclick="closeLineBindModal(event)">
-    <div class="brutal-card bg-white p-6 w-full max-w-sm border-l-8 border-[#06c755]">
-      <div class="flex justify-between items-start mb-4">
-        <div>
-          <h3 class="font-black uppercase text-lg">LINE 帳號綁定</h3>
-          <p id="bindMemberName" class="font-bold text-[#111] uppercase text-sm mt-1"></p>
-        </div>
-        <button onclick="document.getElementById('lineBindModal').classList.add('hidden')" class="font-black text-xl leading-none">&times;</button>
-      </div>
-      <div class="space-y-3">
-        <div>
-          <label class="block font-black uppercase text-xs mb-1">LINE User ID</label>
-          <input type="text" id="bindLineUserId" class="brutal-input w-full font-mono" placeholder="Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
-          <p class="text-gray-500 text-xs mt-1 font-bold uppercase">成員傳送「綁定」給 Bot 即可取得此 ID</p>
-        </div>
-        <div class="bg-[#f0f0f0] p-3 border-4 border-[#111] text-xs font-mono space-y-1">
-          <p class="font-black uppercase">Bot 指令小抄</p>
-          <p>&gt; 「綁定」→ 取得 LINE User ID</p>
-          <p>&gt; 「我的資料」→ 個人出席統計</p>
-          <p>&gt; 「拍賣」→ 最新首領戰分紅</p>
-        </div>
-        <p class="text-gray-400 text-xs font-bold uppercase">留空則解除綁定</p>
-        <p id="bindResult" class="font-black text-sm"></p>
-      </div>
-      <div class="flex gap-3 mt-5">
-        <button onclick="document.getElementById('lineBindModal').classList.add('hidden')" class="brutal-button bg-white flex-1 py-2 text-sm uppercase">取消</button>
-        <button onclick="saveLineBinding()" class="brutal-button flex-1 py-2 text-sm uppercase font-black" style="background:#06c755;color:#fff;border-color:#111;">&#x1F517; 存儲綁定</button>
+      <div class="flex gap-3 mt-6 pt-4 border-t border-white/5">
+        <button onclick="document.getElementById('lineBindModal').classList.add('hidden')" class="btn btn-outline flex-1 py-2">ABORT</button>
+        <button onclick="saveLineBinding()" class="btn btn-primary flex-1 py-2 font-black bg-[#06c755] border-none text-surface-lowest">
+          EXECUTE.BIND()
+        </button>
       </div>
     </div>
   </div>

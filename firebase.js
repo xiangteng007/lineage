@@ -2,136 +2,113 @@ const admin = require('firebase-admin');
 const path = require('path');
 const fs = require('fs');
 
-// Initialize Firebase Admin
+// ── Firebase Init ──────────────────────────────────────────────────────
+let db = null;
+
 function initializeFirebase() {
     if (admin.apps.length > 0) return;
-
     try {
-        // Option 1: Look for a local serviceAccountKey.json file
         const keyPath = path.join(__dirname, 'serviceAccountKey.json');
-        
         if (fs.existsSync(keyPath)) {
             const serviceAccount = require(keyPath);
-            admin.initializeApp({
-                credential: admin.credential.cert(serviceAccount)
-            });
+            admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
             console.log('Firebase initialized using local serviceAccountKey.json');
-        } 
-        // Option 2: Use environment variables (good for Vercel)
-        else if (process.env.FIREBASE_PROJECT_ID) {
+            db = admin.firestore();
+        } else if (process.env.FIREBASE_PROJECT_ID) {
             admin.initializeApp({
                 credential: admin.credential.cert({
                     projectId: process.env.FIREBASE_PROJECT_ID,
                     clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-                    // Handle newlines in the private key
                     privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
                 })
             });
             console.log('Firebase initialized using environment variables');
+            db = admin.firestore();
         } else {
-            console.warn('⚠️ No Firebase credentials found. Please add serviceAccountKey.json or set FIREBASE_* env vars.');
-            // We initialize with default app to prevent immediate crashes, but db operations will fail
-            admin.initializeApp();
+            console.error('❌ No Firebase credentials found. Running in degraded mode. Please set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY.');
         }
     } catch (error) {
-        console.error('Error initializing Firebase:', error);
+        console.error('Error initializing Firebase:', error.message);
     }
 }
 
 initializeFirebase();
-const db = admin.firestore();
 
-/**
- * Get all documents from a collection
- * @param {string} collectionName 
- * @returns {Promise<Array>}
- */
+// ── Public API ─────────────────────────────────────────────────────────
+
+/** Returns whether the system is using Firestore or local JSON */
+function getStorageMode() {
+    return 'firebase';
+}
+
+/** Get all documents from a collection */
 async function getAllData(collectionName) {
     try {
+        if (!db) return [];
         const snapshot = await db.collection(collectionName).get();
         if (snapshot.empty) return [];
-        
-        const data = [];
-        snapshot.forEach(doc => {
-            data.push({ id: doc.id, ...doc.data() });
-        });
-        return data;
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     } catch (error) {
-        console.error(`Error getting data from ${collectionName}:`, error);
+        console.error(`Firestore error (${collectionName}):`, error.message);
         return [];
     }
 }
 
-/**
- * Get a specific document by ID
- */
+/** Get a specific document by ID */
 async function getDocument(collectionName, docId) {
     try {
-        const docRef = db.collection(collectionName).doc(docId);
-        const doc = await docRef.get();
+        if (!db) return null;
+        const doc = await db.collection(collectionName).doc(String(docId)).get();
         if (!doc.exists) return null;
         return { id: doc.id, ...doc.data() };
     } catch (error) {
-        console.error(`Error getting doc ${docId} from ${collectionName}:`, error);
+        console.error(`Firestore getDoc error:`, error.message);
         return null;
     }
 }
 
-/**
- * Add a new document (auto-generates ID if not provided inside data)
- */
+/** Add a new document */
 async function addData(collectionName, data) {
     try {
-        // If data has an ID, use it, otherwise let Firestore generate one
+        if (!db) return null;
         let docRef;
         if (data.ID) {
             docRef = db.collection(collectionName).doc(String(data.ID));
             await docRef.set(data);
         } else {
             docRef = await db.collection(collectionName).add(data);
-            data.ID = docRef.id; // Assign generated ID back to object
+            data.ID = docRef.id;
             await docRef.update({ ID: docRef.id });
         }
         return data;
     } catch (error) {
-        console.error(`Error adding data to ${collectionName}:`, error);
-        throw error;
+        console.error(`Firestore addData error:`, error.message);
+        return null;
     }
 }
 
-/**
- * Update an existing document
- */
+/** Update an existing document */
 async function updateData(collectionName, docId, data) {
     try {
-        const docRef = db.collection(collectionName).doc(String(docId));
-        await docRef.update(data);
+        if (!db) return false;
+        await db.collection(collectionName).doc(String(docId)).update(data);
         return true;
     } catch (error) {
-        console.error(`Error updating data in ${collectionName}:`, error);
-        throw error;
+        console.error(`Firestore updateData error:`, error.message);
+        return false;
     }
 }
 
-/**
- * Delete a document
- */
+/** Delete a document */
 async function deleteData(collectionName, docId) {
     try {
-        const docRef = db.collection(collectionName).doc(String(docId));
-        await docRef.delete();
+        if (!db) return false;
+        await db.collection(collectionName).doc(String(docId)).delete();
         return true;
     } catch (error) {
-        console.error(`Error deleting data from ${collectionName}:`, error);
-        throw error;
+        console.error(`Firestore deleteData error:`, error.message);
+        return false;
     }
 }
 
-module.exports = {
-    db,
-    getAllData,
-    getDocument,
-    addData,
-    updateData,
-    deleteData
-};
+module.exports = { db, getAllData, getDocument, addData, updateData, deleteData, getStorageMode };
