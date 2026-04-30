@@ -675,13 +675,23 @@
                    <div class="font-bold text-sm">Precision Tiering</div>
                    <div class="text-[10px] text-tertiary uppercase mt-1">Target specific member tiers</div>
                    <div id="tierCheckboxes" class="hidden mt-4 flex flex-wrap gap-2">
-                     <label class="flex items-center gap-2 bg-copper-glow border border-copper-dim/20 px-3 py-1 rounded text-copper-primary">
-                       <input type="checkbox" value="核心" checked class="accent-copper-primary"> <span class="text-[10px] font-bold">CORE</span>
-                     </label>
-                     <label class="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1 rounded text-white/50">
-                       <input type="checkbox" value="一般" class="accent-white"> <span class="text-[10px] font-bold">REGULAR</span>
-                     </label>
-                   </div>
+                    <label class="flex items-center gap-2 bg-copper-glow border border-copper-dim/20 px-3 py-1 rounded text-copper-primary cursor-pointer transition-colors hover:bg-copper-glow/80">
+                      <input type="checkbox" value="核心" checked class="accent-copper-primary" onchange="updateBroadcastUI()"> 
+                      <span class="text-[10px] font-bold">CORE</span>
+                    </label>
+                    <label class="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1 rounded text-white/50 cursor-pointer transition-colors hover:bg-white/10 hover:text-white/80">
+                      <input type="checkbox" value="一般" class="accent-white" onchange="updateBroadcastUI()"> 
+                      <span class="text-[10px] font-bold">REGULAR</span>
+                    </label>
+                    <label class="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1 rounded text-white/50 cursor-pointer transition-colors hover:bg-white/10 hover:text-white/80">
+                      <input type="checkbox" value="試煉" class="accent-white" onchange="updateBroadcastUI()"> 
+                      <span class="text-[10px] font-bold">TRIAL</span>
+                    </label>
+                    <label class="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1 rounded text-white/50 cursor-pointer transition-colors hover:bg-white/10 hover:text-white/80">
+                      <input type="checkbox" value="外交" class="accent-white" onchange="updateBroadcastUI()"> 
+                      <span class="text-[10px] font-bold">DIPLOMAT</span>
+                    </label>
+                  </div>
                  </div>
                </label>
              </div>
