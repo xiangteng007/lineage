@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+  <html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Blood Pledge | Attendance Confirm</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0a0a0a;
+      color: #e0c88a;
+            min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+}
+    .container {
+            width: 100%;
+      max-width: 400px;
+      text-align: center;
+}
+    .logo {
+            font-size: 48px;
+      margin-bottom: 8px;
+}
+    .title {
+            font-size: 20px;
+      font-weight: bold;
+      color: #ffe600;
+            letter-spacing: 2px;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+}
+    .subtitle {
+            font-size: 12px;
+      color: #666;
+      letter-spacing: 1px;
+      margin-bottom: 32px;
+      text-transform: uppercase;
+}
+    .card {
+            background: #111;
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 16px;
+}
+    .boss-name {
+            font-size: 28px;
+      font-weight: bold;
+      color: #ff3333;
+            margin-bottom: 8px;
+}
+    .event-type {
+            font-size: 13px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+}
+    .member-info {
+            background: #1a1a1a;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+}
+    .member-avatar {
+            width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #ffe600;
+        }
+    .member-avatar-placeholder {
+              width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      border: 2px solid #444;
+}
+    .member-details { text-align: left; }
+    .member-name { font-size: 16px; font-weight: bold; color: #e0c88a; }
+        .member-tier { font-size: 12px; color: #888; margin-top: 2px; }
+    .btn {
+            width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 1px;
+    }
+    .btn-primary {
+            background: #ff3333;
+            color: white;
+      text-transform: uppercase;
+}
+    .btn-primary:hover { background: #cc0000; transform: translateY(-1px); }
+        .btn-primary:disabled { background: #333; color: #666; cursor: not-allowed; transform: none; }
+    .btn-secondary {
+            background: transparent;
+      color: #888;
+      border: 1px solid #333;
+      margin-top: 8px;
+      font-size: 14px;
+                       }
+    .status-msg {
+            padding: 12px 16px;
+      border-radius: 8px;
+      margin-top: 16px;
+      font-size: 14px;
+      font-weight: bold;
+}
+    .status-success { background: #0d3320; border: 1px solid #1a6640; color: #4caf90; }
+    .status-already { background: #1a2a0d; border: 1px solid #2a4010; color: #8bc34a; }
+    .status-error { background: #330d0d; border: 1px solid #660000; color: #ff6666; }
+        .status-loading { background: #1a1a2e; border: 1px solid #333; color: #888; }
+    .spinner {
+            display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid #444;
+      border-top-color: #ffe600;
+              border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 8px;
+      vertical-align: middle;
+}
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .divider { border: none; border-top: 1px solid #222; margin: 16px 0; }
+    .not-bound-msg { color: #888; font-size: 14px; line-height: 1.5; }
+    .bind-id {
+            background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-family: monospace;
+      font-size: 12px;
+      color: #aaa;
+            word-break: break-all;
+      margin-top: 8px;
+      cursor: pointer;
+}
+  </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="logo">⚔️</div>
+        <div class="title">Blood Pledge</div>
+        <div class="subtitle">Attendance Confirmation</div>
+
+        <div id="loadingState" class="card">
+          <div class="status-msg status-loading">
+            <span class="spinner"></span>Loading...
+          </div>
+        </div>
+
+        <div id="mainState" class="card" style="display:none">
+          <div id="eventType" class="event-type">Boss Hunt</div>
+          <div id="eventName" class="boss-name">—</div>
+          <hr class="divider">
+          <div id="memberInfo" class="member-info">
+            <div class="member-avatar-placeholder">?</div>
+            <div class="member-details">
+              <div class="member-name" id="memberName">Loading...</div>
+              <div class="member-tier" id="memberTier">—</div>
+            </div>
+          </div>
+          <button class="btn btn-primary" id="attendBtn" onclick="confirmAttendance()">
+            ✅ Confirm Attendance
+      </button>
+          <div id="statusMsg"></div>
+        </div>
+
+        <div id="notBoundState" class="card" style="display:none">
+          <div style="font-size:32px;margin-bottom:12px">🔗</div>
+          <div style="font-size:16px;font-weight:bold;margin-bottom:8px;color:#ffe600">Account Not Bound</div>
+      <div class="not-bound-msg">
+        Your LINE account is not linked to a Blood Pledge member.<br><br>
+            Send your LINE ID to the administrator to complete binding:
+        </div>
+                <div class="bind-id" id="lineIdDisplay" onclick="copyLineId()">Tap to copy your LINE ID</div>
+      <div style="font-size:12px;color:#555;margin-top:8px">Tap the ID above to copy</div>
+        </div>
+
+        <button class="btn btn-secondary" onclick="liff.closeWindow()">Close</button>
+      </div>
+
+      <script>
+        let lineUserId = null;
+    let recordId = null;
+    let recordType = null;
+
+    async function init() {
+      try {
+        // Get LIFF ID from API
+        const configRes = await fetch('/api/liff/config');
+        const config = await configRes.json();
+        const liffId = config.liffId;
+
+        if (!liffId) {
+          showError('LIFF not configured. Please contact administrator.');
+          return;
+        }
+
+        await liff.init({ liffId });
+
+        if (!liff.isLoggedIn()) {
+          liff.login({ redirectUri: window.location.href });
+          return;
+        }
+
+        // Get URL params
+        const params = new URLSearchParams(window.location.search);
+        recordId = params.get('id');
+        recordType = params.get('type') || 'battle';
+
+        if (!recordId) {
+          showError('Invalid link. No event ID found.');
+          return;
+        }
+
+        // Get LINE profile
+        const profile = await liff.getProfile();
+        lineUserId = profile.userId;
+
+        // Get member info from server
+        const profileRes = await fetch('/api/liff/profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ accessToken: liff.getAccessToken() })
+          });
+        const profileData = await profileRes.json();
+
+        // Show event info
+        document.getElementById('eventType').textContent = recordType === 'siege' ? '🏰 Siege Battle' : '⚔️ Boss Hunt';
+
+        // Fetch event name
+        try {
+          const eventRes = await fetch(`/api/${recordType === 'siege' ? 'sieges' : 'battles'}`);
+          const events = await eventRes.json();
+          const event = events.find(e => e.ID === recordId || e.id === recordId);
+          if (event) {
+            document.getElementById('eventName').textContent = event.bossName || event.castle || event.ID || recordId;
+} else {
+            document.getElementById('eventName').textContent = recordId;
+}
+} catch(e) {
+          document.getElementById('eventName').textContent = recordId;
+}
+
+        if (profileData.isBound && profileData.boundMember) {
+          const member = profileData.boundMember;
+          const TIER_COLOR = { '核心': '#ffe600', '一般': '#888', '試煉': '#ff9900', '外交': '#66aaff', '預備': '#aaa' };
+          document.getElementById('memberInfo').innerHTML = `
+            <img class="member-avatar" src="${profile.pictureUrl || ''}" onerror="this.style.display='none'" alt="avatar">
+            <div class="member-details">
+              <div class="member-name">${member.name || member.Name || profile.displayName}</div>
+              <div class="member-tier" style="color:${TIER_COLOR[member.tier] || '#888'}">${member.tier || '-'} | ${member.job || '-'}</div>
+            </div>
+          `;
+          document.getElementById('memberName').textContent = member.name || member.Name || profile.displayName;
+          document.getElementById('memberTier').textContent = `${member.tier || '-'} | ${member.job || '-'}`;
+
+          document.getElementById('loadingState').style.display = 'none';
+          document.getElementById('mainState').style.display = 'block';
+} else {
+          // Not bound
+          document.getElementById('lineIdDisplay').textContent = lineUserId;
+          document.getElementById('loadingState').style.display = 'none';
+          document.getElementById('notBoundState').style.display = 'block';
+}
+
+} catch (e) {
+        showError('Error: ' + e.message);
+}
+}
+
+    async function confirmAttendance() {
+      const btn = document.getElementById('attendBtn');
+      const statusMsg = document.getElementById('statusMsg');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>Processing...';
+
+      try {
+        const res = await fetch('/api/liff/attend', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lineUserId, recordId, type: recordType })
+});
+        const data = await res.json();
+
+        if (data.ok) {
+          if (data.alreadyConfirmed) {
+            statusMsg.innerHTML = '<div class="status-msg status-already">✅ Already confirmed! ' + (data.memberName || '') + '</div>';
+} else {
+            statusMsg.innerHTML = '<div class="status-msg status-success">⚔️ Attendance confirmed! ' + (data.memberName || '') + '</div>';
+            btn.textContent = '✅ Confirmed!';
+}
+          setTimeout(() => {
+            if (liff.isInClient()) liff.closeWindow();
+}, 2000);
+} else {
+          statusMsg.innerHTML = '<div class="status-msg status-error">❌ ' + (data.error || 'Error occurred') + '</div>';
+          btn.disabled = false;
+          btn.textContent = '✅ Confirm Attendance';
+}
+} catch (e) {
+        statusMsg.innerHTML = '<div class="status-msg status-error">❌ Network error. Please try again.</div>';
+        btn.disabled = false;
+        btn.textContent = '✅ Confirm Attendance';
+}
+}
+
+    function copyLineId() {
+      const id = document.getElementById('lineIdDisplay').textContent;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(id).then(() => {
+          document.getElementById('lineIdDisplay').textContent = 'Copied! ✅';
+          setTimeout(() => { document.getElementById('lineIdDisplay').textContent = id; }, 2000);
+});
+}
+}
+
+    function showError(msg) {
+      document.getElementById('loadingState').innerHTML = '<div class="status-msg status-error">❌ ' + msg + '</div>';
+}
+
+    init();
+  </script>
+</body>
+</html>
