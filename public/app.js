@@ -1,12 +1,12 @@
 /* ══════════════════════════════════════════════════
-   天堂：經典版 管理系統 �?app.js
+   天堂：經典版 管理系統 — app.js
    Firebase + Google OAuth Admin Auth
 ══════════════════════════════════════════════════ */
 
 const API_BASE = '/api';
 
 // ── State ────────────────────────────────────────
-let state = { members: [], battles: [], sieges: [], alliances: [], activityLogs: [] };
+let state = { members: [], battles: [], sieges: [], alliances: [], treasury: null, transactions: [], activityLogs: [] };
 let auth = { isLoggedIn: false, isAdmin: false, user: null, token: null };
 let filters = { members: '', battles: '', sieges: '', alliances: '', treasury: '' };
 
@@ -14,7 +14,7 @@ let filters = { members: '', battles: '', sieges: '', alliances: '', treasury: '
 let classChartInstance = null;
 let treasuryChartInstance = null;
 
-// (duplicate early declarations removed �?canonical versions defined below)
+// (duplicate early declarations removed → canonical versions defined below)
 
 function setFilter(section, query) {
   filters[section] = query.toLowerCase();
@@ -35,7 +35,7 @@ function toggleExpand(id) {
 }
 
 function getAttendanceHtml(attIds) {
-  if (!attIds || attIds.length === 0) return '<div style="opacity:0.5;">無出席紀�?/div>';
+  if (!attIds || attIds.length === 0) return '<div style="opacity:0.5;">無出席紀錄</div>';
   return attIds.map(aid => {
     let person = state.members.find(m => (m.ID || m.id) === aid);
     let type = 'blood';
@@ -43,9 +43,9 @@ function getAttendanceHtml(attIds) {
       person = state.alliances.find(a => (a.ID || a.id) === aid);
       type = person ? 'alliance' : 'unknown';
     }
-    const name = person ? (person.name || person.Name || '未知') : '已刪除人�?;
+    const name = person ? (person.name || person.Name || '未知') : '已刪除人員';
     const job = person ? person.job : '';
-    const badge = type === 'alliance' ? '<span class="bg-primary/20 text-primary border border-primary/30 text-[9px] px-1 rounded-sm ml-1 font-bold">聯盟</span>' : '';
+    const badge = type === 'alliance' ? '<span class="bg-primary/20 text-primary border border-primary/30 text-[11px] px-1 rounded-sm ml-1 font-bold">聯盟</span>' : '';
     return `<div>${name} ${badge} <span class="text-slate-500 font-bold ml-1">${job}</span></div>`;
   }).join('');
 }
@@ -58,7 +58,7 @@ async function init() {
     const cfgRes = await fetch(`${API_BASE}/config`);
     const cfg = await cfgRes.json();
     if (cfg.openMode) {
-      // No ADMIN_EMAILS configured �?give everyone admin access
+      // No ADMIN_EMAILS configured — give everyone admin access
       auth.isAdmin = true;
       auth.isLoggedIn = false; // still not "logged in" as a named user
       auth.openMode = true;
@@ -113,7 +113,19 @@ async function init() {
 // ── Telemetry Simulation ─────────────────────────
 function startTelemetry() {
   setInterval(updateTelemetry, 2500);
+  setInterval(updateClock, 1000);
   updateTelemetry();
+  updateClock();
+}
+
+function updateClock() {
+  const el = document.getElementById('sysClockDisplay');
+  if (!el) return;
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2, '0');
+  const ss = String(now.getSeconds()).padStart(2, '0');
+  el.textContent = `${hh}:${mm}:${ss}`;
 }
 
 function updateTelemetry() {
@@ -176,9 +188,9 @@ async function handleGoogleLogin(credential) {
     renderAlliances();
 
     if (data.isAdmin) {
-      showToast(`歡迎�?{data.name || data.email}！已以管理員身份登入`, 'success');
+      showToast(`歡迎，${data.name || data.email}！已以管理員身份登入`, 'success');
     } else {
-      showToast(`歡迎�?{data.name || data.email}！已登入血盟系統`, 'success');
+      showToast(`歡迎，${data.name || data.email}！已登入血盟系統`, 'success');
     }
   } catch (e) {
     document.getElementById('loginError').textContent = '無法連線至伺服器，請稍後再試';
@@ -191,7 +203,7 @@ function logout() {
   renderAuthUI();
   renderMembers();
   renderAlliances();
-  showToast('已登�?, 'default');
+  showToast('已登出', 'default');
   
   // Reset Google One Tap
   if (window.google && window.google.accounts) {
@@ -248,7 +260,7 @@ function renderAuthUI() {
 
 // ── Login Modal ───────────────────────────────────
 function openLoginModal() {
-  document.getElementById('loginModal').classList.remove('hidden');
+  document.getElementById('loginModal').style.display = 'flex';
   document.getElementById('loginError').classList.add('hidden');
 
   // Render Google Sign-In button
@@ -273,20 +285,20 @@ function openLoginModal() {
         <div style="background:#fff;border-radius:4px;padding:10px 24px;display:flex;align-items:center;gap:10px;cursor:default;opacity:0.7;">
           <span style="color:#444;font-size:14px;">請先設定 Google Client ID</span>
         </div>
-        <p style="color:var(--text-soft);font-size:12px;margin-top:12px;">請在 Vercel 環境變數中加�?GOOGLE_CLIENT_ID</p>
+        <p style="color:var(--text-soft);font-size:12px;margin-top:12px;">請在 Vercel 環境變數中加入 GOOGLE_CLIENT_ID</p>
       `;
     }
   } else {
     document.getElementById('googleSignInDiv').innerHTML = `
       <div style="color:var(--text-soft);font-size:13px;padding:16px 0;">
-        Google 登入載入�?.. 如長時間無反應，請重新整理頁�?      </div>
+        Google 登入載入中.. 如長時間無反應，請重新整理頁面      </div>
     `;
   }
 }
 
 function closeLoginModal(e) {
   if (e && e.target !== document.getElementById('loginModal')) return;
-  document.getElementById('loginModal').classList.add('hidden');
+  document.getElementById('loginModal').style.display = 'none';
 }
 
 // ── Navigation ────────────────────────────────────
@@ -294,21 +306,57 @@ function switchSection(sectionId) {
   document.querySelectorAll('.nav-item, .mobile-nav-item').forEach(btn => btn.classList.remove('active'));
   document.querySelectorAll(`.nav-item[data-section="${sectionId}"], .mobile-nav-item[data-section="${sectionId}"]`).forEach(btn => btn.classList.add('active'));
   document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
-  document.getElementById(sectionId).classList.add('active');
+  const el = document.getElementById(sectionId);
+  if (el) el.classList.add('active');
+  setMobileNavActive(sectionId);
+  // Sync top-nav underline
+  document.querySelectorAll('.top-nav-link').forEach(a => a.classList.remove('active-nav'));
+  const topLink = document.querySelector(`.top-nav-link[onclick*="${sectionId}"]`);
+  if (topLink) topLink.classList.add('active-nav');
+}
+
+function setTopNavActive(el) {
+  document.querySelectorAll('.top-nav-link').forEach(a => a.classList.remove('active-nav'));
+  if (el) el.classList.add('active-nav');
+}
+
+function setMobileNavActive(sectionId) {
+  document.querySelectorAll('.mnav-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.section === sectionId);
+    // Update fill icon
+    const icon = btn.querySelector('.mnav-icon');
+    if (icon) {
+      icon.style.fontVariationSettings = btn.dataset.section === sectionId
+        ? "'FILL' 1, 'wght' 700, 'GRAD' 0, 'opsz' 24"
+        : "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24";
+    }
+  });
 }
 
 // ── Toast & Activity Feed ─────────────────────────
 function showToast(msg, type = 'default') {
-  const t = document.getElementById('toast');
-  const icons = { success: '�?, error: '�?, default: '💬' };
-  t.textContent = `${icons[type] || '💬'} ${msg}`;
-  t.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
-  t.classList.add('opacity-100', 'translate-y-0');
-  setTimeout(() => {
-    t.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none');
-    t.classList.remove('opacity-100', 'translate-y-0');
-  }, 3200);
+  const container = document.getElementById('toastContainer');
+  const colorMap = { success: 'toast-success', error: 'toast-error', info: 'toast-info', default: 'toast-info' };
+  const cls = colorMap[type] || 'toast-info';
+  const id = 'toast-' + Date.now();
+  const card = document.createElement('div');
+  card.className = `toast-card ${cls}`;
+  card.id = id;
+  card.innerHTML = `
+    <div class="toast-dot"></div>
+    <span class="toast-msg">${msg}</span>
+    <button onclick="dismissToast('${id}')" style="color:#475569;font-size:14px;line-height:1;background:none;border:none;cursor:pointer;padding:0 2px;flex-shrink:0;">✕</button>
+    <div class="toast-progress"></div>`;
+  if (container) container.appendChild(card);
+  setTimeout(() => dismissToast(id), 3200);
   logActivity(msg, type);
+}
+
+function dismissToast(id) {
+  const card = document.getElementById(id);
+  if (!card) return;
+  card.classList.add('dismissing');
+  setTimeout(() => card.remove(), 280);
 }
 
 function logActivity(content, type = 'default') {
@@ -324,11 +372,66 @@ const logToTerminal = logActivity;
 function renderActivityFeed() {
   const feed = document.getElementById('activityFeed');
   if (!feed) return;
+  const items = [];
+
+  [...state.battles].forEach(b => {
+    const isOk = (b.result||b.status) === 'success';
+    const boss = b.bossName || b.boss || '首領';
+    const cfg = getBossConfig()[boss];
+    const bossIcon = cfg ? cfg.icon : '⚔️';
+    const date = new Date(b.time||b.createdAt||0).toLocaleDateString('zh-TW',{month:'2-digit',day:'2-digit'});
+    let att = [];
+    try { att = typeof b.attendance==='string'?JSON.parse(b.attendance):(b.attendance||[]); } catch(e){}
+    items.push({ ts: new Date(b.time||b.createdAt||0), html:
+      `<li class="feed-item">
+        <div class="feed-icon ${isOk ? 'bg-red-900/40' : 'bg-slate-800/60'}">${bossIcon}</div>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-baseline gap-1.5 flex-wrap">
+            <span class="text-[10px] font-black ${isOk?'text-primary':'text-slate-500'} uppercase tracking-wide">${isOk?'擊殺':'失敗'}</span>
+            <span class="text-[10px] font-bold text-white/80 truncate">${boss}</span>
+          </div>
+          <div class="text-[11px] text-slate-500 font-bold mt-0.5">${date} · ${att.length} 人出席</div>
+        </div>
+        <span class="text-[10px] font-black uppercase tracking-wide ${isOk ? 'text-green-600' : 'text-red-700'} flex-shrink-0">${isOk?'✓':'✗'}</span>
+      </li>` });
+  });
+
+  [...state.sieges].forEach(s => {
+    const castle = s.castle || s.castleName || '城堡';
+    const isAtk = (s.type||s.siegeType) === 'attack';
+    const typeLabel = isAtk ? '攻城' : '守城';
+    const date = new Date(s.date||s.createdAt||0).toLocaleDateString('zh-TW',{month:'2-digit',day:'2-digit'});
+    let att = [];
+    try { att = typeof s.attendance==='string'?JSON.parse(s.attendance):(s.attendance||[]); } catch(e){}
+    items.push({ ts: new Date(s.date||s.createdAt||0), html:
+      `<li class="feed-item">
+        <div class="feed-icon bg-amber-900/30">🏰</div>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-baseline gap-1.5 flex-wrap">
+            <span class="text-[10px] font-black ${isAtk?'text-red-400':'text-blue-400'} uppercase tracking-wide">${typeLabel}</span>
+            <span class="text-[10px] font-bold text-white/80 truncate">${castle}</span>
+          </div>
+          <div class="text-[11px] text-slate-500 font-bold mt-0.5">${date} · ${att.length} 人出席</div>
+        </div>
+        <span class="text-[10px] font-black uppercase text-amber-700/60 flex-shrink-0">⚔️</span>
+      </li>` });
+  });
+
+  items.sort((a,b) => b.ts - a.ts);
+  if (!items.length) {
+    feed.innerHTML = `<li class="empty-state"><div class="empty-icon">🏰</div><div class="empty-text">尚無活動記錄</div></li>`;
+    return;
+  }
+  feed.innerHTML = items.slice(0,8).map(i=>i.html).join('');
+  return;
+  // (legacy code below kept for fallback)
+  const feed2 = document.getElementById('activityFeed');
+  if (!feed2) return;
 
   const typeConfig = {
-    success: { icon: '�?, color: '#10b981' },
-    error:   { icon: '�?, color: '#f43f5e' },
-    default: { icon: '�?, color: 'var(--Copper-dim)' },
+    success: { icon: '✅', color: '#10b981' },
+    error:   { icon: '❌', color: '#f43f5e' },
+    default: { icon: '💬', color: 'var(--Copper-dim)' },
   };
 
   feed.innerHTML = state.activityLogs.map(log => {
@@ -354,22 +457,32 @@ function authHeaders() {
 // ── Data Fetching ─────────────────────────────────
 async function fetchData() {
   try {
-    const [m, b, s, a] = await Promise.all([
+    const [m, b, s, a, tr, txList] = await Promise.all([
       fetch(`${API_BASE}/members`).then(r => r.json()),
       fetch(`${API_BASE}/battles`).then(r => r.json()),
       fetch(`${API_BASE}/sieges`).then(r => r.json()),
-      fetch(`${API_BASE}/alliances`).then(r => r.json())
+      fetch(`${API_BASE}/alliances`).then(r => r.json()),
+      fetch(`${API_BASE}/treasury`).then(r => r.json()).catch(() => null),
+      fetch(`${API_BASE}/transactions`).then(r => r.json()).catch(() => [])
     ]);
     state.members = m || [];
     state.battles = b || [];
     state.sieges = s || [];
     state.alliances = a || [];
+    state.treasury = tr || { balance: 0 };
+    state.transactions = Array.isArray(txList) ? txList : [];
 
     renderMembers();
     renderBattles();
     renderSieges();
     renderAlliances();
     renderTreasury();
+    renderTransactions();
+    renderOverview();
+  renderMemberTierStrip();
+  renderSiegeStats();
+  renderAllianceStats();
+  renderActivityFeed();
     renderCheckboxes();
     updateMemberCountBadge();
     renderCharts();
@@ -378,26 +491,26 @@ async function fetchData() {
     // ── Populate Event Horizon feed with data summary ──
     const now = new Date().toLocaleTimeString('en-GB', { hour12: false });
     const memberTiers = {};
-    state.members.forEach(m => { memberTiers[m.tier || '一�?] = (memberTiers[m.tier || '一�?] || 0) + 1; });
-    const tierStr = Object.entries(memberTiers).map(([t,c]) => `${t}×${c}`).join(' | ') || '�?;
+    state.members.forEach(m => { memberTiers[m.tier || '一般'] = (memberTiers[m.tier || '一般'] || 0) + 1; });
+    const tierStr = Object.entries(memberTiers).map(([t,c]) => `${t}×${c}`).join(' | ') || '無';
 
-    // Seed with structured system entries (only seed once �?clear stale boot entries first)
+    // Seed with structured system entries (only seed once — clear stale boot entries first)
     state.activityLogs = state.activityLogs.filter(l => !l._boot);
 
     const bootEntries = [
-      { time: now, content: `SYSTEM_READY �?血盟管理終端機已上線`, type: 'success', _boot: true },
-      { time: now, content: `DATA_SYNC �?${state.members.length} 成員 / ${state.alliances.length} 聯盟`, type: 'default', _boot: true },
-      { time: now, content: `OPS_LOG �?${state.battles.length} 戰場 / ${state.sieges.length} 攻城`, type: 'default', _boot: true },
-      { time: now, content: `TIER_MAP �?${tierStr}`, type: 'default', _boot: true },
+      { time: now, content: `SYSTEM_READY → 血盟管理終端機已上線`, type: 'success', _boot: true },
+      { time: now, content: `DATA_SYNC → ${state.members.length} 成員 / ${state.alliances.length} 聯盟`, type: 'default', _boot: true },
+      { time: now, content: `OPS_LOG → ${state.battles.length} 戰場 / ${state.sieges.length} 攻城`, type: 'default', _boot: true },
+      { time: now, content: `TIER_MAP → ${tierStr}`, type: 'default', _boot: true },
     ];
 
     if (state.battles.length > 0) {
       const last = state.battles[0];
-      bootEntries.push({ time: now, content: `LAST_OP �?${last.boss || last.name || '?'} · ${last.date || ''}`, type: 'default', _boot: true });
+      bootEntries.push({ time: now, content: `LAST_OP → ${last.boss || last.name || '?'} · ${last.date || ''}`, type: 'default', _boot: true });
     }
     if (state.sieges.length > 0) {
       const last = state.sieges[0];
-      bootEntries.push({ time: now, content: `LAST_SIEGE �?${last.castle || last.name || '?'} · ${last.date || ''}`, type: 'default', _boot: true });
+      bootEntries.push({ time: now, content: `LAST_SIEGE → ${last.castle || last.name || '?'} · ${last.date || ''}`, type: 'default', _boot: true });
     }
 
     state.activityLogs = [...bootEntries, ...state.activityLogs];
@@ -444,42 +557,101 @@ function updateStatusTexts() {
   const battleStatus = document.getElementById('battleStatusText');
   if (battleStatus) {
     battleStatus.textContent = state.battles.length > 0
-      ? `> ${state.battles.length} ENCOUNTER(S) LOGGED �?LAST: ${state.battles[0]?.bossName || state.battles[0]?.boss || '?'}`
+      ? `> ${state.battles.length} ENCOUNTER(S) LOGGED → LAST: ${state.battles[0]?.bossName || state.battles[0]?.boss || '?'}`
       : '> AWAITING NEW LOGS...';
   }
   const siegeStatus = document.getElementById('siegeStatusText');
   if (siegeStatus) {
     siegeStatus.textContent = state.sieges.length > 0
-      ? `> ${state.sieges.length} SIEGE(S) RECORDED �?LAST: ${state.sieges[0]?.castle || '?'}`
+      ? `> ${state.sieges.length} SIEGE(S) RECORDED → LAST: ${state.sieges[0]?.castle || '?'}`
       : '> MONITORING CASTLE STATUS...';
   }
 }
 
-// ── Checkboxes ────────────────────────────────────
+// ── Checkboxes (Officer Roll-Call) ───────────────────
+function selectAllAttendance(containerId, checked) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.querySelectorAll('input[type="checkbox"]').forEach(cb => { cb.checked = checked; });
+}
+
+function filterAttendance(containerId, query) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const q = query.trim().toLowerCase();
+  // Show/hide individual labels
+  el.querySelectorAll('label').forEach(label => {
+    label.style.display = (!q || label.textContent.toLowerCase().includes(q)) ? '' : 'none';
+  });
+  // Hide entire job-group blocks if no visible members inside
+  el.querySelectorAll('.att-group').forEach(group => {
+    const visible = [...group.querySelectorAll('label')].some(l => l.style.display !== 'none');
+    group.style.display = visible ? '' : 'none';
+  });
+}
+
 function renderCheckboxes() {
-  const membersHtml = state.members.map(m => `
-        <label class="hover:bg-primary/10 p-2 transition-colors border-2 border-transparent hover:border-primary/30 flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" value="${m.ID || m.id}" class="rounded-none border-2 border-white/20 text-primary focus:ring-primary bg-black/40 accent-primary">
-          <div>
-            <span class="text-white uppercase font-black text-sm">${m.name || m.Name || '未知'}</span> 
-            <span class="text-[10px] text-slate-500 font-bold uppercase ml-1">(${m.job || ''})</span>
+  const buildHtml = () => {
+    if (!state.members.length && !state.alliances.length) {
+      return '<span class="text-xs text-slate-400 font-bold uppercase p-2">尚無成員或聯盟，請先新增人員</span>';
+    }
+    // Group blood members by job, sort within group by level desc
+    const grouped = {};
+    JOB_ORDER.forEach(j => { grouped[j] = []; });
+    state.members.forEach(m => {
+      const job = m.job || '其他';
+      if (!grouped[job]) grouped[job] = [];
+      grouped[job].push(m);
+    });
+    Object.values(grouped).forEach(arr => arr.sort((a, b) => (b.level || 0) - (a.level || 0)));
+
+    let html = '';
+    Object.entries(grouped).forEach(([job, members]) => {
+      if (!members.length) return;
+      const icon = JOB_ICON[job] || '⚔️';
+      html += `<div class="mb-1 att-group">
+        <div class="flex items-center justify-between px-2 py-1 bg-amber-900/10 border-l-2 border-amber-700/40 mb-1">
+          <span class="text-[11px] font-black uppercase tracking-widest text-amber-700/80">${icon} ${job} (${members.length})</span>
+          <div class="flex gap-2">
+            <button type="button" onclick="(function(el){el.querySelectorAll('input').forEach(cb=>cb.checked=true)})(this.closest('.att-group'))" class="text-[10px] text-primary font-black uppercase hover:underline">全</button>
+            <button type="button" onclick="(function(el){el.querySelectorAll('input').forEach(cb=>cb.checked=false)})(this.closest('.att-group'))" class="text-[10px] text-slate-500 font-black uppercase hover:underline">取</button>
           </div>
-        </label>`).join('');
+        </div>
+        <div class="grid grid-cols-2 gap-0.5">
+          ${members.map(m => {
+            const lv = m.level ? `<span class="text-[11px] text-amber-600 font-bold ml-1">Lv${m.level}</span>` : '';
+            return `<label class="hover:bg-primary/10 px-2 py-1.5 transition-colors flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" value="${m.ID || m.id}" class="rounded-none border border-white/20 bg-black/40 accent-primary w-3.5 h-3.5 flex-shrink-0">
+              <span class="text-white font-black text-[11px] uppercase truncate">${m.name || m.Name || '未知'}</span>${lv}
+            </label>`;
+          }).join('')}
+        </div>
+      </div>`;
+    });
 
-  const alliancesHtml = state.alliances.map(a => `
-        <label class="hover:bg-secondary/10 p-2 transition-colors border-2 border-transparent hover:border-secondary/30 flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" value="${a.ID || a.id}" class="rounded-none border-2 border-white/20 text-secondary focus:ring-secondary bg-black/40 accent-secondary">
-          <div>
-            <span class="text-white uppercase font-black text-sm">${a.name || a.Name || '未知'}</span> 
-            <span class="bg-secondary/20 text-secondary border border-secondary/30 text-[9px] px-1 py-0.5 rounded-sm ml-1 align-middle uppercase font-bold">聯盟</span>
-            <span class="text-[10px] text-slate-500 font-bold uppercase ml-1">(${a.job || ''})</span>
+    if (state.alliances.length) {
+      html += `<div class="mb-1 mt-2 att-group">
+        <div class="flex items-center justify-between px-2 py-1 bg-blue-900/10 border-l-2 border-blue-700/40 mb-1">
+          <span class="text-[11px] font-black uppercase tracking-widest text-blue-400/80">🤝 聯盟成員 (${state.alliances.length})</span>
+          <div class="flex gap-2">
+            <button type="button" onclick="(function(el){el.querySelectorAll('input').forEach(cb=>cb.checked=true)})(this.closest('.att-group'))" class="text-[10px] text-secondary font-black uppercase hover:underline">全</button>
+            <button type="button" onclick="(function(el){el.querySelectorAll('input').forEach(cb=>cb.checked=false)})(this.closest('.att-group'))" class="text-[10px] text-slate-500 font-black uppercase hover:underline">取</button>
           </div>
-        </label>`).join('');
+        </div>
+        <div class="grid grid-cols-2 gap-0.5">
+          ${state.alliances.map(a => `
+            <label class="hover:bg-secondary/10 px-2 py-1.5 transition-colors flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" value="${a.ID || a.id}" class="rounded-none border border-white/20 bg-black/40 accent-secondary w-3.5 h-3.5 flex-shrink-0">
+              <span class="text-white font-black text-[11px] uppercase truncate">${a.name || a.Name || '未知'}</span>
+              <span class="bg-secondary/20 text-secondary text-[10px] px-1 rounded-sm font-bold flex-shrink-0">聯盟</span>
+            </label>`).join('')}
+        </div>
+      </div>`;
+    }
+    return html;
+  };
 
-  const html = (state.members.length > 0 || state.alliances.length > 0)
-    ? membersHtml + alliancesHtml
-    : '<span class="text-xs text-slate-400 font-bold uppercase p-2">尚無成員或聯盟，請先新增人員</span>';
-
+  const html = buildHtml();
   const bAtt = document.getElementById('bAttendance');
   if (bAtt) bAtt.innerHTML = html;
   const sAtt = document.getElementById('sAttendance');
@@ -492,23 +664,24 @@ function getCheckedValues(id) {
   return Array.from(el.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
 }
 
-// ── Boss Select ───────────────────────────────────
-function handleBossSelect(sel) {
-  const customGroup = document.getElementById('bCustomBossGroup');
+// ── Boss Name Input ────────────────────────────────
+// (free-text only — no preset list)
+
+// ── Castle Select ─────────────────────────────────
+function handleCastleSelect(sel) {
+  const customInput = document.getElementById('sCastleCustom');
+  if (!customInput) return;
   if (sel.value === '__custom__') {
-    customGroup.style.display = 'flex';
-    document.getElementById('bBossCustom').focus();
+    customInput.classList.remove('hidden');
+    customInput.focus();
   } else {
-    customGroup.style.display = 'none';
+    customInput.classList.add('hidden');
+    customInput.value = '';
   }
 }
 
 function getBossName() {
-  const sel = document.getElementById('bBossSelect');
-  if (sel.value === '__custom__') {
-    return document.getElementById('bBossCustom').value.trim() || '未知首領';
-  }
-  return sel.value;
+  return (document.getElementById('bBossNameInput')?.value || '').trim() || '未知首領';
 }
 
 // ── Members ───────────────────────────────────────
@@ -516,15 +689,16 @@ async function addMember() {
   const name = document.getElementById('mName').value.trim();
   const job = document.getElementById('mJob').value;
   const notes = document.getElementById('mNotes').value.trim();
-  const tier = document.getElementById('mTier')?.value || '一�?;
+  const tier = document.getElementById('mTier')?.value || '一般';
+  const level = parseInt(document.getElementById('mLevel')?.value || 0) || 0;
   if (!name || !job) { showToast('請填寫角色名稱與職業', 'error'); return; }
 
   try {
     const res = await fetch(`${API_BASE}/members`, {
       method: 'POST', headers: authHeaders(),
-      body: JSON.stringify({ name, job, notes, tier })
+      body: JSON.stringify({ name, job, notes, tier, level })
     });
-    if (res.status === 401) { showToast('請先登入管理員帳�?, 'error'); openLoginModal(); return; }
+    if (res.status === 401) { showToast('請先登入管理員帳號', 'error'); openLoginModal(); return; }
     if (res.status === 403) { showToast('您的帳號非授權管理員', 'error'); return; }
 
     document.getElementById('mName').value = '';
@@ -536,7 +710,7 @@ async function addMember() {
 }
 
 async function deleteMember(id, name) {
-  if (!confirm(`確定從血盟移除�?{name}」？`)) return;
+  if (!confirm(`確定從血盟移除「${name}」？`)) return;
   const res = await fetch(`${API_BASE}/members/${id}`, { method: 'DELETE', headers: authHeaders() });
   if (!res.ok) { showToast('刪除失敗（權限不足）', 'error'); return; }
   showToast(`${name} 已移除`, 'success');
@@ -550,13 +724,15 @@ function openEditModal(id) {
   document.getElementById('editMemberName').value = m.name || m.Name || '';
   document.getElementById('editMemberJob').value = m.job || '王族';
   document.getElementById('editMemberNotes').value = m.notes || '';
-  document.getElementById('editMemberTier').value = m.tier || '一�?;
-  document.getElementById('editMemberModal').classList.remove('hidden');
+  document.getElementById('editMemberTier').value = m.tier || '一般';
+  const lvEl = document.getElementById('editMemberLevel');
+  if (lvEl) lvEl.value = m.level || '';
+  document.getElementById('editMemberModal').style.display = 'flex';
 }
 
 function closeEditModal(e) {
   if (e && e.target !== document.getElementById('editMemberModal')) return;
-  document.getElementById('editMemberModal').classList.add('hidden');
+  document.getElementById('editMemberModal').style.display = 'none';
 }
 
 async function updateMember() {
@@ -564,77 +740,207 @@ async function updateMember() {
   const name = document.getElementById('editMemberName').value.trim();
   const job = document.getElementById('editMemberJob').value;
   const notes = document.getElementById('editMemberNotes').value.trim();
-  const tier = document.getElementById('editMemberTier').value || '一�?;
+  const tier = document.getElementById('editMemberTier').value || '一般';
+  const level = parseInt(document.getElementById('editMemberLevel')?.value || 0) || 0;
   if (!name || !job) { showToast('請填寫角色名稱與職業', 'error'); return; }
 
   try {
     const res = await fetch(`${API_BASE}/members/${id}`, {
       method: 'PUT', headers: authHeaders(),
-      body: JSON.stringify({ name, job, notes, tier })
+      body: JSON.stringify({ name, job, notes, tier, level })
     });
     if (!res.ok) { showToast('修改失敗（權限不足）', 'error'); return; }
-    document.getElementById('editMemberModal').classList.add('hidden');
+    document.getElementById('editMemberModal').style.display = 'none';
     showToast(`${name} 資料已更新`, 'success');
     await fetchData();
   } catch (e) { showToast('修改失敗', 'error'); }
 }
 
+// ── Member Sort State ─────────────────────────────
+let memberSort = { by: 'tier', dir: 'desc' };
+let memberTierFilter = null; // null = all tiers
+
+const TIER_ORDER = { '核心': 0, '一般': 1, '試煉': 2, '預備': 3, '外交': 4 };
+const TIER_CONFIG = {
+  '核心': { label: 'CORE', bg: 'bg-primary/10', text: 'text-primary', border: 'border-primary/30' },
+  '一般': { label: 'UNIT', bg: 'bg-white/5', text: 'text-slate-400', border: 'border-white/10' },
+  '試煉': { label: 'PROB', bg: 'bg-slate-800/50', text: 'text-slate-500', border: 'border-slate-700' },
+  '預備': { label: 'PROB', bg: 'bg-slate-800/50', text: 'text-slate-500', border: 'border-slate-700' },
+  '外交': { label: 'DEPL', bg: 'bg-secondary/10', text: 'text-secondary', border: 'border-secondary/30' },
+};
+const JOB_ORDER = ['王族', '騎士', '妖精', '法師', '黑妖'];
+const JOB_ICON  = { '王族': '👑', '騎士': '⚔️', '妖精': '🌿', '法師': '🔮', '黑妖': '🌑' };
+
+function setMemberSort(by) {
+  if (memberSort.by === by) {
+    memberSort.dir = memberSort.dir === 'desc' ? 'asc' : 'desc';
+  } else {
+    memberSort.by = by;
+    memberSort.dir = 'desc';
+  }
+  ['tier', 'level'].forEach(key => {
+    const btn = document.getElementById(`sortBy${key.charAt(0).toUpperCase() + key.slice(1)}Btn`);
+    if (!btn) return;
+    const label = key === 'tier' ? '階級 TIER' : '等級 LEVEL';
+    if (key === memberSort.by) {
+      btn.style.cssText = 'border-color:rgba(201,168,76,0.5);color:#c9a84c;background:rgba(201,168,76,0.08)';
+    } else {
+      btn.style.cssText = 'border-color:rgba(255,255,255,0.1);color:#64748b;background:transparent';
+    }
+    btn.textContent = `${label} ${memberSort.by === key && memberSort.dir === 'asc' ? '▴' : '▾'}`;
+  });
+  renderMembers();
+}
+
+function setMemberTierFilter(tier) {
+  memberTierFilter = tier;
+  document.querySelectorAll('.tier-chip').forEach(btn => {
+    const isAll = btn.classList.contains('tier-chip-all');
+    const matches = tier === null ? isAll : btn.textContent.trim() === tier;
+    btn.style.cssText = matches
+      ? 'border-color:rgba(201,168,76,0.5);color:#c9a84c;background:rgba(201,168,76,0.08)'
+      : 'border-color:rgba(255,255,255,0.08);color:#475569;background:transparent';
+  });
+  renderMembers();
+}
+
 function renderMembers() {
   const tbody = document.querySelector('#membersTable tbody');
   if (!tbody) return;
-  
-  let data = state.members;
+
+  // Build per-member attendance count from battles + sieges
+  const attCount = {};
+  [...state.battles, ...state.sieges].forEach(op => {
+    let att = [];
+    try { att = typeof op.attendance === 'string' ? JSON.parse(op.attendance) : (op.attendance || []); } catch(e){}
+    att.forEach(id => { attCount[id] = (attCount[id] || 0) + 1; });
+  });
+
+  let data = [...state.members];
+
+  // Text search filter
   if (filters.members) {
-    const q = filters.members;
-    data = data.filter(m => 
-      (m.name || m.Name || '').toLowerCase().includes(q) || 
-      (m.job || '').toLowerCase().includes(q) || 
+    const q = filters.members.toLowerCase();
+    data = data.filter(m =>
+      (m.name || m.Name || '').toLowerCase().includes(q) ||
+      (m.job || '').toLowerCase().includes(q) ||
       (m.notes || '').toLowerCase().includes(q)
     );
   }
-  
-  const TIER_CONFIG = {
-    '核心': { label: 'CORE', bg: 'bg-primary/10', text: 'text-primary', border: 'border-primary/30' },
-    '一�?: { label: 'UNIT', bg: 'bg-white/5', text: 'text-slate-400', border: 'border-white/10' },
-    '試煉': { label: 'PROB', bg: 'bg-slate-800/50', text: 'text-slate-500', border: 'border-slate-700' },
-    '外交': { label: 'DEPL', bg: 'bg-secondary/10', text: 'text-secondary', border: 'border-secondary/30' },
-  };
-  tbody.innerHTML = data.map(m => {
-    const id = m.ID || m.id;
-    const name = m.name || m.Name || '';
-    const tc = TIER_CONFIG[m.tier] || TIER_CONFIG['一�?];
-    const tierBadge = `<span class="${tc.bg} ${tc.text} ${tc.border} border-[1px] text-[8px] px-1.5 py-0.5 font-black tracking-widest uppercase flex items-center gap-1.5 w-fit">
-      <span class="w-1 h-1 rounded-full ${tc.bg.replace('/10', '/40')}"></span> ${tc.label}
-    </span>`;
-    const lineStatus = m.lineUserId
-      ? `<span class="bg-secondary/10 text-secondary border border-secondary/20 text-[8px] px-1.5 py-0.5 font-black uppercase tracking-tighter">LINE_SYNCED</span>`
-      : `<span class="text-slate-700 text-[8px] px-1.5 py-0.5 font-black uppercase">--</span>`;
-    
-    const adminActions = auth.isAdmin ? `
-      <td class="py-4 pr-4 text-right admin-col">
-        <div class="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button class="text-[10px] font-black text-secondary hover:underline tracking-tight" onclick="openLineBindModal('members','${id}','${name.replace(/'/g, "\\'")}')">LINK</button>
-          <button class="text-[10px] font-black text-primary hover:underline tracking-tight" onclick="openEditModal('${id}')">MUTATE</button>
-          <button class="text-[10px] font-black text-error hover:underline tracking-tight" onclick="deleteMember('${id}', '${name.replace(/'/g, "\\'")}')">PURGE</button>
-        </div>
-      </td>` : '<td class="py-4 pr-4 text-right admin-col hidden"></td>';
 
-    return `
-      <tr class="hover:bg-primary/5 border-b border-border/20 transition-all group">
-        <td class="py-4 pl-4">
-          <div class="flex flex-col">
-            <span class="font-black text-on-background uppercase tracking-tight group-hover:text-primary transition-colors text-sm">${name}</span>
-            <span class="text-[8px] font-mono text-slate-500 uppercase tracking-widest">ID: ${id.slice(-6).toUpperCase()}</span>
-          </div>
+  // Tier chip filter
+  if (memberTierFilter) {
+    data = data.filter(m => (m.tier || '一般') === memberTierFilter);
+  }
+
+  // Sort
+  data.sort((a, b) => {
+    if (memberSort.by === 'tier') {
+      const ta = TIER_ORDER[a.tier] ?? 9, tb = TIER_ORDER[b.tier] ?? 9;
+      if (ta !== tb) return memberSort.dir === 'desc' ? ta - tb : tb - ta;
+      return (b.level || 0) - (a.level || 0);
+    } else {
+      const la = a.level || 0, lb = b.level || 0;
+      if (la !== lb) return memberSort.dir === 'desc' ? lb - la : la - lb;
+      return (TIER_ORDER[a.tier] ?? 9) - (TIER_ORDER[b.tier] ?? 9);
+    }
+  });
+
+  // Group by job
+  const groups = {};
+  JOB_ORDER.forEach(j => { groups[j] = []; });
+  data.forEach(m => {
+    const job = m.job || '其他';
+    if (!groups[job]) groups[job] = [];
+    groups[job].push(m);
+  });
+
+  const labelEl = document.getElementById('memberCountLabel');
+  if (labelEl) labelEl.textContent = `${data.length} MEMBERS`;
+
+  const rows = [];
+  Object.entries(groups).forEach(([job, members]) => {
+    if (!members.length) return;
+    const icon = JOB_ICON[job] || '⚔️';
+    rows.push(`
+      <tr class="border-b border-amber-900/30">
+        <td colspan="7" class="py-2 pl-4">
+          <span class="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600/80">${icon} ${job} · ${members.length}</span>
         </td>
-        <td class="py-4 text-[11px] text-slate-400 font-bold uppercase tracking-wider">${m.job || ''}</td>
-        <td class="py-4">${tierBadge}</td>
-        <td class="py-4 text-[10px] text-slate-500 font-bold uppercase max-w-[200px] truncate">${m.notes || '<span class="opacity-20">�?/span>'}</td>
-        <td class="py-4 text-center">${lineStatus}</td>
-        ${adminActions}
-      </tr>`;
-  }).join('');
+      </tr>`);
+
+    members.forEach(m => {
+      const id = m.ID || m.id;
+      const name = m.name || m.Name || '';
+      const tier = m.tier || '一般';
+      const tc = TIER_CONFIG[tier] || TIER_CONFIG['一般'];
+
+      // New tier badge using CSS design system
+      const tierBadge = `<span class="tier-badge tier-${tier}">${tc.label || tier}</span>`;
+
+      // Level with progress bar (max level 99)
+      const lv = m.level || 0;
+      const lvPct = Math.round((lv / 99) * 100);
+      const levelCell = lv
+        ? `<div class="flex flex-col gap-0.5">
+            <span class="font-black text-[11px] text-white leading-none">${lv}</span>
+            <div class="level-bar-track w-10"><div class="level-bar-fill" style="width:${lvPct}%"></div></div>
+           </div>`
+        : `<span class="text-[11px] text-slate-700 font-black">—</span>`;
+
+      // Job with color class
+      const jobIcon = JOB_ICON[m.job] || '';
+      const jobCell = `<span class="job-${m.job} font-bold text-[12px]">${jobIcon} ${m.job || ''}</span>`;
+
+      // LINE status
+      const lineStatus = m.lineUserId
+        ? `<span class="inline-flex items-center gap-1 bg-secondary/10 text-secondary border border-secondary/25 text-[10px] px-1.5 py-0.5 font-black uppercase rounded-sm"><span style="width:5px;height:5px;background:currentColor;border-radius:50%;display:inline-block;"></span>LINE</span>`
+        : `<span class="text-slate-700 text-[10px] font-black">—</span>`;
+
+      const adminActions = auth.isAdmin ? `
+        <td class="py-2.5 pr-4 text-right admin-col">
+          <div class="flex items-center justify-end gap-2.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button class="text-[11px] font-black text-secondary hover:underline tracking-tight" onclick="openLineBindModal('members','${id}','${name.replace(/'/g,"\\'")}')">LINE</button>
+            <button class="text-[11px] font-black text-amber-400 hover:underline tracking-tight" onclick="openEditModal('${id}')">編輯</button>
+            <button class="text-[11px] font-black text-primary hover:underline tracking-tight" onclick="deleteMember('${id}','${name.replace(/'/g,"\\'")}')">刪除</button>
+          </div>
+        </td>` : '<td class="py-2.5 pr-4 text-right admin-col hidden"></td>';
+
+      const memberAtt = attCount[id] || 0;
+      const avatarLetter = (name.charAt(0) || '?').toUpperCase();
+      const avatarBg = tc.bg || 'bg-white/5';
+      const avatarBorder = tc.border || 'border-white/10';
+      const avatarText = tc.text || 'text-slate-400';
+      const attBadge = `<span class="att-pill ${memberAtt > 0 ? 'has-att' : ''}">${memberAtt > 0 ? memberAtt : '—'}</span>`;
+
+      rows.push(`
+        <tr class="data-row border-b border-white/5 group cursor-pointer" onclick="openMemberProfile('${id}')">
+          <td class="py-2.5 pl-3">
+            <div class="flex items-center gap-2.5">
+              <div class="w-7 h-7 rounded-full ${avatarBg} border ${avatarBorder} flex items-center justify-center flex-shrink-0">
+                <span class="text-[11px] font-black ${avatarText}">${avatarLetter}</span>
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="font-black text-white/90 uppercase tracking-tight group-hover:text-primary transition-colors text-[13px] leading-tight truncate">${name}</span>
+                <span class="text-[10px] font-mono text-slate-700 uppercase tracking-widest">·${id.slice(-4).toUpperCase()}</span>
+              </div>
+            </div>
+          </td>
+          <td class="py-2.5">${levelCell}</td>
+          <td class="py-2.5 hidden sm:table-cell">${jobCell}</td>
+          <td class="py-2.5">${tierBadge}</td>
+          <td class="py-2.5 text-center hidden md:table-cell">${attBadge}</td>
+          <td class="py-2.5 text-[11px] text-slate-600 font-bold uppercase max-w-[140px] truncate hidden lg:table-cell">${m.notes || ''}</td>
+          <td class="py-2.5 text-center">${lineStatus}</td>
+          ${adminActions}
+        </tr>`);
+    });
+  }); // close Object.entries(groups).forEach
+
+  tbody.innerHTML = rows.join('') || `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">⚔️</div><div class="empty-text">查無成員</div></div></td></tr>`;
+
 }
+
 
 // ── Shared Detail View Modal ──────────────────────
 function openDetailModal(type, id) {
@@ -643,7 +949,7 @@ function openDetailModal(type, id) {
   if (!data) return;
 
   const dateStr = new Date(data.time || data.date || data.createdAt).toLocaleString('zh-TW');
-  const title = isBattle ? `⚔️ ${data.bossName || data.boss || '未知首領'} (${dateStr})` : `🏰 ${data.castle || '攻城�?} (${dateStr})`;
+  const title = isBattle ? `⚔️ ${data.bossName || data.boss || '未知首領'} (${dateStr})` : `🏰 ${data.castle || '攻城戰'} (${dateStr})`;
   document.getElementById('detailModalTitle').textContent = title;
 
   // Attendance
@@ -659,12 +965,12 @@ function openDetailModal(type, id) {
       type = person ? 'alliance' : 'unknown';
     }
     
-    const name = person ? (person.name || person.Name || '未知') : '已刪除人�?;
+    const name = person ? (person.name || person.Name || '未知') : '已刪除人員';
     const job = person ? person.job : '';
-    const badge = type === 'alliance' ? '<span class="bg-[#4285F4] text-white text-[9px] px-1 rounded-sm ml-1 font-bold">聯盟</span>' : '';
+    const badge = type === 'alliance' ? '<span class="bg-[#4285F4] text-white text-[11px] px-1 rounded-sm ml-1 font-bold">聯盟</span>' : '';
     
     return `<div style="padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.05);">${name} ${badge} <span style="font-size:12px;opacity:0.6;">${job}</span></div>`;
-  }).join('') || '<div style="opacity:0.5;">無出席紀�?/div>';
+  }).join('') || '<div style="opacity:0.5;">無出席紀錄</div>';
   document.getElementById('detailAttendanceList').innerHTML = attListHtml;
 
   const dropsGroup = document.getElementById('detailDropsGroup');
@@ -686,29 +992,87 @@ function openDetailModal(type, id) {
     dropsGroup.classList.add('hidden');
   }
 
-  document.getElementById('detailModal').classList.remove('hidden');
+  document.getElementById('detailModal').style.display = 'flex';
 }
 
 function closeDetailModal(e) {
   if (e && e.target !== document.getElementById('detailModal')) return;
-  document.getElementById('detailModal').classList.add('hidden');
+  document.getElementById('detailModal').style.display = 'none';
 }
 
 // ── Battles ───────────────────────────────────────
+// getBossConfig — boss names are free-text input; returns {} for fallback lookups
+function getBossConfig() { return {}; }
+
+let _bossFilter = null; // null = show all
+
+function setBossFilter(boss) {
+  _bossFilter = boss;
+  // Update filter button styles
+  document.querySelectorAll('.boss-filter-btn').forEach(btn => {
+    const isActive = btn.id === (boss ? `bossFilter-${boss}` : 'bossFilter-all');
+    btn.style.cssText = isActive
+      ? 'border-color:rgba(201,168,76,0.5);color:#c9a84c;background:rgba(201,168,76,0.08)'
+      : 'border-color:rgba(255,255,255,0.08);color:#475569;background:transparent';
+  });
+  renderBattles();
+}
+
+function updateBattlePreview() {
+  const pool = Number(document.getElementById('bAuctionPool')?.value || 0);
+  const dropTotal = [...document.querySelectorAll('.loot-price')]
+    .reduce((s, el) => s + (Number(el.value) || 0), 0);
+  const totalLoot = dropTotal > 0 ? dropTotal : pool;
+  const count = document.querySelectorAll('#bAttendance input[type="checkbox"]:checked').length;
+  const perPerson = count > 0 ? Math.floor(totalLoot / count) : 0;
+
+  const previewEl = document.getElementById('battlePreview');
+  const amtEl = document.getElementById('battlePreviewAmt');
+  const cntEl = document.getElementById('battlePreviewCount');
+  if (!previewEl) return;
+
+  if (totalLoot > 0 || count > 0) {
+    previewEl.classList.remove('hidden');
+    amtEl.textContent = perPerson.toLocaleString() + ' 天幣';
+    cntEl.textContent = count + ' 人';
+  } else {
+    previewEl.classList.add('hidden');
+  }
+}
+
+function updateSiegePreview() {
+  const reward = Number(document.getElementById('sReward')?.value || 0);
+  const count = document.querySelectorAll('#sAttendance input[type="checkbox"]:checked').length;
+  const perPerson = count > 0 ? Math.floor(reward / count) : 0;
+
+  const previewEl = document.getElementById('siegePreview');
+  const amtEl = document.getElementById('siegePreviewAmt');
+  const cntEl = document.getElementById('siegePreviewCount');
+  if (!previewEl) return;
+
+  if (reward > 0 || count > 0) {
+    previewEl.classList.remove('hidden');
+    if (amtEl) amtEl.textContent = perPerson.toLocaleString() + ' 天幣';
+    if (cntEl) cntEl.textContent = count + ' 人';
+  } else {
+    previewEl.classList.add('hidden');
+  }
+}
+
 function addLootRow() {
   const container = document.getElementById('bDropsList');
   const div = document.createElement('div');
   div.className = 'loot-row flex gap-2';
   div.innerHTML = `
-    <input type="text" placeholder="Item Name" class="atelier-input flex-1 text-xs loot-name">
-    <input type="number" placeholder="Value" class="atelier-input w-24 text-xs loot-price">
+    <input type="text" placeholder="物品名稱" class="atelier-input flex-1 text-xs loot-name">
+    <input type="number" placeholder="價格" class="atelier-input w-24 text-xs loot-price" oninput="updateBattlePreview()">
     <button class="btn btn-outline px-2 py-1" onclick="removeLootRow(this)"><span class="material-symbols-outlined text-sm">close</span></button>`;
   container.appendChild(div);
 }
 
 function removeLootRow(btn) {
   const all = document.querySelectorAll('.loot-row');
-  if (all.length > 1) btn.closest('.loot-row').remove();
+  if (all.length > 1) { btn.closest('.loot-row').remove(); updateBattlePreview(); }
 }
 
 async function addBattle() {
@@ -716,11 +1080,13 @@ async function addBattle() {
   const time = document.getElementById('bTime').value || new Date().toISOString();
   const attendance = getCheckedValues('bAttendance');
   const auctionPool = Number(document.getElementById('bAuctionPool').value) || 0;
+  const notes = document.getElementById('bNotes')?.value.trim() || '';
+  const result = document.getElementById('bResult')?.value || 'success';
 
   const drops = [];
   document.querySelectorAll('.loot-row').forEach(row => {
-    const name = row.querySelector('.loot-name').value.trim();
-    const price = row.querySelector('.loot-price').value;
+    const name = row.querySelector('.loot-name')?.value.trim();
+    const price = row.querySelector('.loot-price')?.value;
     if (name) drops.push({ name, price: Number(price) || 0 });
   });
 
@@ -731,17 +1097,21 @@ async function addBattle() {
   try {
     const res = await fetch(`${API_BASE}/battles`, {
       method: 'POST', headers: authHeaders(),
-      body: JSON.stringify({ bossName, time, attendance, drops, auctionPool: totalLoot, revenuePerPerson, status: 'completed' })
+      body: JSON.stringify({ bossName, time, attendance, drops, auctionPool: totalLoot, revenuePerPerson, notes, result, status: 'pending' })
     });
     if (res.status === 401) { showToast('請先登入系統', 'error'); openLoginModal(); return; }
     if (!res.ok) { showToast('提交失敗（權限不足）', 'error'); return; }
 
+    // Reset form
     document.getElementById('bDropsList').innerHTML = `
       <div class="loot-row flex gap-2">
-        <input type="text" placeholder="Item Name" class="atelier-input flex-1 text-xs loot-name">
-        <input type="number" placeholder="Value" class="atelier-input w-24 text-xs loot-price">
+        <input type="text" placeholder="物品名稱" class="atelier-input flex-1 text-xs loot-name">
+        <input type="number" placeholder="價格" class="atelier-input w-24 text-xs loot-price" oninput="updateBattlePreview()">
+        <button class="btn btn-outline px-2 py-1" onclick="removeLootRow(this)"><span class="material-symbols-outlined text-sm">close</span></button>
       </div>`;
     document.getElementById('bAuctionPool').value = '';
+    if (document.getElementById('bNotes')) document.getElementById('bNotes').value = '';
+    document.getElementById('battlePreview')?.classList.add('hidden');
     document.querySelectorAll('#bAttendance input[type="checkbox"]').forEach(cb => cb.checked = false);
     showToast(`${bossName} 討伐紀錄提交！每人分紅 ${revenuePerPerson.toLocaleString()} 天幣`, 'success');
     await fetchData();
@@ -749,34 +1119,143 @@ async function addBattle() {
 }
 
 async function deleteBattle(id, bossName) {
-  if (!confirm(`確定移除討伐紀錄�?{bossName}」？這將會影響結算中心的資料。`)) return;
+  if (!confirm(`確定移除討伐紀錄「${bossName}」？這將會影響結算中心的資料。`)) return;
   const res = await fetch(`${API_BASE}/battles/${id}`, { method: 'DELETE', headers: authHeaders() });
   if (!res.ok) { showToast('刪除失敗（權限不足）', 'error'); return; }
   showToast(`${bossName} 紀錄已移除`, 'success');
   await fetchData();
 }
 
+// ── Battle Stats & Leaderboard ───────────────────────
+function renderBossStats() {
+  const cardsEl = document.getElementById('bossStatsCards');
+  const lbEl    = document.getElementById('battleLeaderboard');
+  const statusEl= document.getElementById('battleStatusText');
+  if (!cardsEl) return;
+
+  const bossMap = {};
+  state.battles.forEach(b => {
+    const name = b.bossName || b.boss || '未知';
+    if (!bossMap[name]) bossMap[name] = { kills: 0, successKills: 0, totalLoot: 0, totalAtt: 0, lastDate: null };
+    const entry = bossMap[name];
+    entry.kills++;
+    if (b.result !== 'failed') entry.successKills++;
+    let pool = Number(b.auctionPool || 0);
+    if (!pool) {
+      let drops = [];
+      try { drops = typeof b.drops === 'string' ? JSON.parse(b.drops) : (b.drops || []); } catch {}
+      pool = drops.reduce((s, d) => s + (Number(d.price) || 0), 0);
+    }
+    entry.totalLoot += pool;
+    let att = [];
+    try { att = typeof b.attendance === 'string' ? JSON.parse(b.attendance) : (b.attendance || []); } catch {}
+    entry.totalAtt += att.length;
+    const d = new Date(b.time || b.createdAt);
+    if (!entry.lastDate || d > entry.lastDate) entry.lastDate = d;
+  });
+
+  const cards = Object.entries(bossMap).sort((a, b) => b[1].kills - a[1].kills).map(([boss, s]) => {
+    const cfg = getBossConfig()[boss] || { icon: '⚔️', color: '#c9a84c', tier: '首領' };
+    const avgLoot = s.kills > 0 ? Math.floor(s.totalLoot / s.kills) : 0;
+    const avgAtt  = s.kills > 0 ? Math.round(s.totalAtt / s.kills) : 0;
+    const lastStr = s.lastDate ? s.lastDate.toLocaleDateString('zh-TW') : '—';
+    return `<div class="flex-shrink-0 w-44 bg-black/40 border p-3" style="border-color:${cfg.color}30">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-xl">${cfg.icon}</span>
+        <div>
+          <div class="text-xs font-black text-white uppercase tracking-tight">${boss}</div>
+          <div class="text-[10px] font-bold uppercase tracking-widest" style="color:${cfg.color}">${cfg.tier || ''}</div>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px]">
+        <span class="text-slate-500 uppercase font-bold">擊殺</span><span class="text-white font-black">${s.successKills}/${s.kills}</span>
+        <span class="text-slate-500 uppercase font-bold">平均掉落</span><span class="font-black" style="color:${cfg.color}">${avgLoot.toLocaleString()}</span>
+        <span class="text-slate-500 uppercase font-bold">平均人數</span><span class="text-slate-300 font-bold">${avgAtt} 人</span>
+        <span class="text-slate-500 uppercase font-bold">最近</span><span class="text-slate-400 font-bold">${lastStr}</span>
+      </div>
+    </div>`;
+  }).join('');
+  cardsEl.innerHTML = cards || '<span class="text-slate-600 text-xs font-bold uppercase">尚無首領戰紀錄</span>';
+
+  if (statusEl) {
+    const total = state.battles.length;
+    const settled = state.battles.filter(b => b.status === 'settled').length;
+    statusEl.textContent = `TOTAL: ${total} BATTLES · SETTLED: ${settled}`;
+  }
+
+  const filterEl = document.getElementById('bossFilterBtns');
+  if (filterEl) {
+    filterEl.innerHTML = Object.keys(bossMap).sort().map(boss => {
+      const cfg = getBossConfig()[boss] || { icon: '⚔️', color: '#64748b' };
+      const safeId = boss.replace(/\s/g, '-');
+      return `<button id="bossFilter-${safeId}" onclick="setBossFilter('${boss}')"
+        class="boss-filter-btn text-[11px] font-black uppercase tracking-widest px-2.5 py-1 border transition-all"
+        style="border-color:rgba(255,255,255,0.08);color:#475569">
+        ${cfg.icon} ${boss}
+      </button>`;
+    }).join('');
+  }
+
+  if (lbEl) {
+    const attMap = {};
+    state.battles.forEach(b => {
+      let att = [];
+      try { att = typeof b.attendance === 'string' ? JSON.parse(b.attendance) : (b.attendance || []); } catch {}
+      att.forEach(id => { attMap[id] = (attMap[id] || 0) + 1; });
+    });
+    const top = Object.entries(attMap).sort((a, b) => b[1] - a[1]).slice(0, 8);
+    lbEl.innerHTML = top.map(([id, cnt], i) => {
+      const member = state.members.find(m => (m.ID || m.id) === id) || state.alliances.find(a => (a.ID || a.id) === id);
+      const name = member ? (member.name || member.Name || '未知') : '已刪除';
+      const bRankCls = ['rank-gold','rank-silver','rank-bronze'];
+      const barMax = top[0]?.[1] || 1;
+      const rkBattle = i < 3
+        ? `<span class="${bRankCls[i]} text-sm w-5 flex-shrink-0">★</span>`
+        : `<span class="text-[10px] text-slate-600 font-black w-5 flex-shrink-0">${i+1}</span>`;
+      const barWb = Math.round(cnt / barMax * 100);
+      return `<div class="card-row">
+        ${rkBattle}
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-1 mb-0.5">
+            <span class="text-[10px] font-black text-white uppercase truncate flex-1">${name}</span>
+            <span class="text-[11px] font-black text-primary flex-shrink-0">${cnt}次</span>
+          </div>
+          <div class="level-bar-track"><div class="level-bar-fill" style="width:${barWb}%"></div></div>
+        </div>
+      </div>`;
+    }).join('') || '<span class="text-slate-600 text-xs font-bold col-span-4 py-2">尚無出席紀錄</span>';
+  }
+}
+
 function renderBattles() {
+  renderBossStats();
   const tbody = document.querySelector('#battlesTable tbody');
   if (!tbody) return;
-  
-  let data = state.battles;
+
+  let data = [...state.battles].sort((a, b) =>
+    new Date(b.time || b.createdAt) - new Date(a.time || a.createdAt)
+  );
   if (filters.battles) {
     const q = filters.battles;
-    data = data.filter(b => 
+    data = data.filter(b =>
       (b.bossName || b.boss || '').toLowerCase().includes(q) ||
-      (b.time || b.createdAt || '').includes(q)
+      (b.time || b.createdAt || '').includes(q) ||
+      (b.notes || '').toLowerCase().includes(q)
     );
   }
-  
+  if (_bossFilter) {
+    data = data.filter(b => (b.bossName || b.boss || '') === _bossFilter);
+  }
+
   if (data.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-gray-500 font-bold uppercase py-8">查無討伐紀�?/td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center text-gray-500 font-bold uppercase py-8">查無討伐紀錄</td></tr>';
     return;
   }
   tbody.innerHTML = data.map(b => {
     const id = b.ID || b.id;
-    const date = new Date(b.time || b.createdAt).toLocaleString('en-GB', { hour12: false, month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', '');
+    const date = new Date(b.time || b.createdAt).toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
     const boss = b.bossName || b.boss || '';
+    const cfg = getBossConfig()[boss] || { icon: '⚔️', color: '#c9a84c' };
     let att = [];
     try { att = typeof b.attendance === 'string' ? JSON.parse(b.attendance) : (b.attendance || []); } catch (e) {}
     const count = att.length;
@@ -788,10 +1267,21 @@ function renderBattles() {
     }
     const rev = b.revenuePerPerson || (count > 0 ? Math.floor(pool / count) : 0);
     
+    const isFailed = b.result === 'failed';
+    const resultBadge = isFailed
+      ? `<span class="tier-badge result-failed">✗ 失敗</span>`
+      : `<span class="tier-badge result-success">✓ 成功</span>`;
+
+    const isSettled = b.status === 'settled';
+    const statusBadge = isSettled
+      ? `<span class="tier-badge" style="color:#34d399;border-color:rgba(52,211,153,0.4);background:rgba(52,211,153,0.08);">已結算</span>`
+      : `<span class="tier-badge" style="color:#f59e0b;border-color:rgba(245,158,11,0.35);background:rgba(245,158,11,0.07);">待結算</span>`;
+
     const adminActions = auth.isAdmin ? `
-      <div class="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button class="text-[10px] font-black text-secondary hover:underline tracking-tight" onclick="event.stopPropagation(); openBroadcastModal('battle','${id}','${boss.replace(/'/g, "\\'")}')">LINE_CALL</button>
-        <button class="text-[10px] font-black text-error hover:underline tracking-tight" onclick="event.stopPropagation(); deleteBattle('${id}', '${boss.replace(/'/g, "\\'")}')">PURGE</button>
+      <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity flex-wrap">
+        ${!isSettled ? `<button class="text-[10px] font-black text-emerald-400 hover:underline tracking-tight" onclick="event.stopPropagation(); openSettleModal('battle','${id}')">結算</button>` : ''}
+        <button class="text-[10px] font-black text-secondary hover:underline tracking-tight" onclick="event.stopPropagation(); openBroadcastModal('battle','${id}','${boss.replace(/'/g, "\\'")}')">LINE</button>
+        <button class="text-[10px] font-black text-error hover:underline tracking-tight" onclick="event.stopPropagation(); deleteBattle('${id}', '${boss.replace(/'/g, "\\'")}')">刪除</button>
       </div>
     ` : '';
 
@@ -800,43 +1290,74 @@ function renderBattles() {
       const dropRows = drops.map(d => `
         <div class="flex justify-between border-b border-border/20 py-1.5">
           <span class="text-[10px] font-black text-slate-300 uppercase">${d.name}</span>
-          <span class="text-[10px] font-mono text-secondary font-black">${Number(d.price).toLocaleString()}</span>
+          <span class="text-[10px] font-mono text-secondary font-black">${Number(d.price || d.highestBid || 0).toLocaleString()}</span>
         </div>`).join('');
       dropsHtml = `<div class="flex-1 max-w-sm">
-        <div class="text-[8px] font-black text-secondary uppercase tracking-[0.3em] mb-3 flex items-center gap-2">
+        <div class="text-[10px] font-black text-secondary uppercase tracking-[0.3em] mb-3 flex items-center gap-2">
           <span class="w-1 h-1 bg-secondary rounded-full"></span> LOOT_MANIFEST
         </div>
         <div class="bg-black/20 p-4 border border-border/30">${dropRows}</div>
       </div>`;
     }
 
+    // Group attendance by job for detail view
+    const attDetailHtml = (() => {
+      if (!att.length) return '<div class="text-slate-600 text-xs font-bold uppercase col-span-full">無出席紀錄</div>';
+      const grouped = {};
+      JOB_ORDER.forEach(j => { grouped[j] = []; });
+      att.forEach(aid => {
+        const m = state.members.find(x => (x.ID || x.id) === aid) || state.alliances.find(x => (x.ID || x.id) === aid);
+        if (!m) return;
+        const job = m.job || '其他';
+        if (!grouped[job]) grouped[job] = [];
+        grouped[job].push(m);
+      });
+      return Object.entries(grouped).filter(([,arr]) => arr.length).map(([job, members]) => `
+        <div class="col-span-full mb-1">
+          <span class="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600/60">${JOB_ICON[job] || '⚔️'} ${job} · ${members.length}</span>
+        </div>
+        ${members.map(m => {
+          const lv = m.level ? `<span class="text-[10px] text-amber-600 ml-1">Lv${m.level}</span>` : '';
+          const isAlly = !!state.alliances.find(a => (a.ID || a.id) === (m.ID || m.id));
+          const allyBadge = isAlly ? '<span class="text-[10px] bg-secondary/20 text-secondary px-1 rounded ml-1">聯盟</span>' : '';
+          return `<div class="flex items-center gap-1 py-0.5">
+            <span class="text-[10px] font-black text-white uppercase">${m.name || m.Name || '未知'}</span>${lv}${allyBadge}
+          </div>`;
+        }).join('')}`).join('');
+    })();
+
     return `
-      <tr class="hover:bg-primary/5 transition-all cursor-pointer group border-b border-border/20" onclick="toggleExpand('b-${id}')">
-        <td class="py-5 pl-4 text-[10px] font-mono text-slate-500 uppercase tracking-tighter">
-          <div class="flex items-center gap-2">
-            <span class="expand-icon material-symbols-outlined text-[16px] text-primary/40 group-hover:text-primary transition-colors" id="icon-b-${id}">expand_more</span>
+      <tr class="data-row cursor-pointer group border-b border-white/5" onclick="toggleExpand('b-${id}')">
+        <td class="py-2.5 pl-3 text-[12px] font-mono text-slate-400 uppercase tracking-tight whitespace-nowrap">
+          <div class="flex items-center gap-1.5">
+            <span class="expand-icon material-symbols-outlined text-[14px] text-primary/40 group-hover:text-primary transition-colors" id="icon-b-${id}">expand_more</span>
             ${date}
           </div>
         </td>
-        <td class="py-5 font-black text-on-background uppercase group-hover:text-primary transition-colors tracking-tight text-sm">${boss}</td>
-        <td class="py-5 text-[11px] text-slate-400 font-bold uppercase">${count} UNITS</td>
-        <td class="py-5 text-[11px] font-mono text-slate-300">${Number(pool).toLocaleString()}</td>
-        <td class="py-5">
-           <span class="text-xs font-black text-primary tracking-tighter drop-shadow-[0_0_5px_rgba(var(--primary-rgb),0.3)]">${Number(rev).toLocaleString()}</span>
+        <td class="py-2.5">
+          <span class="font-black text-white uppercase group-hover:text-primary transition-colors tracking-tight text-[13px]">${cfg.icon} ${boss}</span>
+          ${b.notes ? `<div class="text-[10px] text-slate-600 font-bold uppercase mt-0.5 max-w-[150px] truncate">${b.notes}</div>` : ''}
         </td>
-        <td class="py-5 pr-4 text-right ${auth.isAdmin ? 'admin-col' : 'admin-col hidden'}">
+        <td class="py-2.5 text-[10px] text-slate-400 font-bold hidden sm:table-cell">${count} 人</td>
+        <td class="py-2.5 text-[10px] font-mono text-slate-500 hidden md:table-cell">${Number(pool).toLocaleString()}</td>
+        <td class="py-2.5">
+           <span class="text-[13px] font-black text-primary tracking-tight">${Number(rev).toLocaleString()}</span>
+        </td>
+        <td class="py-2.5">${resultBadge}</td>
+        <td class="py-2.5 hidden lg:table-cell">${statusBadge}</td>
+        <td class="py-2.5 pr-3 text-right ${auth.isAdmin ? 'admin-col' : 'admin-col hidden'}">
           ${adminActions}
         </td>
       </tr>
       <tr id="details-b-${id}" class="expandable-details">
-        <td colspan="6" class="p-0 border-b border-border/50 bg-black/60 overflow-hidden">
-          <div class="p-8 flex flex-col md:flex-row gap-10">
+        <td colspan="8" class="p-0 border-b border-border/50 bg-black/60 overflow-hidden">
+          <div class="p-6 flex flex-col md:flex-row gap-8">
              <div class="flex-1">
-                <div class="text-[8px] font-black text-primary uppercase tracking-[0.3em] mb-4 flex items-center gap-2">
-                  <span class="w-1 h-1 bg-primary rounded-full animate-pulse"></span> DEPLOYED_NODES (${count})
+                <div class="text-[10px] font-black text-primary uppercase tracking-[0.3em] mb-3 flex items-center gap-2">
+                  <span class="w-1 h-1 bg-primary rounded-full animate-pulse"></span> 出席名單 (${count})
                 </div>
-                <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-                   ${getAttendanceHtml(att)}
+                <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-1">
+                   ${attDetailHtml}
                 </div>
              </div>
              ${dropsHtml}
@@ -849,26 +1370,39 @@ function renderBattles() {
 // ── Sieges ────────────────────────────────────────
 async function addSiege() {
   const date = document.getElementById('sDate').value || new Date().toISOString();
-  const castle = document.getElementById('sCastle').value;
+  const siegeType = document.getElementById('sSiegeType')?.value || 'attack';
+  const castleSel = document.getElementById('sCastle').value;
+  const castle = castleSel === '__custom__'
+    ? (document.getElementById('sCastleCustom').value.trim() || '未知城堡')
+    : castleSel;
   const reward = Number(document.getElementById('sReward').value) || 0;
+  const notes = document.getElementById('sSiegeNotes')?.value.trim() || '';
   const attendance = getCheckedValues('sAttendance');
-  const count = attendance.length;
-  const revenuePerPerson = count > 0 ? Math.floor(reward / count) : 0;
+
+  if (!castle) { showToast('請選擇或輸入城堡名稱', 'error'); return; }
 
   try {
     const res = await fetch(`${API_BASE}/sieges`, {
       method: 'POST', headers: authHeaders(),
-      body: JSON.stringify({ date, castle, reward, attendance, revenuePerPerson })
+      body: JSON.stringify({ date, castle, siegeType, reward, notes, attendance, status: 'pending' })
     });
     if (res.status === 401) { showToast('請先登入系統', 'error'); openLoginModal(); return; }
     if (!res.ok) { showToast('提交失敗（權限不足）', 'error'); return; }
-    showToast(`${castle} 攻城戰提交！每人分紅 ${revenuePerPerson.toLocaleString()} 天幣`, 'success');
+    showToast(`${castle} 攻城戰已記錄！`, 'success');
+    // Reset form
+    const castleSel2 = document.getElementById('sCastle');
+    if (castleSel2) castleSel2.selectedIndex = 0;
+    const customIn = document.getElementById('sCastleCustom');
+    if (customIn) { customIn.classList.add('hidden'); customIn.value = ''; }
+    document.getElementById('sReward').value = '';
+    if (document.getElementById('sSiegeNotes')) document.getElementById('sSiegeNotes').value = '';
+    document.querySelectorAll('#sAttendance input[type="checkbox"]').forEach(cb => cb.checked = false);
     await fetchData();
   } catch (e) { showToast('新增失敗', 'error'); }
 }
 
 async function deleteSiege(id, castle) {
-  if (!confirm(`確定移除攻城紀錄�?{castle}」？這將會影響結算中心的資料。`)) return;
+  if (!confirm(`確定移除攻城紀錄「${castle}」？這將會影響結算中心的資料。`)) return;
   const res = await fetch(`${API_BASE}/sieges/${id}`, { method: 'DELETE', headers: authHeaders() });
   if (!res.ok) { showToast('刪除失敗（權限不足）', 'error'); return; }
   showToast(`${castle} 紀錄已移除`, 'success');
@@ -878,18 +1412,18 @@ async function deleteSiege(id, castle) {
 function renderSieges() {
   const tbody = document.querySelector('#siegesTable tbody');
   if (!tbody) return;
-  
+
   let data = state.sieges;
   if (filters.sieges) {
     const q = filters.sieges;
-    data = data.filter(s => 
+    data = data.filter(s =>
       (s.castle || '').toLowerCase().includes(q) ||
       (s.date || s.createdAt || '').includes(q)
     );
   }
-  
+
   if (data.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-gray-500 font-bold uppercase py-8">查無攻城戰紀�?/td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center text-gray-500 font-bold uppercase py-8">查無攻城戰紀錄</td></tr>';
     return;
   }
   tbody.innerHTML = data.map(s => {
@@ -899,61 +1433,76 @@ function renderSieges() {
     let att = [];
     try { att = typeof s.attendance === 'string' ? JSON.parse(s.attendance) : (s.attendance || []); } catch (e) {}
     const count = att.length;
-    const rev = s.revenuePerPerson || (count > 0 ? Math.floor(Number(s.reward || 0) / count) : 0);
-    
+    const subsidy = s.subsidyPerPerson || 0;
+    const isSettled = s.status === 'settled';
+
+    const typeBadge = s.siegeType === 'defend'
+      ? `<span class="tier-badge siege-defend">🛡 守城</span>`
+      : `<span class="tier-badge siege-attack">⚔️ 攻城</span>`;
+
+    const statusBadge = isSettled
+      ? `<span class="tier-badge" style="color:#34d399;border-color:rgba(52,211,153,0.4);background:rgba(52,211,153,0.08);">已結算</span>`
+      : `<span class="tier-badge" style="color:#f59e0b;border-color:rgba(245,158,11,0.35);background:rgba(245,158,11,0.07);">待結算</span>`;
+
     const adminActions = auth.isAdmin ? `
-      <div class="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity flex-wrap">
+        ${!isSettled ? `<button class="text-[10px] font-black text-emerald-400 hover:underline tracking-tight" onclick="event.stopPropagation(); openSettleModal('siege','${id}')">SETTLE</button>` : ''}
         <button class="text-[10px] font-black text-secondary hover:underline tracking-tight" onclick="event.stopPropagation(); openBroadcastModal('siege','${id}','${castle.replace(/'/g, "\\'")}')">LINE_CALL</button>
         <button class="text-[10px] font-black text-error hover:underline tracking-tight" onclick="event.stopPropagation(); deleteSiege('${id}', '${castle.replace(/'/g, "\\'")}')">PURGE</button>
       </div>
     ` : '';
 
     return `
-      <tr class="hover:bg-Copper-glow transition-all cursor-pointer group" onclick="toggleExpand('s-${id}')">
-        <td class="py-5 pl-4 text-[10px] font-mono text-tertiary uppercase tracking-tighter">
-          <div class="flex items-center gap-2">
-            <span class="expand-icon material-symbols-outlined text-[16px] text-Copper-dim/40 group-hover:text-Copper-primary transition-colors" id="icon-s-${id}">expand_more</span>
+      <tr class="data-row cursor-pointer group border-b border-white/5" onclick="toggleExpand('s-${id}')">
+        <td class="py-2.5 pl-3 text-[12px] font-mono text-slate-400 uppercase tracking-tight whitespace-nowrap">
+          <div class="flex items-center gap-1.5">
+            <span class="expand-icon material-symbols-outlined text-[14px] text-secondary/40 group-hover:text-secondary transition-colors" id="icon-s-${id}">expand_more</span>
             ${date}
           </div>
         </td>
-        <td class="py-5 font-bold text-white uppercase group-hover:text-Copper-primary transition-colors tracking-tight text-sm">${castle}</td>
-        <td class="py-5 text-[11px] text-tertiary font-bold uppercase">${count} UNITS</td>
-        <td class="py-5 text-[11px] font-mono text-slate-300">${Number(s.reward || 0).toLocaleString()}</td>
-        <td class="py-5">
-           <span class="text-xs font-black text-Copper-primary tracking-tighter">${Number(rev).toLocaleString()}</span>
+        <td class="py-2.5">${typeBadge}</td>
+        <td class="py-2.5 font-bold text-white uppercase group-hover:text-secondary transition-colors tracking-tight text-xs max-w-[110px] truncate">${castle}</td>
+        <td class="py-2.5 text-[10px] text-slate-400 font-bold hidden sm:table-cell">${count} 人</td>
+        <td class="py-2.5 text-[10px] font-mono text-slate-500 hidden md:table-cell">${Number(s.reward || 0).toLocaleString()}</td>
+        <td class="py-2.5">
+           <span class="text-[13px] font-black text-secondary tracking-tight">${subsidy > 0 ? Number(subsidy).toLocaleString() : '—'}</span>
         </td>
-        <td class="py-5 pr-4 text-right ${auth.isAdmin ? '' : 'hidden'}">
+        <td class="py-2.5 hidden lg:table-cell">${statusBadge}</td>
+        <td class="py-2.5 pr-3 text-right ${auth.isAdmin ? 'admin-col' : 'admin-col hidden'}">
           ${adminActions}
         </td>
       </tr>
       <tr id="details-s-${id}" class="expandable-details">
-        <td colspan="6" class="p-0 bg-black/40 overflow-hidden">
+        <td colspan="8" class="p-0 bg-black/40 overflow-hidden">
           <div class="p-8">
-             <div class="text-[8px] font-black text-Copper-primary uppercase tracking-[0.3em] mb-4 flex items-center gap-2">
-               <span class="w-1 h-1 bg-Copper-primary rounded-full animate-pulse"></span> DEPLOYED_NODES (${count})
+             <div class="text-[10px] font-black text-secondary uppercase tracking-[0.3em] mb-4 flex items-center gap-2">
+               <span class="w-1 h-1 bg-secondary rounded-full animate-pulse"></span> DEPLOYED_NODES (${count})
              </div>
              <div class="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-2">
                 ${getAttendanceHtml(att)}
              </div>
+             ${s.notes ? `<div class="mt-4 text-[10px] text-amber-700/60 font-bold uppercase">備註：${s.notes}</div>` : ''}
           </div>
         </td>
       </tr>`;
   }).join('');
 }
 
+
 // ── Alliances ─────────────────────────────────────
 async function addAlliance() {
   const name = document.getElementById('aName').value.trim();
+  const pledgeName = document.getElementById('aPledgeName')?.value.trim() || '';
   const job = document.getElementById('aJob').value;
   const notes = document.getElementById('aNotes').value.trim();
-  if (!name || !job) { showToast('請填寫完整資�?, 'error'); return; }
+  if (!name || !job) { showToast('請填寫完整資料', 'error'); return; }
 
   try {
     const res = await fetch(`${API_BASE}/alliances`, {
       method: 'POST', headers: authHeaders(),
-      body: JSON.stringify({ name, job, notes })
+      body: JSON.stringify({ name, pledgeName, job, notes })
     });
-    if (res.status === 401) { showToast('請先登入管理員帳�?, 'error'); openLoginModal(); return; }
+    if (res.status === 401) { showToast('請先登入管理員帳號', 'error'); openLoginModal(); return; }
     if (!res.ok) { showToast('提交失敗（權限不足）', 'error'); return; }
     document.getElementById('aName').value = '';
     document.getElementById('aNotes').value = '';
@@ -963,7 +1512,7 @@ async function addAlliance() {
 }
 
 async function deleteAlliance(id, name) {
-  if (!confirm(`確定移除聯盟成員�?{name}」？`)) return;
+  if (!confirm(`確定移除聯盟成員「${name}」？`)) return;
   const res = await fetch(`${API_BASE}/alliances/${id}`, { method: 'DELETE', headers: authHeaders() });
   if (!res.ok) { showToast('刪除失敗（權限不足）', 'error'); return; }
   showToast(`${name} 已移除`, 'success');
@@ -975,19 +1524,21 @@ function openEditAllianceModal(id) {
   if (!a) return;
   document.getElementById('editAllianceId').value = id;
   document.getElementById('editAllianceName').value = a.name || a.Name || '';
+  document.getElementById('editAlliancePledgeName').value = a.pledgeName || '';
   document.getElementById('editAllianceJob').value = a.job || '王族';
   document.getElementById('editAllianceNotes').value = a.notes || '';
-  document.getElementById('editAllianceModal').classList.remove('hidden');
+  document.getElementById('editAllianceModal').style.display = 'flex';
 }
 
 function closeEditAllianceModal(e) {
   if (e && e.target !== document.getElementById('editAllianceModal')) return;
-  document.getElementById('editAllianceModal').classList.add('hidden');
+  document.getElementById('editAllianceModal').style.display = 'none';
 }
 
 async function updateAlliance() {
   const id = document.getElementById('editAllianceId').value;
   const name = document.getElementById('editAllianceName').value.trim();
+  const pledgeName = document.getElementById('editAlliancePledgeName')?.value.trim() || '';
   const job = document.getElementById('editAllianceJob').value;
   const notes = document.getElementById('editAllianceNotes').value.trim();
   if (!name || !job) { showToast('請填寫角色名稱與職業', 'error'); return; }
@@ -995,10 +1546,10 @@ async function updateAlliance() {
   try {
     const res = await fetch(`${API_BASE}/alliances/${id}`, {
       method: 'PUT', headers: authHeaders(),
-      body: JSON.stringify({ name, job, notes })
+      body: JSON.stringify({ name, pledgeName, job, notes })
     });
     if (!res.ok) { showToast('修改失敗（權限不足）', 'error'); return; }
-    document.getElementById('editAllianceModal').classList.add('hidden');
+    document.getElementById('editAllianceModal').style.display = 'none';
     showToast(`${name} 聯盟資料已更新`, 'success');
     await fetchData();
   } catch (e) { showToast('修改失敗', 'error'); }
@@ -1019,35 +1570,99 @@ function renderAlliances() {
   }
   
   if (data.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-gray-500 font-bold uppercase py-8">查無聯盟成員</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-slate-500 font-bold uppercase py-8">查無聯盟成員</td></tr>';
     return;
   }
-  tbody.innerHTML = data.map(a => {
-    const id = a.ID || a.id;
-    const name = a.name || a.Name || '';
-    const adminActions = auth.isAdmin
-      ? `<td class="py-3 pr-2 text-right admin-col">
-          <div class="flex items-center justify-end gap-2">
-            <button class="action-btn edit" onclick="openEditAllianceModal('${id}')">MUTATE</button>
-            <button class="action-btn delete" onclick="deleteAlliance('${id}', '${name.replace(/'/g, "\\'")}')">DELETE</button>
-          </div>
-         </td>`
-      : '<td class="py-3 pr-2 text-right admin-col hidden"></td>';
-    return `
-      <tr class="hover:bg-white/5 transition-colors group">
-        <td class="py-3 pl-2 font-black text-white uppercase group-hover:text-secondary transition-colors">${name}</td>
-        <td class="py-3 text-slate-300 font-bold uppercase">${a.job || ''}</td>
-        <td class="py-3 notes-cell text-slate-500 font-bold uppercase">${a.notes || '<span class="opacity-40">�?/span>'}</td>
-        ${adminActions}
-      </tr>`;
-  }).join('');
+
+  // Group by pledgeName
+  const groups = {};
+  data.forEach(a => {
+    const grp = a.pledgeName || '（未分類）';
+    if (!groups[grp]) groups[grp] = [];
+    groups[grp].push(a);
+  });
+
+  const rows = [];
+  Object.entries(groups).forEach(([grpName, members]) => {
+    // Group header row
+    rows.push(`
+      <tr class="bg-amber-950/20 border-y border-amber-900/20">
+        <td colspan="7" class="py-2 pl-3 text-[10px] font-black text-secondary uppercase tracking-widest">
+          <span class="material-symbols-outlined text-[12px] align-middle mr-1" style="font-variation-settings:'FILL' 1;">groups</span>
+          ${grpName} <span class="text-amber-700/50 font-normal ml-1">(${members.length})</span>
+        </td>
+      </tr>`);
+
+    // Build per-ally attendance count
+    const allyAttCount = {};
+    [...state.battles, ...state.sieges].forEach(op => {
+      let att2 = [];
+      try { att2 = typeof op.attendance==='string'?JSON.parse(op.attendance):(op.attendance||[]); } catch(e){}
+      att2.forEach(aid => { allyAttCount[aid] = (allyAttCount[aid]||0)+1; });
+    });
+
+    members.forEach(a => {
+      const id = a.ID || a.id;
+      const name = a.name || a.Name || '';
+      const avatarLetter = (name.charAt(0) || '?').toUpperCase();
+      const attCnt = allyAttCount[id] || 0;
+      const lineStatus = a.lineUserId
+        ? `<span class="inline-flex items-center gap-1 bg-secondary/10 text-secondary border border-secondary/25 text-[10px] px-1.5 py-0.5 font-black uppercase rounded-sm"><span style="width:5px;height:5px;background:currentColor;border-radius:50%;display:inline-block;"></span>LINE</span>`
+        : `<span class="text-slate-700 text-[10px] font-black">—</span>`;
+      const adminActions = auth.isAdmin
+        ? `<td class="py-2.5 pr-3 text-right admin-col">
+            <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button class="text-[10px] font-black text-secondary hover:underline" onclick="openLineBindModal('alliances','${id}','${name.replace(/'/g, "\\'")}')">LINK</button>
+              <button class="text-[10px] font-black text-primary hover:underline" onclick="openEditAllianceModal('${id}')">EDIT</button>
+              <button class="text-[10px] font-black text-error hover:underline" onclick="deleteAlliance('${id}', '${name.replace(/'/g, "\\'")}')">刪除</button>
+            </div>
+           </td>`
+        : '<td class="py-2.5 pr-3 text-right admin-col hidden"></td>';
+      rows.push(`
+        <tr class="data-row border-b border-white/5 group">
+          <td class="py-2.5 pl-3">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-full bg-blue-900/30 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
+                <span class="text-[11px] font-black text-blue-400">${avatarLetter}</span>
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="font-black text-white uppercase group-hover:text-secondary transition-colors text-xs truncate">${name}</span>
+                <span class="text-[10px] font-mono text-slate-600 uppercase">·${id.slice(-4).toUpperCase()}</span>
+              </div>
+            </div>
+          </td>
+          <td class="py-2.5 text-[10px] text-amber-700/70 font-bold truncate max-w-[100px]">${a.pledgeName || '—'}</td>
+          <td class="py-2.5 hidden sm:table-cell"><span class="job-${a.job} font-bold text-[10px]">${JOB_ICON[a.job]||''} ${a.job || ''}</span></td>
+          <td class="py-2.5 text-center hidden md:table-cell">
+            ${attCnt > 0 ? `<span class="font-black text-[10px] text-secondary">${attCnt}</span>` : '<span class="text-slate-700 text-[10px] font-black">—</span>'}
+          </td>
+          <td class="py-2.5 text-[11px] text-slate-600 font-bold hidden lg:table-cell truncate max-w-[130px]">${a.notes || ''}</td>
+          <td class="py-2.5 text-center">${lineStatus}</td>
+          ${adminActions}
+        </tr>`);
+    }); // close members.forEach
+  }); // close groups.forEach
+
+  tbody.innerHTML = rows.join('');
 }
 
 // ── Treasury (結算中心) ───────────────────────────
 function renderTreasury() {
+  // Update real treasury balance display
+  const balanceEl = document.getElementById('treasuryBalanceDisplay');
+  const bal = Number(state.treasury?.balance || 0);
+  // Income / Expense totals from transactions
+  const txList = state.transactions || [];
+  const totalIncome = txList.filter(t=>Number(t.amount||0)>0).reduce((s,t)=>s+Number(t.amount||0),0);
+  const totalExpense = Math.abs(txList.filter(t=>Number(t.amount||0)<0).reduce((s,t)=>s+Number(t.amount||0),0));
+  const setEl = (id, val) => { const e = document.getElementById(id); if(e) e.textContent=val; };
+  setEl('treasuryTotalIncome',  totalIncome  > 0 ? totalIncome.toLocaleString()  : '—');
+  setEl('treasuryTotalExpense', totalExpense > 0 ? totalExpense.toLocaleString() : '—');
+  if (balanceEl) balanceEl.textContent = bal.toLocaleString();
+
   const tbody = document.querySelector('#treasuryTable tbody');
   if (!tbody) return;
-  
+
   if (state.members.length === 0 && state.alliances.length === 0) {
     tbody.innerHTML = '<tr><td colspan="5" class="text-center text-slate-400 font-bold uppercase py-8">尚無人員紀錄，無法結算</td></tr>';
     return;
@@ -1116,7 +1731,7 @@ function renderTreasury() {
   if (totalDistEl) totalDistEl.textContent = grandTotal.toLocaleString();
   if (activeAcctsEl) activeAcctsEl.textContent = activeAccts;
 
-  // Generate HTML �?apply treasury search filter
+  // Generate HTML — apply treasury search filter
   let treasuryEntries = allEntries;
   if (filters.treasury) {
     const q = filters.treasury;
@@ -1131,23 +1746,82 @@ function renderTreasury() {
   const rows = treasuryEntries
     // Sort by Total Revenue (descending)
     .sort((a, b) => (b.battleRev + b.siegeRev) - (a.battleRev + a.siegeRev))
-    .map(t => {
+    .map((t, i) => {
       const totalRev = t.battleRev + t.siegeRev;
-      const typeBadge = t.type === 'alliance' 
-        ? '<span style="background:rgba(59,130,246,0.15);color:#3b82f6;border:1px solid rgba(59,130,246,0.3);font-size:9px;padding:2px 6px;border-radius:4px;font-weight:800;text-transform:uppercase;margin-left:6px;">聯盟</span>'
+      const maxRev = treasuryEntries.length > 0
+        ? Math.max(...treasuryEntries.map(x => x.battleRev + x.siegeRev), 1)
+        : 1;
+      const barPct = totalRev > 0 ? Math.round(totalRev / maxRev * 100) : 0;
+      const typeBadge = t.type === 'alliance'
+        ? '<span class="tier-badge" style="color:#60a5fa;border-color:rgba(96,165,250,0.4);background:rgba(96,165,250,0.08);margin-left:4px;">聯盟</span>'
         : '';
-      
+      const tRankCls = ['rank-gold','rank-silver','rank-bronze'];
+      const rankEl = i < 3
+        ? `<span class="${tRankCls[i]} text-sm mr-1">★</span>`
+        : `<span class="text-[11px] text-slate-600 font-black mr-1">${i+1}</span>`;
+
       return `
-        <tr class="hover:bg-white/5 transition-colors border-b border-white/5 last:border-0 group">
-          <td class="py-3 pl-2 font-black text-white uppercase flex items-center group-hover:text-primary transition-colors">${t.name} ${typeBadge}</td>
-          <td class="py-3 text-center text-slate-300 font-bold uppercase">${t.attendanceCount}</td>
-          <td class="py-3 text-right text-slate-400 font-bold uppercase">${t.battleRev.toLocaleString()}</td>
-          <td class="py-3 text-right text-slate-400 font-bold uppercase">${t.siegeRev.toLocaleString()}</td>
-          <td class="py-3 pr-2 text-right font-black text-primary uppercase bg-white/5 border-l-4 border-l-primary/40">${totalRev.toLocaleString()}</td>
+        <tr class="data-row border-b border-white/5 group">
+          <td class="py-2.5 pl-2">
+            <div class="flex items-center min-w-0">
+              ${rankEl}
+              <span class="font-black text-white uppercase group-hover:text-primary transition-colors text-xs truncate">${t.name}</span>
+              ${typeBadge}
+            </div>
+            ${barPct > 0 ? `<div class="level-bar-track mt-0.5 ml-5"><div class="level-bar-fill" style="width:${barPct}%"></div></div>` : ''}
+          </td>
+          <td class="py-2.5 text-center"><span class="att-pill ${t.attendanceCount > 0 ? 'has-att' : ''}">${t.attendanceCount || '—'}</span></td>
+          <td class="py-2.5 text-right text-slate-500 font-bold text-[10px] hidden md:table-cell">${t.battleRev > 0 ? t.battleRev.toLocaleString() : '—'}</td>
+          <td class="py-2.5 text-right text-slate-500 font-bold text-[10px] hidden md:table-cell">${t.siegeRev > 0 ? t.siegeRev.toLocaleString() : '—'}</td>
+          <td class="py-2.5 pr-2 text-right font-black text-primary text-xs">${totalRev > 0 ? totalRev.toLocaleString() : '—'}</td>
         </tr>`;
     });
 
   tbody.innerHTML = rows.join('');
+}
+
+// ── Transactions Render ──────────────────────────
+function renderTransactions() {
+  const tbody = document.getElementById('transactionsTbody');
+  if (!tbody) return;
+  const txList = state.transactions || [];
+  if (!txList.length) {
+    tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">尚無收支記錄</div></div></td></tr>`;
+    return;
+  }
+
+  const catIconMap = {
+    '城堡稅收': '🏰', '首領戰分紅': '⚔️', '攻城戰薪津': '🏰',
+    '薪津支出': '💰', '裝備採購': '🛡️', '活動獎勵': '🎁',
+    '其他收入': '📥', '其他支出': '📤', '手動結算': '⚖️'
+  };
+
+  const sorted = [...txList].sort((a, b) =>
+    new Date(b.date || b.createdAt || 0) - new Date(a.date || a.createdAt || 0)
+  );
+
+  tbody.innerHTML = sorted.map(tx => {
+    const amt = Number(tx.amount || 0);
+    const isIncome = amt >= 0;
+    const date = new Date(tx.date || tx.createdAt || 0).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' });
+    const cat = tx.category || (isIncome ? '其他收入' : '其他支出');
+    const catIcon = catIconMap[cat] || (isIncome ? '📥' : '📤');
+    const amtColor = isIncome ? 'text-emerald-400' : 'text-red-400';
+    const amtStr = `${isIncome ? '+' : ''}${amt.toLocaleString()}`;
+    const note = tx.note || tx.description || '';
+
+    return `<tr class="data-row border-b border-white/5 group">
+      <td class="py-2 pl-3 text-[11px] font-mono text-slate-500 whitespace-nowrap">${date}</td>
+      <td class="py-2 hidden sm:table-cell">
+        <div class="flex items-center gap-1.5">
+          <span class="text-sm">${catIcon}</span>
+          <span class="text-[11px] font-black uppercase tracking-wide text-slate-400">${cat}</span>
+        </div>
+      </td>
+      <td class="py-2 text-[10px] text-slate-400 font-bold max-w-[200px] truncate">${note}</td>
+      <td class="py-2 pr-3 text-right font-black text-xs ${amtColor} whitespace-nowrap">${amtStr}</td>
+    </tr>`;
+  }).join('');
 }
 
 // ── Charts ────────────────────────────────────────
@@ -1394,7 +2068,7 @@ let _broadcastTarget = null;
 function openBroadcastModal(type, id, name) {
   _broadcastTarget = { type, id, name };
   const modal = document.getElementById('lineBroadcastModal');
-  document.getElementById('broadcastTargetName').textContent = `[${type === 'siege' ? '攻城�? : '首領�?}] ${name}`;
+  document.getElementById('broadcastTargetName').textContent = `[${type === 'siege' ? '攻城戰' : '首領戰'}] ${name}`;
   document.getElementById('broadcastNotes').value = '';
   document.getElementById('broadcastTime').value = '';
   document.getElementById('broadcastResult').textContent = '';
@@ -1402,13 +2076,13 @@ function openBroadcastModal(type, id, name) {
   const radios = document.querySelectorAll('input[name="broadcastMode"]');
   radios.forEach(r => { r.checked = r.value === 'bound'; });
   updateBroadcastUI();
-  modal.classList.remove('hidden');
+  modal.style.display = 'flex';
 }
 
 function closeBroadcastModal(e) {
   const modal = document.getElementById('lineBroadcastModal');
   if (e && e.target !== modal) return;
-  modal.classList.add('hidden');
+  modal.style.display = 'none';
 }
 
 function updateBroadcastUI() {
@@ -1422,17 +2096,17 @@ function updateBroadcastUI() {
   // Count potential recipients for preview
   if (mode === 'all') {
     preview.classList.remove('hidden');
-    previewText.textContent = '�?廣播路線：全部關注者（不限綁定狀態）';
+    previewText.textContent = '► 廣播路線：全部關注者（不限綁定狀態）';
   } else if (mode === 'bound') {
     const allPeople = [...state.members, ...state.alliances];
     const count = allPeople.filter(p => p.lineUserId).length;
     preview.classList.remove('hidden');
-    previewText.textContent = `�?將發送給 ${count} 位已綁定成員`;
+    previewText.textContent = `► 將發送給 ${count} 位已綁定成員`;
   } else if (mode === 'tier') {
     const selectedTiers = Array.from(document.querySelectorAll('#tierCheckboxes input:checked')).map(c => c.value);
-    const count = state.members.filter(m => m.lineUserId && selectedTiers.includes(m.tier || '一�?)).length;
+    const count = state.members.filter(m => m.lineUserId && selectedTiers.includes(m.tier || '一般')).length;
     preview.classList.remove('hidden');
-    previewText.textContent = `�?分級 [${selectedTiers.join(' / ')}] 將發送給 ${count} 位成員`;
+    previewText.textContent = `► 分級 [${selectedTiers.join(' / ')}] 將發送給 ${count} 位成員`;
   }
 }
 
@@ -1444,14 +2118,14 @@ async function sendBroadcast() {
     : [];
 
   if (mode === 'tier' && selectedTiers.length === 0) {
-    showToast('請至少勾選一個分�?, 'error');
+    showToast('請至少勾選一個分級', 'error');
     return;
   }
 
   const btn = document.getElementById('broadcastSendBtn');
   const result = document.getElementById('broadcastResult');
   btn.disabled = true;
-  btn.textContent = '推播�?..';
+  btn.textContent = '推播中..';
   result.textContent = '';
 
   try {
@@ -1472,24 +2146,24 @@ async function sendBroadcast() {
     const data = await res.json();
     if (res.ok) {
       const methodLabel = {
-        all: '廣播給所有關注�?,
+        all: '廣播給所有關注者',
         bound: `已發送給 ${data.sent} 位綁定成員`,
-        tier: `已發送給 ${data.sent} �?[${selectedTiers.join('/')}] 成員`
+        tier: `已發送給 ${data.sent} 位 [${selectedTiers.join('/')}] 成員`
       }[data.method] || `已發送給 ${data.sent || 0} 位`;
       result.className = 'text-secondary font-black text-sm mt-2 uppercase tracking-widest';
-      result.textContent = `�?推播成功�?{methodLabel}`;
-      showToast('LINE 召集令已發出�?, 'success');
-      logToTerminal(`LINE BROADCAST [${mode.toUpperCase()}]: ${_broadcastTarget.name} �?${methodLabel}`);
+      result.textContent = `✅ 推播成功！${methodLabel}`;
+      showToast('LINE 召集令已發出！', 'success');
+      logToTerminal(`LINE BROADCAST [${mode.toUpperCase()}]: ${_broadcastTarget.name} → ${methodLabel}`);
     } else {
       result.className = 'text-[#ff3333] font-black text-sm mt-2 uppercase';
-      result.textContent = `�?${data.error || '推播失敗'}`;
+      result.textContent = `❌ ${data.error || '推播失敗'}`;
     }
   } catch (e) {
     result.className = 'text-error font-black text-sm mt-2 uppercase tracking-widest';
-    result.textContent = '�?網路錯誤，請稍後再試';
+    result.textContent = '❌ 網路錯誤，請稍後再試';
   } finally {
     btn.disabled = false;
-    btn.textContent = '📢 發�?LINE 召集�?;
+    btn.textContent = '📢 發送 LINE 召集令';
   }
 }
 
@@ -1498,63 +2172,550 @@ let _bindTarget = null;
 
 function openLineBindModal(collection, id, name) {
   const person = collection === 'members'
-    ? state.members.find(m => (m.ID || m.id) === id)
-    : state.alliances.find(a => (a.ID || a.id) === id);
-  _bindTarget = { collection, id, name };
+    ? state.members.find(m => (m.ID || m.id) == id)
+    : state.alliances.find(a => (a.ID || a.id) == id);
+  _bindTarget = { collection, id, name, currentLine: person?.lineId || '' };
+  document.getElementById('lineBindName').textContent = name;
+  document.getElementById('lineBindInput').value = _bindTarget.currentLine;
   const modal = document.getElementById('lineBindModal');
-  document.getElementById('bindMemberName').textContent = name;
-  document.getElementById('bindLineUserId').value = person?.lineUserId || '';
-  document.getElementById('bindResult').textContent = '';
-  modal.classList.remove('hidden');
+  modal.style.display = 'flex';
 }
 
 function closeLineBindModal(e) {
+  if (e && e.target !== e.currentTarget) return;
   const modal = document.getElementById('lineBindModal');
-  if (e && e.target !== modal) return;
-  modal.classList.add('hidden');
+  modal.style.display = 'none';
+  _bindTarget = null;
 }
 
 async function saveLineBinding() {
   if (!_bindTarget) return;
-  const lineUserId = document.getElementById('bindLineUserId').value.trim();
-  const result = document.getElementById('bindResult');
-
-  if (!lineUserId) {
-    // Unbind
-    if (!confirm(`確定解除 ${_bindTarget.name} �?LINE 綁定？`)) return;
-    try {
-      const res = await fetch(`${API_BASE}/${_bindTarget.collection === 'members' ? 'members' : 'alliances'}/${_bindTarget.id}/line-bind`, {
-        method: 'DELETE', headers: authHeaders()
-      });
-      if (res.ok) {
-        showToast(`${_bindTarget.name} LINE 綁定已解除`, 'success');
-        document.getElementById('lineBindModal').classList.add('hidden');
-        await fetchData();
-      }
-    } catch (e) { showToast('解除失敗', 'error'); }
-    return;
-  }
-
+  const lineId = document.getElementById('lineBindInput').value.trim();
+  const { collection, id } = _bindTarget;
   try {
-    const endpoint = _bindTarget.collection === 'members' ? 'members' : 'alliances';
-    const res = await fetch(`${API_BASE}/${endpoint}/${_bindTarget.id}/line-bind`, {
-      method: 'PUT', headers: authHeaders(),
-      body: JSON.stringify({ lineUserId })
+    const res = await fetch(`${API_BASE}/${collection}/${id}/line`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ lineId })
     });
+    const data = await res.json();
     if (res.ok) {
-      result.className = 'text-secondary font-black text-sm mt-2 tracking-widest';
-      result.textContent = '�?綁定成功�?;
-      showToast(`${_bindTarget.name} LINE 綁定完成`, 'success');
+      showToast('LINE ID 已更新', 'success');
+      closeLineBindModal();
       await fetchData();
     } else {
-      result.className = 'text-error font-black text-sm mt-2 tracking-widest';
-      result.textContent = '�?綁定失敗，請確認權限';
+      showToast(data.error || '更新失敗', 'error');
     }
   } catch (e) {
-    result.className = 'text-error font-black text-sm mt-2 tracking-widest';
-    result.textContent = '�?網路錯誤';
+    showToast('❌ 網路錯誤，請稍後再試', 'error');
   }
 }
 
-// ── Start ─────────────────────────────────────────────
-init();
+// ── Settle Modal ─────────────────────────────────────
+let _settleTarget = null;
+
+function openSettleModal(type, id) {
+  const collection = type === 'battle' ? state.battles : state.sieges;
+  const record = collection.find(r => (r.ID || r.id) == id);
+  if (!record) return;
+  _settleTarget = { type, id, record };
+  document.getElementById('settleTitle').textContent =
+    type === 'battle'
+      ? `結算：${record.bossName || '首領戰'}`
+      : `結算：${record.castle || '攻城戰'}`;
+  const subsidyRow = document.getElementById('settleSubsidyRow');
+  if (subsidyRow) subsidyRow.style.display = type === 'siege' ? '' : 'none';
+  renderSettlePreview();
+  const modal = document.getElementById('settleModal');
+  modal.style.display = 'flex';
+}
+
+function closeSettleModal(e) {
+  if (e && e.target !== e.currentTarget) return;
+  const modal = document.getElementById('settleModal');
+  modal.style.display = 'none';
+  _settleTarget = null;
+}
+
+function renderSettlePreview() {
+  if (!_settleTarget) return;
+  const { type, record } = _settleTarget;
+  const reserveInput = document.getElementById('settleReserve');
+  const subsidyInput = document.getElementById('settleSubsidy');
+  const previewEl = document.getElementById('settlePreview');
+  const reservePct = parseFloat(reserveInput?.value || 0);
+  const subsidyPer = parseFloat(subsidyInput?.value || 0);
+
+  const parseAtt = (att) => {
+    try { return JSON.parse(att || '[]'); } catch { return []; }
+  };
+
+  if (type === 'battle') {
+    const drops = Number(record.drops || 0);
+    const reserve = Math.floor(drops * reservePct / 100);
+    const distributable = drops - reserve;
+    const attendees = parseAtt(record.attendance).filter(a => a.present);
+    const perPerson = attendees.length > 0 ? Math.floor(distributable / attendees.length) : 0;
+    previewEl.innerHTML = `
+      <div class="grid grid-cols-2 gap-2 text-sm">
+        <span class="text-[#b8a87a]">總掉落:</span><span class="text-white">${drops.toLocaleString()} 金</span>
+        <span class="text-[#b8a87a]">公積金 (${reservePct}%):</span><span class="text-[#ffd700]">${reserve.toLocaleString()} 金</span>
+        <span class="text-[#b8a87a]">可分配:</span><span class="text-white">${distributable.toLocaleString()} 金</span>
+        <span class="text-[#b8a87a]">出席人數:</span><span class="text-white">${attendees.length} 人</span>
+        <span class="text-[#b8a87a]">每人分得:</span><span class="text-[#51cf66] font-bold">${perPerson.toLocaleString()} 金</span>
+      </div>`;
+  } else {
+    const loot = Number(record.loot || 0);
+    const reserve = Math.floor(loot * reservePct / 100);
+    const attendees = parseAtt(record.attendance).filter(a => a.present);
+    const totalSubsidy = subsidyPer * attendees.length;
+    previewEl.innerHTML = `
+      <div class="grid grid-cols-2 gap-2 text-sm">
+        <span class="text-[#b8a87a]">戰利品:</span><span class="text-white">${loot.toLocaleString()} 金</span>
+        <span class="text-[#b8a87a]">公積金 (${reservePct}%):</span><span class="text-[#ffd700]">${reserve.toLocaleString()} 金</span>
+        <span class="text-[#b8a87a]">出席人數:</span><span class="text-white">${attendees.length} 人</span>
+        <span class="text-[#b8a87a]">薪津/人:</span><span class="text-white">${subsidyPer.toLocaleString()} 金</span>
+        <span class="text-[#b8a87a]">薪津總計:</span><span class="text-[#ff6b35] font-bold">-${totalSubsidy.toLocaleString()} 金</span>
+      </div>`;
+  }
+}
+
+async function confirmSettle() {
+  if (!_settleTarget) return;
+  const { type, id } = _settleTarget;
+  const reservePct = parseFloat(document.getElementById('settleReserve')?.value || 0);
+  const subsidyPer = parseFloat(document.getElementById('settleSubsidy')?.value || 0);
+  const endpoint = type === 'battle'
+    ? `${API_BASE}/battles/${id}/settle`
+    : `${API_BASE}/sieges/${id}/settle`;
+  const body = type === 'battle'
+    ? { reservePercentage: reservePct }
+    : { subsidyPerPerson: subsidyPer, reservePercentage: reservePct, source: _settleTarget.record.castle || '攻城戰' };
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showToast('結算完成！金庫已更新', 'success');
+      closeSettleModal();
+      await fetchData();
+    } else {
+      showToast(data.error || '結算失敗', 'error');
+    }
+  } catch (e) {
+    showToast('❌ 網路錯誤，請稍後再試', 'error');
+  }
+}
+
+// ── Member Profile Modal ──────────────────────────────
+function openMemberProfile(id) {
+  const member = state.members.find(m => (m.ID || m.id) == id);
+  if (!member) return;
+  const modal = document.getElementById('memberProfileModal');
+  if (!modal) return;
+
+  document.getElementById('profileName').textContent = member.name || '—';
+  document.getElementById('profileJob').textContent = member.job || '—';
+  document.getElementById('profileTier').textContent = member.tier || '一般';
+  document.getElementById('profileLine').textContent = member.lineId || '未綁定';
+  document.getElementById('profileNote').textContent = member.note || '—';
+
+  const parseAtt = (att) => {
+    try { return JSON.parse(att || '[]'); } catch { return []; }
+  };
+
+  const battles = state.battles.filter(b =>
+    parseAtt(b.attendance).some(a => a.name === member.name && a.present)
+  );
+  const sieges = state.sieges.filter(s =>
+    parseAtt(s.attendance).some(a => a.name === member.name && a.present)
+  );
+
+  const elB = document.getElementById('profileBattleCount');
+  const elS = document.getElementById('profileSiegeCount');
+  if (elB) elB.textContent = battles.length;
+  if (elS) elS.textContent = sieges.length;
+
+  modal.style.display = 'flex';
+}
+
+function closeMemberProfile(e) {
+  if (e && e.target !== e.currentTarget) return;
+  const modal = document.getElementById('memberProfileModal');
+  if (!modal) return;
+  modal.style.display = 'none';
+}
+
+// ── Overview Panel ────────────────────────────────────
+function renderOverview() {
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  const bal = Number(state.treasury?.balance || 0);
+
+  // KPI strip — with count-up animation trigger
+  const kpis = [
+    ['kpiMemberCount',   state.members.length],
+    ['kpiTreasury',      bal.toLocaleString()],
+    ['kpiBattleCount',   state.battles.filter(b => (b.result || b.status) === 'success').length],
+    ['kpiAllianceCount', state.alliances.length],
+  ];
+  kpis.forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = val;
+    el.classList.remove('kpi-animate');
+    // Force reflow to restart animation
+    void el.offsetWidth;
+    el.classList.add('kpi-animate');
+  });
+
+  // Legacy ids still used by treasury card in overview
+  set('overviewClanBank', bal.toLocaleString());
+  set('overviewTotalOps', state.battles.length + state.sieges.length);
+
+  // Battle summary
+  const totalB = state.battles.length;
+  const wonB   = state.battles.filter(b => (b.result || b.status) === 'success').length;
+  set('ovBattleTotal',   totalB);
+  set('ovBattleWinRate', totalB > 0 ? Math.round(wonB / totalB * 100) + '%' : '—');
+  set('ovSiegeTotal',    state.sieges.length);
+
+  // Recent battles mini list
+  const rbEl = document.getElementById('ovRecentBattles');
+  if (rbEl) {
+    const recent = [...state.battles]
+      .sort((a,b) => new Date(b.time||b.createdAt||0) - new Date(a.time||a.createdAt||0))
+      .slice(0, 5);
+    if (!recent.length) {
+      rbEl.innerHTML = '<div class="text-[11px] text-slate-600 font-bold uppercase">尚無戰鬥記錄</div>';
+    } else {
+      rbEl.innerHTML = recent.map(b => {
+        const isOk = (b.result||b.status) === 'success';
+        const date = new Date(b.time||b.createdAt||0).toLocaleDateString('zh-TW',{month:'2-digit',day:'2-digit'});
+        const boss = b.bossName || b.boss || '未知首領';
+        const cfg = getBossConfig()[boss];
+        const bossIcon = cfg ? cfg.icon : '⚔️';
+        return `<div class="card-row" style="${isOk?'border-color:rgba(52,211,153,0.3);':''}">
+          <span class="text-sm flex-shrink-0">${bossIcon}</span>
+          <span class="font-black text-[10px] text-white/80 flex-1 truncate">${boss}</span>
+          <span class="text-[11px] text-slate-600 flex-shrink-0">${date}</span>
+          <span class="tier-badge ${isOk?'result-success':'result-failed'} flex-shrink-0">${isOk?'✓ 成功':'✗ 失敗'}</span>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // Tier bars in overview
+  const tierBarsEl = document.getElementById('overviewTierBars');
+  if (tierBarsEl) {
+    const tierCounts = {};
+    state.members.forEach(m => { const t = m.tier||'一般'; tierCounts[t] = (tierCounts[t]||0)+1; });
+    const total = state.members.length || 1;
+    const tierDefs = [
+      { key:'核心', label:'CORE',    color:'bg-primary/70' },
+      { key:'一般', label:'REGULAR', color:'bg-amber-600/60' },
+      { key:'試煉', label:'TRIAL',   color:'bg-slate-500/60' },
+      { key:'預備', label:'RESERVE', color:'bg-slate-600/50' },
+      { key:'外交', label:'DIPL',    color:'bg-secondary/60' },
+    ];
+    tierBarsEl.innerHTML = tierDefs.map(td => {
+      const cnt = tierCounts[td.key] || 0;
+      if (!cnt) return '';
+      const pct = Math.round(cnt / total * 100);
+      return `<div class="group cursor-default" onclick="switchSection('members');setMemberTierFilter('${td.key}')">
+        <div class="flex justify-between items-baseline mb-0.5">
+          <span class="tier-badge tier-${td.key} group-hover:opacity-80 transition-opacity">${td.label}</span>
+          <span class="text-[11px] font-black text-slate-400">${cnt} 人</span>
+        </div>
+        <div class="h-1.5 bg-white/5 rounded-full overflow-hidden">
+          <div class="h-full ${td.color} rounded-full transition-all duration-700 group-hover:brightness-125" style="width:${pct}%"></div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Class legend in overview
+  const legendEl = document.getElementById('overviewClassLegend');
+  if (legendEl) {
+    const jobCounts = {};
+    state.members.forEach(m => { const j = m.job||'其他'; jobCounts[j] = (jobCounts[j]||0)+1; });
+    legendEl.innerHTML = Object.entries(jobCounts).map(([job, cnt]) => {
+      const icon = JOB_ICON[job] || '⚔️';
+      return `<div class="flex items-center gap-1 truncate">
+        <span class="text-sm">${icon}</span>
+        <span class="text-[11px] text-slate-300 font-bold flex-1 truncate">${job}</span>
+        <span class="text-[11px] text-amber-600 font-black">${cnt}</span>
+      </div>`;
+    }).join('');
+  }
+
+  // Top contributors (attendance leaderboard across all ops)
+  const listEl = document.getElementById('topContributorsList');
+  if (listEl) {
+    const counts = {};
+    [...state.battles, ...state.sieges].forEach(op => {
+      let att = [];
+      try { att = typeof op.attendance === 'string' ? JSON.parse(op.attendance) : (op.attendance || []); } catch(e){}
+      att.forEach(id => { counts[id] = (counts[id]||0)+1; });
+    });
+    const top = Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0,6);
+    if (!top.length) {
+      listEl.innerHTML = '<div class="text-[11px] text-slate-600 font-bold uppercase text-center py-2">尚無出席記錄</div>';
+    } else {
+      const rankCls = ['rank-gold','rank-silver','rank-bronze'];
+      const rankNum = ['①','②','③','④','⑤','⑥'];
+      listEl.innerHTML = top.map(([id, cnt], i) => {
+        const member = [...state.members, ...state.alliances].find(m => (m.ID||m.id) === id);
+        const name = member ? (member.name||member.Name||id) : id.slice(-6).toUpperCase();
+        const job = member ? (member.job || '') : '';
+        const jobIcon = JOB_ICON[job] || '';
+        const rankEl = i < 3
+          ? `<span class="${rankCls[i]} text-sm w-5 text-center flex-shrink-0">★</span>`
+          : `<span class="text-[10px] text-slate-600 font-black w-5 text-center flex-shrink-0">${rankNum[i]||i+1}</span>`;
+        const barW = top[0]?.[1] > 0 ? Math.round(cnt / top[0][1] * 100) : 0;
+        return `<div class="card-row">
+          ${rankEl}
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-1 mb-0.5">
+              <span class="text-[10px] font-black text-on-surface uppercase truncate flex-1">${jobIcon} ${name}</span>
+              <span class="text-[11px] font-black text-secondary bg-secondary/10 px-1.5 py-0.5 rounded flex-shrink-0">${cnt}</span>
+            </div>
+            <div class="level-bar-track w-full">
+              <div class="level-bar-fill" style="width:${barW}%"></div>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+  }
+}
+
+// ── Member Tier Strip ──────────────────────────────────
+function renderMemberTierStrip() {
+  const el = document.getElementById('memberTierStrip');
+  if (!el) return;
+  const tierDefs = [
+    { key:'核心', label:'Core',    icon:'⭐', bg:'bg-primary/10',    border:'border-primary/30',    text:'text-primary'   },
+    { key:'一般', label:'Regular', icon:'⚔️', bg:'bg-white/5',       border:'border-white/10',      text:'text-slate-400' },
+    { key:'試煉', label:'Trial',   icon:'🔰', bg:'bg-slate-800/50',  border:'border-slate-700',     text:'text-slate-500' },
+    { key:'預備', label:'Reserve', icon:'📋', bg:'bg-slate-800/40',  border:'border-slate-700/50',  text:'text-slate-500' },
+    { key:'外交', label:'Dipl.',   icon:'🤝', bg:'bg-secondary/10',  border:'border-secondary/30',  text:'text-secondary' },
+  ];
+  const counts = {};
+  state.members.forEach(m => { const t = m.tier||'一般'; counts[t] = (counts[t]||0)+1; });
+  el.innerHTML = tierDefs.map(td => {
+    const cnt = counts[td.key] || 0;
+    return `<div class="s1-panel" style="padding:10px;text-align:center;border-top:2px solid var(--or2);">
+      <div class="text-base mb-0.5">${td.icon}</div>
+      <div class="text-[11px] ${td.text} font-black uppercase tracking-widest">${td.label}</div>
+      <div class="text-xl font-bold ${td.text} mt-0.5">${cnt}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Siege Stats Panel ──────────────────────────────────
+function renderSiegeStats() {
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+
+  const total = state.sieges.length;
+  set('siegeKpiTotal', total);
+
+  // Average attendance
+  let totalAtt = 0;
+  const castleCounts = {};
+  const attendeeCounts = {};
+
+  state.sieges.forEach(s => {
+    let att = [];
+    try { att = typeof s.attendance === 'string' ? JSON.parse(s.attendance) : (s.attendance||[]); } catch(e){}
+    totalAtt += att.length;
+    att.forEach(id => { attendeeCounts[id] = (attendeeCounts[id]||0)+1; });
+    const castle = s.castle || s.castleName || '未知城堡';
+    castleCounts[castle] = (castleCounts[castle]||0)+1;
+  });
+
+  set('siegeKpiAvgAtt', total > 0 ? Math.round(totalAtt / total) : 0);
+
+  // Total pay distributed
+  const totalPay = state.sieges.reduce((sum, s) => {
+    const subsidy = Number(s.subsidyPerPerson || s.perPersonPay || 0);
+    let att = [];
+    try { att = typeof s.attendance === 'string' ? JSON.parse(s.attendance) : (s.attendance||[]); } catch(e){}
+    return sum + subsidy * att.length;
+  }, 0);
+  set('siegeKpiTotalPay', totalPay > 0 ? totalPay.toLocaleString() : '—');
+
+  // Castle stats
+  const castleEl = document.getElementById('siegeCastleStats');
+  if (castleEl) {
+    const entries = Object.entries(castleCounts).sort((a,b)=>b[1]-a[1]);
+    if (!entries.length) {
+      castleEl.innerHTML = '<div class="text-[11px] text-slate-600 font-bold uppercase col-span-4">尚無城堡紀錄</div>';
+    } else {
+      castleEl.innerHTML = entries.map(([castle, cnt]) =>
+        `<div class="s1-panel" style="padding:8px;text-align:center;border-top:2px solid var(--or2);">
+          <div class="text-base mb-0.5">🏰</div>
+          <div class="text-[11px] font-black text-secondary uppercase truncate">${castle}</div>
+          <div class="text-lg font-bold text-white">${cnt}</div>
+          <div class="text-[10px] text-slate-500 font-bold uppercase">次</div>
+        </div>`
+      ).join('');
+    }
+  }
+
+  // Siege leaderboard — with rank medals and progress bars
+  const lbEl = document.getElementById('siegeLeaderboard');
+  if (lbEl) {
+    const top = Object.entries(attendeeCounts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+    if (!top.length) {
+      lbEl.innerHTML = '<div class="text-[11px] text-slate-600 font-bold uppercase col-span-4">尚無出席記錄</div>';
+    } else {
+      const sRankCss = ['rank-gold','rank-silver','rank-bronze'];
+      const topMax = top[0]?.[1] || 1;
+      lbEl.innerHTML = top.map(([id, cnt], i) => {
+        const m = [...state.members,...state.alliances].find(x => (x.ID||x.id)===id);
+        const name = m ? (m.name||m.Name||id) : id.slice(-6).toUpperCase();
+        const job = m ? (m.job || '') : '';
+        const jobIcon = JOB_ICON[job] || '';
+        const rkEl = i < 3
+          ? `<span class="${sRankCss[i]} text-sm">★</span>`
+          : `<span class="text-[10px] text-slate-600 font-black">${i+1}</span>`;
+        const barWs = Math.round(cnt / topMax * 100);
+        return `<div class="card-row">
+          ${rkEl}
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-1 mb-0.5">
+              <span class="text-[11px] font-black text-white uppercase truncate flex-1">${jobIcon} ${name}</span>
+              <span class="text-[11px] font-black text-secondary flex-shrink-0">${cnt}</span>
+            </div>
+            <div class="level-bar-track"><div class="level-bar-fill" style="width:${barWs}%"></div></div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // Status text
+  set('siegeStatusText', total > 0 ? `${total} OPERATIONS LOGGED` : 'NO OPERATIONS');
+}
+
+// ── Alliance Stats Panel ───────────────────────────────
+function renderAllianceStats() {
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+
+  set('allyKpiCount', state.alliances.length);
+
+  // Unique pledges
+  const pledges = {};
+  state.alliances.forEach(a => {
+    const p = a.pledgeName || '（未分類）';
+    if (!pledges[p]) pledges[p] = 0;
+    pledges[p]++;
+  });
+  set('allyKpiPledges', Object.keys(pledges).length);
+
+  // Ops count (alliances who appeared in at least one battle/siege)
+  const opsIds = new Set();
+  [...state.battles, ...state.sieges].forEach(op => {
+    let att = [];
+    try { att = typeof op.attendance === 'string' ? JSON.parse(op.attendance) : (op.attendance || []); } catch(e){}
+    att.forEach(id => {
+      if (state.alliances.find(a => (a.ID||a.id) === id)) opsIds.add(id);
+    });
+  });
+  set('allyKpiOps', opsIds.size);
+
+  // Class bars
+  const classBarsEl = document.getElementById('allyClassBars');
+  if (classBarsEl) {
+    const jobCounts = {};
+    state.alliances.forEach(a => { const j = a.job||'其他'; jobCounts[j]=(jobCounts[j]||0)+1; });
+    const total = state.alliances.length || 1;
+    const jobColors = { '王族':'#fbbf24','騎士':'#60a5fa','妖精':'#34d399','法師':'#c084fc','黑妖':'#f87171' };
+    classBarsEl.innerHTML = Object.entries(jobCounts)
+      .sort((a,b)=>b[1]-a[1])
+      .map(([job, cnt]) => {
+        const pct = Math.round(cnt/total*100);
+        const color = jobColors[job] || '#64748b';
+        const icon = JOB_ICON[job] || '⚔️';
+        return `<div class="flex items-center gap-2">
+          <span class="text-xs w-4 flex-shrink-0">${icon}</span>
+          <span class="text-[11px] font-black uppercase tracking-wide w-12 flex-shrink-0" style="color:${color}">${job}</span>
+          <div class="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+            <div class="h-full rounded-full transition-all duration-700" style="width:${pct}%;background:${color}40;box-shadow:0 0 6px ${color}60"></div>
+          </div>
+          <span class="text-[11px] font-black text-slate-500 w-5 text-right flex-shrink-0">${cnt}</span>
+        </div>`;
+      }).join('');
+  }
+
+  // Pledge list
+  const pledgeListEl = document.getElementById('allyPledgeList');
+  if (pledgeListEl) {
+    pledgeListEl.innerHTML = Object.entries(pledges)
+      .sort((a,b)=>b[1]-a[1])
+      .map(([p, cnt]) =>
+        `<div class="s1-panel" style="padding:8px;text-align:center;">
+          <div class="text-[11px] font-black text-blue-400 uppercase truncate">${p}</div>
+          <div class="text-sm font-bold text-white">${cnt}</div>
+        </div>`
+      ).join('');
+  }
+}
+
+// ── Treasury Render ───────────────────────────────
+// (Treasury is rendered inline in renderTreasury() called from fetchData)
+
+// ── Castle Tax Functions ───────────────────────────
+function addCastleTaxRow() {
+  const list = document.getElementById('castleTaxList');
+  if (!list) return;
+  const row = document.createElement('div');
+  row.className = 'flex gap-2 items-center mt-0';
+  row.innerHTML = `
+    <input type="text" placeholder="城堡名稱" data-role="castle-name"
+      class="flex-1 bg-[#1a1508] border border-[#4a3f20] rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-[#c9a84c]">
+    <input type="number" placeholder="稅金" data-role="castle-amount" min="0"
+      class="w-32 bg-[#1a1508] border border-[#4a3f20] rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-[#c9a84c]">
+    <button onclick="removeCastleTaxRow(this)" class="text-[#ff4444] hover:text-red-400 px-2 text-lg leading-none">✕</button>`;
+  list.appendChild(row);
+}
+
+function removeCastleTaxRow(btn) {
+  btn.closest('div').remove();
+}
+
+async function submitCastleTax() {
+  if (!state.currentUser) { showToast('請先登入管理員帳號', 'error'); openLoginModal(); return; }
+  const list = document.getElementById('castleTaxList');
+  if (!list) return;
+  const entries = [...list.querySelectorAll('div')].map(row => ({
+    castle: row.querySelector('[data-role="castle-name"]')?.value.trim(),
+    amount: parseFloat(row.querySelector('[data-role="castle-amount"]')?.value || 0)
+  })).filter(e => e.castle && e.amount > 0);
+  if (!entries.length) { showToast('請填寫至少一筆城堡稅收資料', 'error'); return; }
+
+  const total = entries.reduce((s, e) => s + e.amount, 0);
+  try {
+    const res = await fetch(`${API_BASE}/treasury/castle-tax`, {
+      method: 'POST', headers: authHeaders(),
+      body: JSON.stringify({ entries, total })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showToast(`城堡稅收已登錄 ${entries.length} 筆`, 'success');
+      const list2 = document.getElementById('castleTaxList');
+      if (list2) { list2.innerHTML = ''; addCastleTaxRow(); }
+      await fetchData();
+    } else {
+      showToast(data.error || '登錄失敗', 'error');
+    }
+  } catch (e) {
+    showToast('❌ 網路錯誤，請稍後再試', 'error');
+  }
+}
+
+// ── Start ─────────────────────────────────────────
+if (!window._initRan) { window._initRan = true; init(); }
