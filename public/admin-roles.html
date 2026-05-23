@@ -1,0 +1,320 @@
+<!--
+  admin-roles.html — 管理員角色 / 模組權限設定 Modal 片段
+  由 auth.js openAdminRolesModal() fetch inject 到 #adminRolesModalContainer
+  僅 roleLevel >= 5（公主）可開啟
+  S1 Industrial Forge · Plan E × V2 × S1
+-->
+
+<!-- Backdrop -->
+<div id="adminRolesModal"
+  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.80);
+    z-index:2100;align-items:center;justify-content:center;"
+  onclick="(function(e){if(e.target===document.getElementById('adminRolesModal'))closeAdminRolesModal();})(event)">
+
+  <!-- Panel -->
+  <div class="s1-panel"
+    style="width:100%;max-width:640px;margin:16px;
+      border:2px solid var(--bd2);
+      outline:1px solid rgba(186,117,23,0.28);outline-offset:3px;
+      background:linear-gradient(180deg,rgba(239,159,39,0.05) 0%,transparent 30%),var(--p1);
+      position:relative;overflow:hidden;display:flex;flex-direction:column;
+      max-height:90vh;">
+
+    <!-- Corner accent -->
+    <div style="position:absolute;top:0;right:0;width:0;height:0;
+      border-style:solid;border-width:0 40px 40px 0;
+      border-color:transparent var(--or2) transparent transparent;opacity:0.4;"></div>
+    <div style="position:absolute;top:4px;right:4px;
+      font-size:9px;color:var(--or2);font-weight:900;letter-spacing:0.1em;
+      writing-mode:vertical-rl;opacity:0.5;">ADMIN</div>
+
+    <!-- ── Header ── -->
+    <div class="s1-panel-header" style="padding:10px 16px;flex-shrink:0;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="material-symbols-outlined" style="color:var(--or);font-size:16px;">admin_panel_settings</span>
+        <span class="s1-panel-title">// GUILD SETTINGS · ROLES &amp; PERMISSIONS</span>
+      </div>
+      <button onclick="closeAdminRolesModal()"
+        style="background:none;border:none;color:var(--tx2);cursor:pointer;
+          font-size:18px;line-height:1;padding:0 2px;transition:color 0.15s;"
+        onmouseover="this.style.color='var(--or)'"
+        onmouseout="this.style.color='var(--tx2)'">✕</button>
+    </div>
+
+    <!-- ── Scroll Body ── -->
+    <div style="overflow-y:auto;flex:1;padding:16px 20px;" class="custom-scrollbar">
+
+      <!-- ════ SECTION 1：階級名稱 ════ -->
+      <div style="margin-bottom:24px;">
+        <div style="font-size:10px;font-weight:900;text-transform:uppercase;
+          letter-spacing:0.14em;color:var(--or);margin-bottom:12px;
+          display:flex;align-items:center;gap:6px;
+          border-bottom:1px solid var(--bd);padding-bottom:8px;">
+          <span class="material-symbols-outlined" style="font-size:14px;">military_tech</span>
+          // RANK DEFINITIONS
+        </div>
+
+        <!-- 階級表格 -->
+        <div style="display:grid;gap:6px;">
+
+          <!-- 表頭 -->
+          <div style="display:grid;grid-template-columns:60px 1fr 1fr 60px;gap:8px;
+            font-size:10px;font-weight:900;color:var(--or2);text-transform:uppercase;
+            letter-spacing:0.10em;padding:0 4px;">
+            <div>Level</div>
+            <div>名稱（中文）</div>
+            <div>英文稱呼</div>
+            <div>色碼</div>
+          </div>
+
+          <!-- Level 5 — 公主 -->
+          <div class="card-row" style="display:grid;grid-template-columns:60px 1fr 1fr 60px;gap:8px;align-items:center;padding:8px 10px;">
+            <div style="font-family:'Share Tech Mono',monospace;font-size:14px;
+              font-weight:900;color:#FFD700;text-align:center;">Lv 5</div>
+            <input id="roleName_5" type="text" class="atelier-input" style="padding:6px 10px;font-size:14px;" placeholder="公主">
+            <input id="roleNameEn_5" type="text" class="atelier-input" style="padding:6px 10px;font-size:12px;" placeholder="GUILD MASTER">
+            <div style="width:28px;height:28px;border-radius:0;border:1px solid var(--bd);
+              background:#FFD700;margin:auto;opacity:0.85;"></div>
+          </div>
+
+          <!-- Level 4 — 元帥 -->
+          <div class="card-row" style="display:grid;grid-template-columns:60px 1fr 1fr 60px;gap:8px;align-items:center;padding:8px 10px;">
+            <div style="font-family:'Share Tech Mono',monospace;font-size:14px;
+              font-weight:900;color:var(--or);text-align:center;">Lv 4</div>
+            <input id="roleName_4" type="text" class="atelier-input" style="padding:6px 10px;font-size:14px;" placeholder="元帥">
+            <input id="roleNameEn_4" type="text" class="atelier-input" style="padding:6px 10px;font-size:12px;" placeholder="ELDER">
+            <div style="width:28px;height:28px;border-radius:0;border:1px solid var(--bd);
+              background:var(--or);margin:auto;opacity:0.85;"></div>
+          </div>
+
+          <!-- Level 3 — 幹部 -->
+          <div class="card-row" style="display:grid;grid-template-columns:60px 1fr 1fr 60px;gap:8px;align-items:center;padding:8px 10px;">
+            <div style="font-family:'Share Tech Mono',monospace;font-size:14px;
+              font-weight:900;color:#C68B2F;text-align:center;">Lv 3</div>
+            <input id="roleName_3" type="text" class="atelier-input" style="padding:6px 10px;font-size:14px;" placeholder="幹部">
+            <input id="roleNameEn_3" type="text" class="atelier-input" style="padding:6px 10px;font-size:12px;" placeholder="OFFICER">
+            <div style="width:28px;height:28px;border-radius:0;border:1px solid var(--bd);
+              background:#C68B2F;margin:auto;opacity:0.85;"></div>
+          </div>
+
+          <!-- Level 2 — 成員 -->
+          <div class="card-row" style="display:grid;grid-template-columns:60px 1fr 1fr 60px;gap:8px;align-items:center;padding:8px 10px;">
+            <div style="font-family:'Share Tech Mono',monospace;font-size:14px;
+              font-weight:900;color:#8B7355;text-align:center;">Lv 2</div>
+            <input id="roleName_2" type="text" class="atelier-input" style="padding:6px 10px;font-size:14px;" placeholder="成員">
+            <input id="roleNameEn_2" type="text" class="atelier-input" style="padding:6px 10px;font-size:12px;" placeholder="MEMBER">
+            <div style="width:28px;height:28px;border-radius:0;border:1px solid var(--bd);
+              background:#8B7355;margin:auto;opacity:0.85;"></div>
+          </div>
+
+          <!-- Level 1 — 新人 -->
+          <div class="card-row" style="display:grid;grid-template-columns:60px 1fr 1fr 60px;gap:8px;align-items:center;padding:8px 10px;">
+            <div style="font-family:'Share Tech Mono',monospace;font-size:14px;
+              font-weight:900;color:#6B6B6B;text-align:center;">Lv 1</div>
+            <input id="roleName_1" type="text" class="atelier-input" style="padding:6px 10px;font-size:14px;" placeholder="新人">
+            <input id="roleNameEn_1" type="text" class="atelier-input" style="padding:6px 10px;font-size:12px;" placeholder="RECRUIT">
+            <div style="width:28px;height:28px;border-radius:0;border:1px solid var(--bd);
+              background:#6B6B6B;margin:auto;opacity:0.85;"></div>
+          </div>
+
+        </div><!-- /階級表格 -->
+      </div>
+
+      <!-- ════ SECTION 2：模組權限矩陣 ════ -->
+      <div>
+        <div style="font-size:10px;font-weight:900;text-transform:uppercase;
+          letter-spacing:0.14em;color:var(--or);margin-bottom:12px;
+          display:flex;align-items:center;gap:6px;
+          border-bottom:1px solid var(--bd);padding-bottom:8px;">
+          <span class="material-symbols-outlined" style="font-size:14px;">lock</span>
+          // MODULE PERMISSION MATRIX
+        </div>
+
+        <div style="font-size:11px;color:var(--tx2);margin-bottom:12px;line-height:1.6;">
+          設定每個模組各動作所需的最低階級（1=新人 / 2=成員 / 3=幹部 / 4=元帥 / 5=公主）
+        </div>
+
+        <!-- 說明列 -->
+        <div style="display:grid;grid-template-columns:130px repeat(4,1fr);gap:6px;
+          font-size:10px;font-weight:900;color:var(--or2);text-transform:uppercase;
+          letter-spacing:0.10em;padding:0 4px;margin-bottom:6px;">
+          <div>模組</div>
+          <div>讀取</div>
+          <div>寫入</div>
+          <div>結算</div>
+          <div>預報名</div>
+        </div>
+
+        <div style="display:grid;gap:4px;">
+
+          <!-- overview -->
+          <div class="card-row" style="display:grid;grid-template-columns:130px repeat(4,1fr);gap:6px;align-items:center;padding:8px 10px;">
+            <div style="font-size:12px;font-weight:700;color:var(--tx);text-transform:uppercase;letter-spacing:0.06em;">
+              <span class="material-symbols-outlined" style="font-size:13px;color:var(--or2);vertical-align:middle;">dashboard</span>
+              概覽
+            </div>
+            <select id="perm_overview_read"   class="atelier-input" style="padding:4px 6px;font-size:12px;">
+              <option value="1">1 · 新人</option><option value="2">2 · 成員</option>
+              <option value="3">3 · 幹部</option><option value="4">4 · 元帥</option><option value="5">5 · 公主</option>
+            </select>
+            <select id="perm_overview_write"  class="atelier-input" style="padding:4px 6px;font-size:12px;">
+              <option value="1">1 · 新人</option><option value="2">2 · 成員</option>
+              <option value="3" selected>3 · 幹部</option><option value="4">4 · 元帥</option><option value="5">5 · 公主</option>
+            </select>
+            <div style="color:var(--tx2);font-size:11px;text-align:center;">—</div>
+            <div style="color:var(--tx2);font-size:11px;text-align:center;">—</div>
+          </div>
+
+          <!-- members -->
+          <div class="card-row" style="display:grid;grid-template-columns:130px repeat(4,1fr);gap:6px;align-items:center;padding:8px 10px;">
+            <div style="font-size:12px;font-weight:700;color:var(--tx);text-transform:uppercase;letter-spacing:0.06em;">
+              <span class="material-symbols-outlined" style="font-size:13px;color:var(--or2);vertical-align:middle;">group</span>
+              成員
+            </div>
+            <select id="perm_members_read"  class="atelier-input" style="padding:4px 6px;font-size:12px;">
+              <option value="1">1 · 新人</option><option value="2" selected>2 · 成員</option>
+              <option value="3">3 · 幹部</option><option value="4">4 · 元帥</option><option value="5">5 · 公主</option>
+            </select>
+            <select id="perm_members_write" class="atelier-input" style="padding:4px 6px;font-size:12px;">
+              <option value="1">1 · 新人</option><option value="2">2 · 成員</option>
+              <option value="3">3 · 幹部</option><option value="4" selected>4 · 元帥</option><option value="5">5 · 公主</option>
+            </select>
+            <div style="color:var(--tx2);font-size:11px;text-align:center;">—</div>
+            <div style="color:var(--tx2);font-size:11px;text-align:center;">—</div>
+          </div>
+
+          <!-- bossBattle -->
+          <div class="card-row" style="display:grid;grid-template-columns:130px repeat(4,1fr);gap:6px;align-items:center;padding:8px 10px;">
+            <div style="font-size:12px;font-weight:700;color:var(--tx);text-transform:uppercase;letter-spacing:0.06em;">
+              <span class="material-symbols-outlined" style="font-size:13px;color:var(--or2);vertical-align:middle;">swords</span>
+              首領戰
+            </div>
+            <select id="perm_bossBattle_read"        class="atelier-input" style="padding:4px 6px;font-size:12px;">
+              <option value="1" selected>1 · 新人</option><option value="2">2 · 成員</option>
+              <option value="3">3 · 幹部</option><option value="4">4 · 元帥</option><option value="5">5 · 公主</option>
+            </select>
+            <select id="perm_bossBattle_write"       class="atelier-input" style="padding:4px 6px;font-size:12px;">
+              <option value="1">1 · 新人</option><option value="2">2 · 成員</option>
+              <option value="3" selected>3 · 幹部</option><option value="4">4 · 元帥</option><option value="5">5 · 公主</option>
+            </select>
+            <select id="perm_bossBattle_settle"      class="atelier-input" style="padding:4px 6px;font-size:12px;">
+              <option value="1">1 · 新人</option><option value="2">2 · 成員</option>
+              <option value="3" selected>3 · 幹部</option><option value="4">4 · 元帥</option><option value="5">5 · 公主</option>
+            </select>
+            <select id="perm_bossBattle_preRegister" class="atelier-input" style="padding:4px 6px;font-size:12px;">
+              <option value="1">1 · 新人</option><option value="2" selected>2 · 成員</option>
+              <option value="3">3 · 幹部</option><option value="4">4 · 元帥</option><option value="5">5 · 公主</option>
+            </select>
+          </div>
+
+          <!-- siege -->
+          <div class="card-row" style="display:grid;grid-template-columns:130px repeat(4,1fr);gap:6px;align-items:center;padding:8px 10px;">
+            <div style="font-size:12px;font-weight:700;color:var(--tx);text-transform:uppercase;letter-spacing:0.06em;">
+              <span class="material-symbols-outlined" style="font-size:13px;color:var(--or2);vertical-align:middle;">fort</span>
+              攻城戰
+            </div>
+            <select id="perm_siege_read"        class="atelier-input" style="padding:4px 6px;font-size:12px;">
+              <option value="1" selected>1 · 新人</option><option value="2">2 · 成員</option>
+              <option value="3">3 · 幹部</option><option value="4">4 · 元帥</option><option value="5">5 · 公主</option>
+            </select>
+            <select id="perm_siege_write"       class="atelier-input" style="padding:4px 6px;font-size:12px;">
+              <option value="1">1 · 新人</option><option value="2">2 · 成員</option>
+              <option value="3" selected>3 · 幹部</option><option value="4">4 · 元帥</option><option value="5">5 · 公主</option>
+            </select>
+            <select id="perm_siege_settle"      class="atelier-input" style="padding:4px 6px;font-size:12px;">
+              <option value="1">1 · 新人</option><option value="2">2 · 成員</option>
+              <option value="3" selected>3 · 幹部</option><option value="4">4 · 元帥</option><option value="5">5 · 公主</option>
+            </select>
+            <select id="perm_siege_preRegister" class="atelier-input" style="padding:4px 6px;font-size:12px;">
+              <option value="1">1 · 新人</option><option value="2" selected>2 · 成員</option>
+              <option value="3">3 · 幹部</option><option value="4">4 · 元帥</option><option value="5">5 · 公主</option>
+            </select>
+          </div>
+
+          <!-- treasury -->
+          <div class="card-row" style="display:grid;grid-template-columns:130px repeat(4,1fr);gap:6px;align-items:center;padding:8px 10px;">
+            <div style="font-size:12px;font-weight:700;color:var(--tx);text-transform:uppercase;letter-spacing:0.06em;">
+              <span class="material-symbols-outlined" style="font-size:13px;color:var(--or2);vertical-align:middle;">account_balance</span>
+              金庫
+            </div>
+            <select id="perm_treasury_read"  class="atelier-input" style="padding:4px 6px;font-size:12px;">
+              <option value="1">1 · 新人</option><option value="2">2 · 成員</option>
+              <option value="3" selected>3 · 幹部</option><option value="4">4 · 元帥</option><option value="5">5 · 公主</option>
+            </select>
+            <select id="perm_treasury_write" class="atelier-input" style="padding:4px 6px;font-size:12px;">
+              <option value="1">1 · 新人</option><option value="2">2 · 成員</option>
+              <option value="3">3 · 幹部</option><option value="4" selected>4 · 元帥</option><option value="5">5 · 公主</option>
+            </select>
+            <div style="color:var(--tx2);font-size:11px;text-align:center;">—</div>
+            <div style="color:var(--tx2);font-size:11px;text-align:center;">—</div>
+          </div>
+
+          <!-- alliance -->
+          <div class="card-row" style="display:grid;grid-template-columns:130px repeat(4,1fr);gap:6px;align-items:center;padding:8px 10px;">
+            <div style="font-size:12px;font-weight:700;color:var(--tx);text-transform:uppercase;letter-spacing:0.06em;">
+              <span class="material-symbols-outlined" style="font-size:13px;color:var(--or2);vertical-align:middle;">handshake</span>
+              外交
+            </div>
+            <select id="perm_alliance_read"  class="atelier-input" style="padding:4px 6px;font-size:12px;">
+              <option value="1">1 · 新人</option><option value="2" selected>2 · 成員</option>
+              <option value="3">3 · 幹部</option><option value="4">4 · 元帥</option><option value="5">5 · 公主</option>
+            </select>
+            <select id="perm_alliance_write" class="atelier-input" style="padding:4px 6px;font-size:12px;">
+              <option value="1">1 · 新人</option><option value="2">2 · 成員</option>
+              <option value="3">3 · 幹部</option><option value="4" selected>4 · 元帥</option><option value="5">5 · 公主</option>
+            </select>
+            <div style="color:var(--tx2);font-size:11px;text-align:center;">—</div>
+            <div style="color:var(--tx2);font-size:11px;text-align:center;">—</div>
+          </div>
+
+          <!-- settings -->
+          <div class="card-row" style="display:grid;grid-template-columns:130px repeat(4,1fr);gap:6px;align-items:center;padding:8px 10px;
+            border-color:rgba(239,159,39,0.4);">
+            <div style="font-size:12px;font-weight:700;color:var(--or);text-transform:uppercase;letter-spacing:0.06em;">
+              <span class="material-symbols-outlined" style="font-size:13px;color:var(--or);vertical-align:middle;">settings</span>
+              系統設定
+            </div>
+            <select id="perm_settings_read"  class="atelier-input" style="padding:4px 6px;font-size:12px;">
+              <option value="1">1 · 新人</option><option value="2">2 · 成員</option>
+              <option value="3">3 · 幹部</option><option value="4">4 · 元帥</option><option value="5" selected>5 · 公主</option>
+            </select>
+            <select id="perm_settings_write" class="atelier-input" style="padding:4px 6px;font-size:12px;">
+              <option value="1">1 · 新人</option><option value="2">2 · 成員</option>
+              <option value="3">3 · 幹部</option><option value="4">4 · 元帥</option><option value="5" selected>5 · 公主</option>
+            </select>
+            <div style="color:var(--tx2);font-size:11px;text-align:center;">—</div>
+            <div style="color:var(--tx2);font-size:11px;text-align:center;">—</div>
+          </div>
+
+        </div><!-- /模組矩陣 -->
+
+        <!-- 警告提示 -->
+        <div style="margin-top:14px;padding:10px 14px;
+          background:rgba(248,113,113,0.06);border:1px solid rgba(248,113,113,0.25);
+          font-size:11px;color:#fca5a5;line-height:1.6;
+          display:flex;align-items:flex-start;gap:8px;">
+          <span class="material-symbols-outlined" style="font-size:16px;flex-shrink:0;margin-top:1px;">warning</span>
+          <span>權限設定儲存後立即生效。降低自己的 roleLevel 將導致無法再開啟此介面，請謹慎操作。</span>
+        </div>
+
+      </div><!-- /SECTION 2 -->
+
+    </div><!-- /scroll body -->
+
+    <!-- ── Footer Actions ── -->
+    <div style="padding:12px 20px;border-top:1px solid var(--bd);
+      background:var(--p2);display:flex;gap:8px;justify-content:flex-end;
+      align-items:center;flex-shrink:0;">
+      <button class="btn btn-sm" onclick="closeAdminRolesModal()">
+        取消
+      </button>
+      <button class="btn btn-sm" onclick="saveAdminRoles()"
+        style="background:var(--or3);border-color:var(--or);
+          display:flex;align-items:center;gap:5px;">
+        <span class="material-symbols-outlined" style="font-size:14px;">save</span>
+        儲存設定
+      </button>
+    </div>
+
+  </div><!-- /panel -->
+</div><!-- /adminRolesModal -->

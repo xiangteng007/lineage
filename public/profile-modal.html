@@ -1,0 +1,177 @@
+<!--
+  profile-modal.html — 個人檔案 Modal 片段
+  由 auth.js openProfileModal() fetch inject 到 #profileModalContainer
+  S1 Industrial Forge · Plan E × V2 × S1
+-->
+
+<!-- Backdrop -->
+<div id="profileModal"
+  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);
+    z-index:2000;align-items:center;justify-content:center;"
+  onclick="(function(e){if(e.target===document.getElementById('profileModal'))closeProfileModal();})(event)">
+
+  <!-- Panel -->
+  <div class="s1-panel glow-or-border"
+    style="width:100%;max-width:480px;margin:16px;
+      border:2px solid var(--bd2);
+      outline:1px solid rgba(186,117,23,0.28);outline-offset:3px;
+      background:linear-gradient(180deg,rgba(239,159,39,0.04) 0%,transparent 35%),var(--p1);
+      position:relative;overflow:hidden;">
+
+    <!-- Corner decoration -->
+    <div style="position:absolute;top:0;right:0;width:0;height:0;
+      border-style:solid;border-width:0 32px 32px 0;
+      border-color:transparent var(--or2) transparent transparent;opacity:0.5;"></div>
+
+    <!-- ── Header ── -->
+    <div class="s1-panel-header" style="padding:10px 16px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="material-symbols-outlined" style="color:var(--or);font-size:16px;">person</span>
+        <span class="s1-panel-title">// MEMBER PROFILE</span>
+      </div>
+      <button onclick="closeProfileModal()"
+        style="background:none;border:none;color:var(--tx2);cursor:pointer;
+          font-size:18px;line-height:1;padding:0 2px;transition:color 0.15s;"
+        onmouseover="this.style.color='var(--or)'"
+        onmouseout="this.style.color='var(--tx2)'">✕</button>
+    </div>
+
+    <!-- ── Identity Block ── -->
+    <div style="padding:16px 20px 12px;border-bottom:1px solid var(--bd);
+      display:flex;align-items:center;gap:16px;">
+
+      <!-- Avatar placeholder (初始字母) -->
+      <div style="width:54px;height:54px;flex-shrink:0;
+        border:2px solid var(--or2);background:var(--or3);
+        display:flex;align-items:center;justify-content:center;position:relative;">
+        <span id="profileInitial"
+          style="font-size:24px;font-weight:900;color:var(--or);
+            font-family:'Share Tech Mono',monospace;letter-spacing:0.02em;">?</span>
+        <!-- Online dot -->
+        <div style="position:absolute;bottom:-2px;right:-2px;
+          width:10px;height:10px;background:#4ade80;
+          border:2px solid var(--bg);"></div>
+      </div>
+
+      <!-- Name + Role -->
+      <div style="flex:1;min-width:0;">
+        <div id="profileName"
+          style="font-size:20px;font-weight:900;color:var(--or);
+            font-family:'Rajdhani','Noto Serif TC',sans-serif;
+            text-transform:uppercase;letter-spacing:0.04em;
+            overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">—</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap;">
+          <!-- RoleLevel badge -->
+          <span id="profileRoleBadge" class="tier-badge"
+            style="font-size:10px;padding:2px 7px;">
+            <span id="profileRoleLevel">Lv?</span>
+          </span>
+          <!-- Role name -->
+          <span id="profileRoleName"
+            style="font-size:12px;color:var(--tx2);text-transform:uppercase;
+              letter-spacing:0.08em;font-weight:700;">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Scroll Body ── -->
+    <div style="max-height:55vh;overflow-y:auto;padding:14px 20px;" class="custom-scrollbar">
+
+      <!-- 遊戲角色 Section -->
+      <div style="margin-bottom:16px;">
+        <div style="font-size:10px;font-weight:900;text-transform:uppercase;
+          letter-spacing:0.12em;color:var(--or2);margin-bottom:10px;
+          display:flex;align-items:center;gap:6px;">
+          <span class="material-symbols-outlined" style="font-size:14px;">sports_esports</span>
+          // GUILD CHARACTERS
+        </div>
+        <div id="profileCharList">
+          <!-- 由 auth.js _populateProfileModal() 動態填入 -->
+          <div class="skeleton" style="height:52px;margin-bottom:6px;"></div>
+          <div class="skeleton" style="height:52px;margin-bottom:6px;"></div>
+        </div>
+      </div>
+
+      <!-- 資訊分隔 -->
+      <div style="border-top:1px solid var(--bd);margin-bottom:14px;"></div>
+
+      <!-- 帳號資訊 -->
+      <div style="font-size:10px;font-weight:900;text-transform:uppercase;
+        letter-spacing:0.12em;color:var(--or2);margin-bottom:8px;
+        display:flex;align-items:center;gap:6px;">
+        <span class="material-symbols-outlined" style="font-size:14px;">info</span>
+        // ACCOUNT INFO
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;">
+        <div style="background:var(--p2);border:1px solid var(--bd);padding:8px 10px;">
+          <div style="color:var(--or2);font-weight:900;text-transform:uppercase;
+            letter-spacing:0.08em;font-size:10px;margin-bottom:3px;">Auth</div>
+          <div style="color:var(--tx);font-weight:700;">LINE OAuth</div>
+        </div>
+        <div style="background:var(--p2);border:1px solid var(--bd);padding:8px 10px;">
+          <div style="color:var(--or2);font-weight:900;text-transform:uppercase;
+            letter-spacing:0.08em;font-size:10px;margin-bottom:3px;">Status</div>
+          <div style="color:#4ade80;font-weight:700;">ACTIVE</div>
+        </div>
+      </div>
+
+    </div><!-- /scroll body -->
+
+    <!-- ── Footer Actions ── -->
+    <div style="padding:12px 20px;border-top:1px solid var(--bd);
+      background:var(--p2);display:flex;gap:8px;justify-content:space-between;
+      align-items:center;flex-wrap:wrap;">
+
+      <!-- 左側：更新角色資料（透過 LINE Bot） -->
+      <button class="btn btn-sm"
+        onclick="(function(){
+          closeProfileModal();
+          showToast('請透過 LINE Bot 更新角色資料', 'info');
+        })()"
+        style="display:flex;align-items:center;gap:5px;">
+        <span class="material-symbols-outlined" style="font-size:14px;">sync</span>
+        更新角色資料
+      </button>
+
+      <!-- 右側：設定（admin only）+ 登出 -->
+      <div style="display:flex;gap:8px;align-items:center;">
+        <!-- 管理員設定按鈕 — 由 JS 控制顯示 -->
+        <button id="profileAdminBtn" class="btn btn-sm"
+          style="display:none;align-items:center;gap:5px;"
+          onclick="closeProfileModal();openAdminRolesModal();">
+          <span class="material-symbols-outlined" style="font-size:14px;">admin_panel_settings</span>
+          權限設定
+        </button>
+        <button class="btn btn-sm btn-danger"
+          onclick="closeProfileModal();logout();"
+          style="display:flex;align-items:center;gap:5px;">
+          <span class="material-symbols-outlined" style="font-size:14px;">logout</span>
+          登出
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /panel -->
+</div><!-- /profileModal -->
+
+<script>
+  // 初始化時更新 profile initial 字母，並控制 admin 按鈕顯示
+  (function() {
+    function _initProfileModal() {
+      const u = window.currentUser;
+      if (!u) return;
+      const initEl = document.getElementById('profileInitial');
+      if (initEl) initEl.textContent = (u.displayName || '?').charAt(0).toUpperCase();
+      const adminBtn = document.getElementById('profileAdminBtn');
+      if (adminBtn && u.roleLevel >= 5) {
+        adminBtn.style.display = 'flex';
+      }
+    }
+    // 若 authReady 已觸發則直接執行，否則監聽
+    if (window.currentUser) {
+      _initProfileModal();
+    } else {
+      window.addEventListener('authReady', _initProfileModal, { once: true });
+    }
+  })();
+</script>

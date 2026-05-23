@@ -16,7 +16,7 @@ function getLineClient() {
 }
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 
@@ -81,7 +81,7 @@ async function handlePostbackEvent(event) {
 
 async function handleLineEvent(event) {
   if (event.type === 'follow') {
-    return sendLineReply(event.replyToken, '🛡️ 歡迎加入血盟通知系統！\n\n可用指令：\n・名單 → 查詢血盟成員\n・拍賣 → 最新首領戰分紅\n・綁定 → 取得您的 LINE ID\n・我的資料 → 個人出席統計\n・網頁 → 開啟管理系統');
+    return sendLineReply(event.replyToken, '🛡️ 歡迎加入血盟通知系統！\n\n可用指令：\n・名單 → 查詢血盟成員\n・拍賣 → 最新首領戰分紅\n・綁定 → 取得您的 LINE ID\n・我的資料 → 個人出席統計\n・更新等級 85 → 自助更新角色等級\n・網頁 → 開啟管理系統');
   }
 
   if (event.type === 'postback') return handlePostbackEvent(event);
@@ -89,18 +89,35 @@ async function handleLineEvent(event) {
 
   const text = event.message.text.trim();
   const lineUserId = event.source.userId;
-  let replyText = '指令無法辨識。\n\n可用指令：\n・名單 / 拍賣 / 網頁\n・綁定 / 我的資料';
+  let replyText = '指令無法辨識。\n\n可用指令：\n・名單 / 拍賣 / 網頁\n・綁定 / 我的資料\n・更新等級 85';
 
   if (text === '名單') {
     const members = await firebase.getAllData('Members');
     const count = members.length;
     const TIER_ICON = { '核心': '⭐', '一般': '○', '試煉': '△', '外交': '◇' };
-    replyText = `🛡️ 血盟目前有 ${count} 名成員\n`;
-    members.slice(0, 10).forEach(m => {
-      const icon = TIER_ICON[m.tier] || '○';
-      replyText += `${icon} ${m.name} (${m.job || ''})${m.notes ? ' ｜' + m.notes : ''}\n`;
+    // Group by job for nicer display
+    const JOB_ORDER = ['王族', '騎士', '妖精', '法師', '黑妖'];
+    const grouped = {};
+    members.forEach(m => {
+      const job = m.job || '其他';
+      if (!grouped[job]) grouped[job] = [];
+      grouped[job].push(m);
     });
-    if (count > 10) replyText += `...以及其他 ${count - 10} 名成員。`;
+    replyText = `🛡️ 血盟目前有 ${count} 名成員\n`;
+    let shown = 0;
+    for (const job of JOB_ORDER) {
+      const group = grouped[job];
+      if (!group || !group.length) continue;
+      replyText += `\n【${job}】\n`;
+      group.sort((a, b) => (b.level || 0) - (a.level || 0)).slice(0, 8).forEach(m => {
+        if (shown >= 15) return;
+        const icon = TIER_ICON[m.tier] || '○';
+        const lv = m.level ? ` Lv${m.level}` : '';
+        replyText += `${icon} ${m.name}${lv}\n`;
+        shown++;
+      });
+    }
+    if (count > shown) replyText += `\n...以及其他 ${count - shown} 名成員。`;
 
   } else if (text === '拍賣') {
     const battles = await firebase.getAllData('Battles');
@@ -149,7 +166,30 @@ async function handleLineEvent(event) {
         if (att.includes(personId)) { siegeCount++; totalDiv += Math.floor(Number(s.revenuePerPerson || 0)); }
       });
       const tierLabel = TIER_LABEL[person.tier] || '○一般';
-      replyText = `🛡️ ${person.name || person.Name} 的個人資料\n職業：${person.job || '—'} ｜ 分級：${tierLabel}\n\n⚔️ 首領戰出席：${battleCount} 次\n🏰 攻城戰出席：${siegeCount} 次\n💰 累計分紅：${totalDiv.toLocaleString()} 天幣`;
+      const levelStr = person.level ? ` ｜ 等級：Lv${person.level}` : '';
+      replyText = `🛡️ ${person.name || person.Name} 的個人資料\n職業：${person.job || '—'}${levelStr} ｜ 分級：${tierLabel}\n\n⚔️ 首領戰出席：${battleCount} 次\n🏰 攻城戰出席：${siegeCount} 次\n💰 累計分紅：${totalDiv.toLocaleString()} 天幣\n\n📝 傳送「更新等級 數字」可自助更新等級`;
+    }
+
+  } else if (/^更新等級\s*\d+$/.test(text)) {
+    // ── Member self-service level update via LINE Bot ──────────────────────
+    const newLevel = parseInt(text.replace(/^更新等級\s*/, ''), 10);
+    if (newLevel < 1 || newLevel > 99) {
+      replyText = '❌ 等級必須介於 1 至 99 之間。\n例：更新等級 85';
+    } else {
+      const members = await firebase.getAllData('Members');
+      const member = members.find(m => m.lineUserId === lineUserId);
+      if (!member) {
+        replyText = '❌ 您尚未綁定血盟帳號，無法更新等級。\n傳送「綁定」取得您的 LINE ID，交給管理員完成綁定。';
+      } else {
+        const memberId = member.ID || member.id;
+        const oldLevel = member.level || '未設定';
+        const ok = await firebase.updateData('Members', memberId, { level: newLevel });
+        if (ok) {
+          replyText = `✅ 等級更新成功！\n\n🛡️ ${member.name || member.Name}\n${oldLevel} → Lv${newLevel}\n\n傳送「我的資料」查看完整個人資訊。`;
+        } else {
+          replyText = '❌ 更新失敗，請稍後再試或聯絡管理員。';
+        }
+      }
     }
   }
 
@@ -451,6 +491,375 @@ app.delete('/api/battles/:id', requireAdmin, async (req, res) => {
   res.json({ ok: true });
 });
 
+// ── Treasury & Transactions ──────────────────────
+app.get('/api/treasury', async (req, res) => {
+  const treasury = await firebase.getAllData('Treasury');
+  const doc = treasury.length > 0 ? treasury[0] : null;
+  res.json({ balance: doc ? (Number(doc.balance) || 0) : 0 });
+});
+
+app.get('/api/transactions', async (req, res) => {
+  const transactions = await firebase.getAllData('Transactions');
+  res.json(transactions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+});
+
+// ── 手動收支 (income / expense) ──────────────────
+app.post('/api/transactions', requireAdmin, async (req, res) => {
+  const { type, amount, category = '其他', source = '', note = '' } = req.body;
+  if (!type || !['income', 'expense'].includes(type)) return res.status(400).json({ error: 'type 必須為 income 或 expense' });
+  if (!amount || Number(amount) <= 0) return res.status(400).json({ error: '金額必須大於 0' });
+
+  const amt = Math.floor(Number(amount));
+
+  // 取得金庫文件
+  const treasuryDocs = await firebase.getAllData('Treasury');
+  let currentBalance = 0;
+  let treasuryId = 'main';
+  if (treasuryDocs.length > 0) {
+    currentBalance = Number(treasuryDocs[0].balance) || 0;
+    treasuryId = treasuryDocs[0].ID || treasuryDocs[0].id || 'main';
+  }
+  const newBalance = type === 'income' ? currentBalance + amt : currentBalance - amt;
+
+  if (treasuryDocs.length === 0) {
+    await firebase.addData('Treasury', { ID: 'main', balance: newBalance });
+  } else {
+    await firebase.updateData('Treasury', treasuryId, { balance: newBalance });
+  }
+
+  const tx = {
+    ID: uid(), type, amount: amt, category, source, note,
+    createdAt: new Date().toISOString(),
+    createdBy: req.adminEmail || 'admin'
+  };
+  await firebase.addData('Transactions', tx);
+  res.json({ ok: true, transaction: tx, newBalance });
+});
+
+// ── 城堡稅收批次登錄 ─────────────────────────────
+// entries: [{ castle, amount }] — 每個城堡一筆
+app.post('/api/transactions/castle-tax', requireAdmin, async (req, res) => {
+  const { entries = [] } = req.body;
+  if (!Array.isArray(entries) || entries.length === 0) return res.status(400).json({ error: '請提供城堡稅收項目' });
+
+  const treasuryDocs = await firebase.getAllData('Treasury');
+  let currentBalance = Number(treasuryDocs[0]?.balance) || 0;
+  let treasuryId = treasuryDocs[0]?.ID || treasuryDocs[0]?.id || 'main';
+
+  const results = [];
+  let totalAdded = 0;
+
+  for (const entry of entries) {
+    const amt = Math.floor(Number(entry.amount) || 0);
+    if (amt <= 0) continue;
+    const tx = {
+      ID: uid(), type: 'income', amount: amt,
+      category: '城堡稅收',
+      source: entry.castle || '未知城堡',
+      note: entry.note || '',
+      createdAt: new Date().toISOString(),
+      createdBy: req.adminEmail || 'admin'
+    };
+    await firebase.addData('Transactions', tx);
+    results.push(tx);
+    totalAdded += amt;
+  }
+
+  const newBalance = currentBalance + totalAdded;
+  if (treasuryDocs.length === 0) {
+    await firebase.addData('Treasury', { ID: 'main', balance: newBalance });
+  } else {
+    await firebase.updateData('Treasury', treasuryId, { balance: newBalance });
+  }
+
+  res.json({ ok: true, entries: results, totalAdded, newBalance });
+});
+
+// ── Loot Auction & Settlement ────────────────────
+app.post('/api/battles/:id/drops', requireAuth, async (req, res) => {
+  const { itemName } = req.body;
+  if (!itemName) return res.status(400).json({ error: '缺少物品名稱' });
+  
+  const battle = await firebase.getDocument('Battles', req.params.id);
+  if (!battle) return res.status(404).json({ error: '找不到該戰役' });
+  
+  let drops = [];
+  try { drops = typeof battle.drops === 'string' ? JSON.parse(battle.drops) : (battle.drops || []); } catch (e) {}
+  
+  const dropId = uid();
+  drops.push({
+    id: dropId,
+    itemName,
+    highestBid: 0,
+    bidderId: null,
+    auctionStage: 'participant',
+    endTime: new Date(Date.now() + 60 * 60 * 1000).toISOString()
+  });
+  
+  await firebase.updateData('Battles', req.params.id, { drops: JSON.stringify(drops) });
+  res.json({ ok: true, dropId });
+});
+
+app.post('/api/battles/:id/drops/:dropId/bid', requireAuth, async (req, res) => {
+  const { amount, bidderId } = req.body;
+  
+  const battle = await firebase.getDocument('Battles', req.params.id);
+  if (!battle) return res.status(404).json({ error: '找不到該戰役' });
+  
+  let drops = [];
+  try { drops = typeof battle.drops === 'string' ? JSON.parse(battle.drops) : (battle.drops || []); } catch (e) {}
+  
+  const dropIndex = drops.findIndex(d => d.id === req.params.dropId);
+  if (dropIndex === -1) return res.status(404).json({ error: '找不到該掉落物' });
+  
+  if (amount <= drops[dropIndex].highestBid) {
+    return res.status(400).json({ error: '出價必須高於目前最高價' });
+  }
+  
+  drops[dropIndex].highestBid = amount;
+  drops[dropIndex].bidderId = bidderId;
+  
+  await firebase.updateData('Battles', req.params.id, { drops: JSON.stringify(drops) });
+  res.json({ ok: true, drop: drops[dropIndex] });
+});
+
+app.post('/api/battles/:id/settle', requireAdmin, async (req, res) => {
+  const { reservePercentage = 0 } = req.body;
+
+  const battle = await firebase.getDocument('Battles', req.params.id);
+  if (!battle) return res.status(404).json({ error: '找不到該戰役' });
+  if (battle.status === 'settled') return res.status(400).json({ error: '此戰役已結算，不可重複結算' });
+
+  let drops = [];
+  try { drops = typeof battle.drops === 'string' ? JSON.parse(battle.drops) : (battle.drops || []); } catch (e) {}
+
+  // Support both auction-bid format (highestBid) and simple price format (price)
+  const dropsTotal = drops.reduce((sum, d) => sum + (Number(d.highestBid || d.price) || 0), 0);
+  const totalRevenue = dropsTotal > 0 ? dropsTotal : Number(battle.auctionPool || 0);
+  const pct = Math.max(0, Math.min(100, Number(reservePercentage) || 0));
+  const reserveDeduction = Math.floor(totalRevenue * (pct / 100));
+  const distributable = totalRevenue - reserveDeduction;
+  
+  let attendance = [];
+  try { attendance = typeof battle.attendance === 'string' ? JSON.parse(battle.attendance) : (battle.attendance || []); } catch (e) {}
+  
+  const participantCount = attendance.length;
+  const dividendPerPerson = participantCount > 0 ? Math.floor(distributable / participantCount) : 0;
+  
+  const treasuryDocs = await firebase.getAllData('Treasury');
+  let currentBalance = 0;
+  let treasuryId = 'main';
+  if (treasuryDocs.length > 0) {
+    currentBalance = treasuryDocs[0].balance || 0;
+    treasuryId = treasuryDocs[0].ID || treasuryDocs[0].id;
+  }
+  const newBalance = currentBalance + reserveDeduction;
+  if (treasuryDocs.length === 0) {
+    await firebase.addData('Treasury', { ID: 'main', balance: newBalance });
+  } else {
+    await firebase.updateData('Treasury', treasuryId, { balance: newBalance });
+  }
+  
+  await firebase.addData('Transactions', {
+    ID: uid(),
+    type: 'income',
+    amount: reserveDeduction,
+    source: `首領戰 ${battle.bossName || '未知'} 公積金抽成`,
+    createdAt: new Date().toISOString()
+  });
+  
+  await firebase.updateData('Battles', req.params.id, {
+    status: 'settled',
+    totalRevenue,
+    reserveDeduction,
+    dividendPerPerson
+  });
+
+  const [members, alliances] = await Promise.all([firebase.getAllData('Members'), firebase.getAllData('Alliances')]);
+  const boundParticipants = [...members, ...alliances]
+    .filter(p => attendance.includes(p.ID || p.id) && p.lineUserId)
+    .map(p => p.lineUserId)
+    .filter((v, i, a) => a.indexOf(v) === i);
+
+  if (boundParticipants.length > 0) {
+    const title = '💰 戰利品分發通知';
+    const flexMessage = {
+      type: 'flex',
+      altText: `分寶通知 — ${battle.bossName || '未知'}`,
+      contents: {
+        type: 'bubble',
+        header: {
+          type: 'box', layout: 'vertical',
+          backgroundColor: '#111111', paddingAll: '16px',
+          contents: [
+            { type: 'text', text: title, weight: 'bold', size: 'xl', color: '#f5c32e' }
+          ]
+        },
+        body: {
+          type: 'box', layout: 'vertical', spacing: 'md', paddingAll: '16px',
+          contents: [
+            { type: 'text', text: battle.bossName || '未知', weight: 'bold', size: 'lg', color: '#ffffff' },
+            { type: 'separator', margin: 'md' },
+            {
+              type: 'box', layout: 'horizontal', margin: 'md',
+              contents: [
+                { type: 'text', text: '總收入', size: 'sm', color: '#8ba1b5', flex: 3 },
+                { type: 'text', text: `${totalRevenue} 鑽`, size: 'sm', weight: 'bold', flex: 4, align: 'end', color: '#ffffff' }
+              ]
+            },
+            {
+              type: 'box', layout: 'horizontal', margin: 'sm',
+              contents: [
+                { type: 'text', text: `公積金抽成 (${reservePercentage}%)`, size: 'sm', color: '#8ba1b5', flex: 3 },
+                { type: 'text', text: `-${reserveDeduction} 鑽`, size: 'sm', flex: 4, align: 'end', color: '#e53e3e' }
+              ]
+            },
+            { type: 'separator', margin: 'md' },
+            {
+              type: 'box', layout: 'horizontal', margin: 'md',
+              contents: [
+                { type: 'text', text: '個人分紅', size: 'md', color: '#8ba1b5', flex: 3, weight: 'bold' },
+                { type: 'text', text: `${dividendPerPerson} 鑽`, size: 'lg', weight: 'bold', flex: 4, align: 'end', color: '#06c755' }
+              ]
+            }
+          ]
+        }
+      }
+    };
+    try {
+      const client = getLineClient();
+      await client.multicast({ to: boundParticipants, messages: [flexMessage] });
+    } catch (e) {
+      console.error('Failed to send LINE notification for settlement:', e);
+    }
+  }
+  
+  res.json({ ok: true, totalRevenue, reserveDeduction, dividendPerPerson });
+});
+
+// ── Siege Settle ─────────────────────────────────
+// source: 'reward' (從攻城獎勵扣) | 'treasury' (從公積金扣)
+// subsidyPerPerson: 每人薪津金額 (admin 每次手動輸入)
+// reservePercentage: 0-100, 僅 source='reward' 時生效
+app.post('/api/sieges/:id/settle', requireAdmin, async (req, res) => {
+  const { subsidyPerPerson = 0, reservePercentage = 0, source = 'reward' } = req.body;
+
+  const siege = await firebase.getDocument('Sieges', req.params.id);
+  if (!siege) return res.status(404).json({ error: '找不到該攻城戰紀錄' });
+  if (siege.status === 'settled') return res.status(400).json({ error: '此攻城戰已結算，不可重複結算' });
+
+  let attendance = [];
+  try { attendance = typeof siege.attendance === 'string' ? JSON.parse(siege.attendance) : (siege.attendance || []); } catch (e) {}
+
+  const participantCount = attendance.length;
+  const perPerson = Math.floor(Number(subsidyPerPerson) || 0);
+  const totalPayout = perPerson * participantCount;
+
+  // ── 取得或初始化金庫 ────────────────────────────
+  const treasuryDocs = await firebase.getAllData('Treasury');
+  let currentBalance = 0;
+  let treasuryId = 'main';
+  if (treasuryDocs.length > 0) {
+    currentBalance = Number(treasuryDocs[0].balance) || 0;
+    treasuryId = treasuryDocs[0].ID || treasuryDocs[0].id || 'main';
+  }
+
+  let reserveDeduction = 0;
+  let newBalance = currentBalance;
+
+  if (source === 'reward') {
+    // 從攻城獎勵池扣：先抽公積金，其餘為薪津來源
+    const pct = Math.max(0, Math.min(100, Number(reservePercentage) || 0));
+    reserveDeduction = Math.floor(Number(siege.reward || 0) * (pct / 100));
+    newBalance = currentBalance + reserveDeduction;
+    if (reserveDeduction > 0) {
+      await firebase.addData('Transactions', {
+        ID: uid(), type: 'income', amount: reserveDeduction,
+        category: '攻城戰公積金抽成',
+        source: `攻城戰 ${siege.castle || '未知'} 公積金 ${pct}%`,
+        createdAt: new Date().toISOString()
+      });
+    }
+  } else {
+    // 從公積金扣：直接扣除
+    newBalance = currentBalance - totalPayout;
+    await firebase.addData('Transactions', {
+      ID: uid(), type: 'expense', amount: totalPayout,
+      category: '攻城戰薪津',
+      source: `攻城戰 ${siege.castle || '未知'} 薪津 × ${participantCount} 人`,
+      createdAt: new Date().toISOString()
+    });
+  }
+
+  // ── 更新金庫 ─────────────────────────────────
+  if (treasuryDocs.length === 0) {
+    await firebase.addData('Treasury', { ID: 'main', balance: newBalance });
+  } else {
+    await firebase.updateData('Treasury', treasuryId, { balance: newBalance });
+  }
+
+  // ── 更新攻城戰紀錄 ───────────────────────────
+  await firebase.updateData('Sieges', req.params.id, {
+    status: 'settled',
+    subsidyPerPerson: perPerson,
+    totalPayout,
+    reserveDeduction,
+    revenuePerPerson: perPerson,
+    settledSource: source,
+    settledAt: new Date().toISOString()
+  });
+
+  // ── LINE 推播分寶通知 ─────────────────────────
+  const [members, alliances] = await Promise.all([firebase.getAllData('Members'), firebase.getAllData('Alliances')]);
+  const boundParticipants = [...members, ...alliances]
+    .filter(p => attendance.includes(p.ID || p.id) && p.lineUserId)
+    .map(p => p.lineUserId)
+    .filter((v, i, a) => a.indexOf(v) === i);
+
+  if (boundParticipants.length > 0) {
+    const typeLabel = siege.siegeType === 'defend' ? '🛡️ 守城戰' : '🏰 攻城戰';
+    const sourceLabel = source === 'treasury' ? '公積金支出' : '攻城獎勵';
+    const flexMessage = {
+      type: 'flex', altText: `薪津通知 — ${siege.castle || '未知'}`,
+      contents: {
+        type: 'bubble',
+        header: {
+          type: 'box', layout: 'vertical', backgroundColor: '#1a1228', paddingAll: '16px',
+          contents: [{ type: 'text', text: `${typeLabel} 薪津發放`, weight: 'bold', size: 'xl', color: '#e2a827' }]
+        },
+        body: {
+          type: 'box', layout: 'vertical', spacing: 'md', paddingAll: '16px',
+          contents: [
+            { type: 'text', text: siege.castle || '未知城堡', weight: 'bold', size: 'lg', color: '#ffffff' },
+            { type: 'separator', margin: 'md' },
+            { type: 'box', layout: 'horizontal', margin: 'md', contents: [
+              { type: 'text', text: '參與人數', size: 'sm', color: '#8ba1b5', flex: 3 },
+              { type: 'text', text: `${participantCount} 人`, size: 'sm', weight: 'bold', flex: 4, align: 'end', color: '#ffffff' }
+            ]},
+            { type: 'box', layout: 'horizontal', margin: 'sm', contents: [
+              { type: 'text', text: '資金來源', size: 'sm', color: '#8ba1b5', flex: 3 },
+              { type: 'text', text: sourceLabel, size: 'sm', flex: 4, align: 'end', color: '#cccccc' }
+            ]},
+            { type: 'separator', margin: 'md' },
+            { type: 'box', layout: 'horizontal', margin: 'md', contents: [
+              { type: 'text', text: '個人薪津', size: 'md', color: '#8ba1b5', flex: 3, weight: 'bold' },
+              { type: 'text', text: `${perPerson.toLocaleString()} 天幣`, size: 'lg', weight: 'bold', flex: 4, align: 'end', color: '#06c755' }
+            ]}
+          ]
+        }
+      }
+    };
+    try {
+      const client = getLineClient();
+      await client.multicast({ to: boundParticipants, messages: [flexMessage] });
+    } catch (e) {
+      console.error('攻城戰 LINE 薪津通知失敗:', e);
+    }
+  }
+
+  res.json({ ok: true, perPerson, totalPayout, reserveDeduction, participantCount, newBalance });
+});
+
 // ── Sieges ───────────────────────────────────────
 app.get('/api/sieges', async (req, res) => {
   const sieges = await firebase.getAllData('Sieges');
@@ -531,6 +940,123 @@ app.post('/api/chroma/search', requireAuth, async (req, res) => {
   }
 });
 
+// ── Pre-Registration API ──────────────────────────
+// POST /api/battles/:id/pre-register
+// POST /api/sieges/:id/pre-register
+['battles', 'sieges'].forEach(col => {
+  app.post(`/api/${col}/:id/pre-register`, express.json(), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { name, note } = req.body;
+      if (!name) return res.status(400).json({ error: '缺少角色名' });
+      const db = firebase.getDb ? firebase.getDb() : null;
+      if (!db) return res.status(503).json({ error: 'DB unavailable' });
+      const ref = db.collection(col).doc(id);
+      const snap = await ref.get();
+      if (!snap.exists) return res.status(404).json({ error: '找不到記錄' });
+      const data = snap.data();
+      let preReg = [];
+      try { preReg = JSON.parse(data.preRegistered || '[]'); } catch {}
+      // 避免重複報名
+      if (preReg.some(p => p.name === name)) {
+        return res.json({ ok: true, message: '已報名', preRegistered: JSON.stringify(preReg) });
+      }
+      preReg.push({ name, note: note || '', registeredAt: new Date().toISOString() });
+      await ref.update({ preRegistered: JSON.stringify(preReg) });
+      res.json({ ok: true, preRegistered: JSON.stringify(preReg) });
+    } catch (err) {
+      console.error(`pre-register ${col} error:`, err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // DELETE pre-registration (cancel)
+  app.delete(`/api/${col}/:id/pre-register`, express.json(), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { name } = req.body;
+      if (!name) return res.status(400).json({ error: '缺少角色名' });
+      const db = firebase.getDb ? firebase.getDb() : null;
+      if (!db) return res.status(503).json({ error: 'DB unavailable' });
+      const ref = db.collection(col).doc(id);
+      const snap = await ref.get();
+      if (!snap.exists) return res.status(404).json({ error: '找不到記錄' });
+      let preReg = [];
+      try { preReg = JSON.parse(snap.data().preRegistered || '[]'); } catch {}
+      preReg = preReg.filter(p => p.name !== name);
+      preReg = preReg.filter(p => p.name !== name);
+      await ref.update({ preRegistered: JSON.stringify(preReg) });
+      res.json({ ok: true, preRegistered: JSON.stringify(preReg) });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // POST attendance (幹部勾稽)
+  app.post(`/api/${col}/:id/attendance`, express.json(), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { attendance, drops, loot, note } = req.body;
+      if (!Array.isArray(attendance)) return res.status(400).json({ error: '缺少出席名單' });
+      const db = firebase.getDb ? firebase.getDb() : null;
+      if (!db) return res.status(503).json({ error: 'DB unavailable' });
+      const ref = db.collection(col).doc(id);
+      await ref.update({
+        attendance: JSON.stringify(attendance),
+        drops: drops || 0,
+        loot: loot || 0,
+        note: note || '',
+        updatedAt: new Date().toISOString()
+      });
+      res.json({ ok: true });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+});
+
+// ── Design Panel API ─────────────────────────────
+const fs = require('fs');
+app.post('/api/save-design', express.json(), (req, res) => {
+  try {
+    const { cssVars, brandName, brandSubtitle } = req.body;
+    const htmlPath = path.join(__dirname, 'public', 'index.html');
+    let html = fs.readFileSync(htmlPath, 'utf8');
+    if (cssVars) {
+      for (const [key, value] of Object.entries(cssVars)) {
+        const regex = new RegExp(`(${key.replace(/[-]/g,'\\-')}:\\s*)([^;]+)(;)`, 'g');
+        html = html.replace(regex, `$1${value}$3`);
+      }
+    }
+    if (brandName !== undefined) {
+      html = html.replace(
+        /(<div style="font-size:18px;font-weight:900;color:var\(--or\);[^"]*">)[^<]*/,
+        `$1${brandName}`
+      );
+    }
+    if (brandSubtitle !== undefined) {
+      html = html.replace(
+        /(<div style="font-size:11px;color:var\(--tx2\);"[^>]*>)[^<]*/,
+        `$1${brandSubtitle}`
+      );
+    }
+    fs.writeFileSync(htmlPath, html, 'utf8');
+    res.json({ ok: true, message: '設計已儲存至 index.html' });
+  } catch (err) {
+    console.error('save-design error:', err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// ── LINE Bot (新版 webhook + Firebase Auth) ───────
+try {
+  const { setupLineBot } = require('./linebot');
+  setupLineBot(app);
+  console.log('✅ LINE Bot 模組已掛載 (/webhook/line, /api/line-auth)');
+} catch (e) {
+  console.warn('⚠️  LINE Bot 模組未能載入（可能缺少環境變數）:', e.message);
+}
+
 // ── Serve frontend ───────────────────────────────
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -550,5 +1076,3 @@ app.listen(PORT, '0.0.0.0', () => {
   }
   console.log('\n   其他成員請連線上方「區網」網址\n');
 });
-
-module.exports = app;

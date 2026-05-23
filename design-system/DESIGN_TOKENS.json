@@ -1,0 +1,105 @@
+{
+  "name": "Lineage AI - Gamma Glassmorphism",
+  "version": "1.0.0",
+  "colors": {
+    "background": {
+      "base": "#0f1218",
+      "obsidian": "#0a0c10",
+      "surface": "rgba(25, 30, 40, 0.4)",
+      "surfaceHighlight": "rgba(45, 50, 65, 0.6)"
+    },
+    "primary": {
+      "gold": "#D4AF37",
+      "amber": "#FFC107",
+      "lightGold": "#FDE68A",
+      "darkGold": "#927117"
+    },
+    "secondary": {
+      "ruby": "#E53935",
+      "bloodstone": "#8E0000",
+      "crimson": "#B71C1C"
+    },
+    "text": {
+      "highEmphasis": "#FFFFFF",
+      "mediumEmphasis": "rgba(255, 255, 255, 0.7)",
+      "lowEmphasis": "rgba(255, 255, 255, 0.4)",
+      "goldAccent": "#D4AF37"
+    }
+  },
+  "gradients": {
+    "goldText": "linear-gradient(180deg, #FFF1B0 0%, #D4AF37 100%)",
+    "glassBorder": "linear-gradient(135deg, rgba(212, 175, 55, 0.5) 0%, rgba(212, 175, 55, 0.05) 100%)",
+    "buttonPrimary": "linear-gradient(180deg, #D4AF37 0%, #927117 100%)",
+    "ambientGlow": "radial-gradient(circle at bottom center, rgba(142, 0, 0, 0.4) 0%, transparent 60%)"
+  },
+  "glass": {
+    "blur": "12px",
+    "opacity": "0.4",
+    "blendMode": "overlay"
+  },
+  "border": {
+    "width": "1px",
+    "color": "rgba(212, 175, 55, 0.2)",
+    "highlightColor": "rgba(212, 175, 55, 0.6)"
+  },
+  "glow": {
+    "text": "0 0 10px rgba(212, 175, 55, 0.5)",
+    "card": "0 0 20px rgba(142, 0, 0, 0.15)",
+    "emblem": "0 0 40px rgba(212, 175, 55, 0.3)"
+  },
+  "shadow": {
+    "card": "0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
+    "button": "0 4px 10px rgba(0, 0, 0, 0.4)"
+  },
+  "radius": {
+    "card": "16px",
+    "button": "8px",
+    "badge": "4px",
+    "circle": "50%"
+  },
+  "typography": {
+    "fontFamily": {
+      "headline": "'Cinzel', serif",
+      "body": "'Noto Sans TC', sans-serif",
+      "mono": "monospace"
+    },
+    "fontSize": {
+      "xs": "10px",
+      "sm": "12px",
+      "base": "14px",
+      "lg": "18px",
+      "xl": "24px",
+      "2xl": "32px",
+      "emblem": "48px"
+    },
+    "fontWeight": {
+      "normal": "400",
+      "bold": "700",
+      "black": "900"
+    }
+  },
+  "spacing": {
+    "xs": "4px",
+    "sm": "8px",
+    "md": "16px",
+    "lg": "24px",
+    "xl": "32px",
+    "gridGap": "20px"
+  },
+  "breakpoints": {
+    "mobile": "320px",
+    "tablet": "768px",
+    "desktop": "1024px",
+    "wide": "1440px"
+  },
+  "particles": {
+    "emberColor": "#E53935",
+    "goldDustColor": "#D4AF37",
+    "animationSpeed": "8s-15s",
+    "density": "Medium"
+  },
+  "motion": {
+    "hoverTransition": "all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)",
+    "cardEntry": "fade-up 0.6s ease-out"
+  }
+}

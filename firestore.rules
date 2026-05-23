@@ -1,0 +1,88 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper Functions ──────────────────────────────────────────────
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isRole(role) {
+      return isSignedIn() && getUserData().role == role;
+    }
+
+    function getRoleLevel() {
+      return getUserData().roleLevel;
+    }
+
+    // minLevel: 1=新人, 2=成員, 3=幹部, 4=元帥, 5=公主/公會主
+    function isAtLeast(minLevel) {
+      return isSignedIn() && getRoleLevel() >= minLevel;
+    }
+
+    function isOwner() {
+      return isAtLeast(5);
+    }
+
+    function isOfficer() {
+      return isAtLeast(3);
+    }
+
+    function isAdmin() {
+      return isAtLeast(4);
+    }
+
+    // ── /users/{uid} ──────────────────────────────────────────────────
+    // 本人可讀寫自己的文件；管理員（roleLevel >= 4）可讀寫所有人
+    match /users/{uid} {
+      allow read:  if request.auth.uid == uid || isAdmin();
+      allow write: if request.auth.uid == uid || isAdmin();
+    }
+
+    // ── /members/{id} ─────────────────────────────────────────────────
+    // 已登入者可讀；幹部以上（roleLevel >= 3）可寫
+    match /members/{id} {
+      allow read:  if isSignedIn();
+      allow write: if isOfficer();
+    }
+
+    // ── /bossBattles/{id} ─────────────────────────────────────────────
+    // 已登入者可讀；幹部以上可寫
+    match /bossBattles/{id} {
+      allow read:  if isSignedIn();
+      allow write: if isOfficer();
+    }
+
+    // ── /sieges/{id} ──────────────────────────────────────────────────
+    // 已登入者可讀；幹部以上可寫
+    match /sieges/{id} {
+      allow read:  if isSignedIn();
+      allow write: if isOfficer();
+    }
+
+    // ── /treasury/{id} ────────────────────────────────────────────────
+    // 已登入者可讀；幹部以上可寫
+    match /treasury/{id} {
+      allow read:  if isSignedIn();
+      allow write: if isOfficer();
+    }
+
+    // ── /alliances/{id} ───────────────────────────────────────────────
+    // 已登入者可讀；幹部以上可寫
+    match /alliances/{id} {
+      allow read:  if isSignedIn();
+      allow write: if isOfficer();
+    }
+
+    // ── /settings/{id} ────────────────────────────────────────────────
+    // 所有登入者可讀；只有 owner（roleLevel == 5）可寫
+    match /settings/{id} {
+      allow read:  if isSignedIn();
+      allow write: if isOwner();
+    }
+  }
+}
