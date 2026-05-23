@@ -3,791 +3,1303 @@
 <head>
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-  <title>Lineage AI | Tactical Terminal</title>
+  <title>Lineage AI | Command Center</title>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <style>
+    /* ══════════════════════════════════════════════
+       S1 INDUSTRIAL FORGE — Plan E × V2 × S1
+       BG:#0A0704  Panel:#0D0A04  Orange:#EF9F27
+       Sharp 0px radius · Double-border btns
+       110px sidebar · Card rows · 4-grid KPI
+    ══════════════════════════════════════════════ */
+    *,*::before,*::after { box-sizing: border-box; margin:0; padding:0; }
+
+    :root {
+      --bg:    #0A0704;
+      --p1:    #0D0A04;
+      --p2:    #141008;
+      --p3:    #1C1610;
+      --or:    #EF9F27;
+      --or2:   #BA7517;
+      --or3:   rgba(239,159,39,0.10);
+      --or4:   rgba(186,117,23,0.20);
+      --bd:    rgba(186,117,23,0.22);
+      --bd2:   rgba(186,117,23,0.45);
+      --tx:    #FFF8F0;
+      --tx2:   rgba(255,248,240,0.78);
+      --tx3:   rgba(255,248,240,0.52);
+      --tx4:   rgba(255,248,240,0.25);
+      --sb:    110px;
+      --hh:    52px;
+    }
+
+    html,body { height:100%; overflow:hidden; }
+    body { background:var(--bg); color:var(--tx); font-family:system-ui,-apple-system,sans-serif; font-size:15px; line-height:1.5; }
+
+    .material-symbols-outlined { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; vertical-align:middle; font-size:18px; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width:3px; height:3px; }
+    ::-webkit-scrollbar-track { background:var(--bg); }
+    ::-webkit-scrollbar-thumb { background:var(--or2); }
+
+    /* ── Section ── */
+    .section { display:none; }
+    .section.active { display:block; animation:fadeIn 0.3s ease; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+    /* ── S1 Panel ── */
+    .s1-panel {
+      background:var(--p1);
+      border:1px solid var(--bd);
+      border-radius:0;
+      position:relative;
+    }
+    .s1-panel-header {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:8px 14px;
+      border-bottom:1px solid var(--bd);
+      background:var(--p2);
+    }
+    .s1-panel-title {
+      font-size:9px; font-weight:900; text-transform:uppercase;
+      letter-spacing:0.12em; color:var(--or2);
+    }
+
+    /* ── KPI 4-Grid ── */
+    .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:18px; }
+    .kpi-card {
+      background:var(--p1); border:1px solid var(--bd);
+      border-top:2px solid var(--or2); padding:12px 14px;
+    }
+    .kpi-label { font-size:10px; font-weight:900; text-transform:uppercase; letter-spacing:0.10em; color:var(--or); margin-bottom:6px; }
+    .kpi-value { font-size:32px; font-weight:700; color:var(--or); line-height:1; font-family:monospace; }
+    .kpi-sub { font-size:10px; color:var(--tx2); margin-top:4px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; }
+    @keyframes kpiReveal { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+    .kpi-animate { animation:kpiReveal 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
+
+    /* ── Buttons (Double-border) ── */
+    .btn, .btn-primary, .btn-outline {
+      border:2px solid var(--or2);
+      outline:1px solid rgba(186,117,23,0.4);
+      outline-offset:2px;
+      color:var(--or);
+      background:transparent;
+      font-weight:700; font-size:11px;
+      text-transform:uppercase; letter-spacing:0.08em;
+      padding:7px 16px; cursor:pointer;
+      transition:background 0.18s, border-color 0.18s;
+      font-family:inherit; display:inline-flex; align-items:center; gap:5px;
+    }
+    .btn:hover, .btn-primary:hover, .btn-outline:hover {
+      background:var(--or3); border-color:var(--or);
+    }
+    .btn:active, .btn-primary:active { transform:scale(0.97); }
+    .btn-danger {
+      border-color:rgba(248,113,113,0.5);
+      outline-color:rgba(248,113,113,0.2);
+      color:#f87171;
+    }
+    .btn-danger:hover { background:rgba(248,113,113,0.08); border-color:#f87171; }
+    .btn-success {
+      border-color:rgba(74,222,128,0.5);
+      outline-color:rgba(74,222,128,0.2);
+      color:#4ade80;
+    }
+    .btn-sm { padding:4px 10px; font-size:10px; }
+    .btn-xs { padding:2px 8px; font-size:9px; outline:none; outline-offset:0; }
+    .btn-icon { padding:5px; outline:none; }
+
+    /* ── Inputs ── */
+    .atelier-input {
+      width:100%; background:var(--p2); border:1px solid var(--bd);
+      border-radius:0; padding:9px 12px; color:var(--tx); font-size:14px;
+      outline:none; transition:border-color 0.2s; font-family:inherit;
+    }
+    .atelier-input:focus { border-color:var(--or2); }
+    .atelier-input::placeholder { color:var(--tx3); }
+    select.atelier-input { cursor:pointer; }
+    label { display:block; font-size:10px; text-transform:uppercase; letter-spacing:0.08em;
+            color:var(--or); margin-bottom:5px; font-weight:700; opacity:1; }
+
+    /* ── Tier Badge (Square border) ── */
+    .tier-badge {
+      display:inline-block; font-size:9px; font-weight:900;
+      text-transform:uppercase; letter-spacing:0.08em;
+      padding:1px 5px; border:1px solid currentColor;
+      border-radius:0; white-space:nowrap; font-family:system-ui;
+    }
+    .tier-核心 { color:var(--or); border-color:rgba(239,159,39,0.6); background:rgba(239,159,39,0.08); }
+    .tier-一般 { color:#60a5fa; border-color:rgba(96,165,250,0.5); background:rgba(96,165,250,0.06); }
+    .tier-試煉 { color:#fb923c; border-color:rgba(251,146,60,0.5); background:rgba(251,146,60,0.06); }
+    .tier-預備 { color:#94a3b8; border-color:rgba(148,163,184,0.4); background:rgba(148,163,184,0.05); }
+    .tier-外交 { color:#a78bfa; border-color:rgba(167,139,250,0.5); background:rgba(167,139,250,0.06); }
+    .result-success { color:#4ade80; border-color:rgba(74,222,128,0.5); background:rgba(74,222,128,0.06); }
+    .result-failed  { color:#f87171; border-color:rgba(248,113,113,0.5); background:rgba(248,113,113,0.06); }
+    .siege-attack   { color:#f87171; border-color:rgba(248,113,113,0.45); background:rgba(248,113,113,0.06); }
+    .siege-defend   { color:#60a5fa; border-color:rgba(96,165,250,0.4); background:rgba(96,165,250,0.06); }
+
+    /* ── Job Colors ── */
+    .job-王族 { color:#fbbf24; }
+    .job-騎士 { color:#60a5fa; }
+    .job-妖精 { color:#34d399; }
+    .job-法師 { color:#c084fc; }
+    .job-黑妖 { color:#f87171; }
+
+    /* ── Rank Medals ── */
+    .rank-gold   { color:#FFD700; }
+    .rank-silver { color:#C0C0C0; }
+    .rank-bronze { color:#CD7F32; }
+
+    /* ── Card Rows ── */
+    .card-row {
+      background:var(--p1); border:1px solid var(--bd);
+      padding:9px 13px; margin-bottom:4px;
+      display:flex; align-items:center; gap:10px;
+      transition:border-color 0.15s, background 0.15s;
+    }
+    .card-row:hover { border-color:var(--bd2); background:var(--p2); }
+    .card-row:last-child { margin-bottom:0; }
+
+    /* ── Section Headers ── */
+    .sec-header {
+      display:flex; flex-wrap:wrap; justify-content:space-between;
+      align-items:flex-end; gap:10px; margin-bottom:14px;
+      border-bottom:2px solid var(--or2); padding-bottom:10px;
+    }
+    .sec-title { font-size:24px; font-weight:900; color:var(--or); letter-spacing:0.02em; }
+    .sec-sub { font-size:11px; color:var(--tx2); text-transform:uppercase; letter-spacing:0.08em; margin-top:3px; }
+
+    /* ── Level Progress Bar ── */
+    .level-bar-track { height:2px; background:var(--tx4); overflow:hidden; }
+    .level-bar-fill  { height:100%; background:var(--or2); transition:width 0.4s; }
+
+    /* ── Attendance Pill ── */
+    .att-pill {
+      display:inline-block; font-size:9px; font-weight:900;
+      padding:1px 6px; border:1px solid var(--bd); color:var(--tx3); border-radius:0;
+    }
+    .att-pill.has-att { color:var(--or); border-color:rgba(239,159,39,0.4); background:rgba(239,159,39,0.06); }
+
+    /* ── Feed Item ── */
+    .feed-item {
+      display:flex; align-items:flex-start; gap:8px; padding:7px 9px;
+      background:var(--p2); border:1px solid var(--bd); margin-bottom:4px;
+      transition:border-color 0.15s;
+    }
+    .feed-item:hover { border-color:var(--bd2); }
+
+    /* ── Empty State ── */
+    .empty-state {
+      display:flex; flex-direction:column; align-items:center;
+      padding:32px 20px; gap:8px; opacity:0.4;
+    }
+
+    /* ── Table Override ── */
+    th {
+      text-align:left; padding:8px 10px;
+      border-bottom:1px solid var(--bd); color:var(--or2);
+      font-size:12px; font-weight:900; text-transform:uppercase;
+      letter-spacing:0.06em; white-space:nowrap; background:var(--p2);
+    }
+    td { padding:9px 10px; font-size:14px; color:var(--tx); border-bottom:1px solid var(--bd); }
+    tr:hover td { background:var(--or3); }
+
+    /* ── Sidebar Active ── */
+    .nav-item { display:flex; flex-direction:column; align-items:center; gap:3px;
+      padding:10px 0; width:100%; cursor:pointer; border:none;
+      background:transparent; color:var(--tx3); border-left:2px solid transparent;
+      transition:all 0.15s; }
+    .nav-item:hover { color:var(--or); background:var(--or4); }
+    .nav-item.active { color:var(--or); background:var(--or3);
+      border-left:2px solid var(--or); }
+    .nav-item .nav-icon { font-size:22px; }
+    .nav-item .nav-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; }
+
+    /* ── Toast ── */
+    .toast-wrap { position:fixed; bottom:20px; right:20px; z-index:9999;
+      display:flex; flex-direction:column; gap:6px; pointer-events:none; }
+    .toast-card {
+      display:flex; align-items:center; gap:8px;
+      background:var(--p1); border:2px solid var(--bd2);
+      outline:1px solid rgba(186,117,23,0.2); outline-offset:2px;
+      padding:9px 13px; min-width:220px; max-width:300px;
+      pointer-events:all; overflow:hidden; position:relative;
+      animation:toastIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+    @keyframes toastIn { from{opacity:0;transform:translateX(30px)} to{opacity:1;transform:translateX(0)} }
+    @keyframes toastOut { to{opacity:0;transform:translateX(30px)} }
+    .toast-card.dismissing { animation:toastOut 0.22s ease-in both; }
+    .toast-progress { position:absolute; bottom:0; left:0; height:2px;
+      animation:toastProgress 3.2s linear both; }
+    @keyframes toastProgress { from{width:100%} to{width:0%} }
+    .toast-success .toast-progress { background:var(--or); }
+    .toast-error   .toast-progress { background:#f87171; }
+    .toast-info    .toast-progress { background:#60a5fa; }
+    .toast-dot { width:6px; height:6px; flex-shrink:0; border-radius:0; }
+    .toast-success .toast-dot { background:var(--or); }
+    .toast-error   .toast-dot { background:#f87171; }
+    .toast-info    .toast-dot { background:#60a5fa; }
+    .toast-msg { font-size:11px; font-weight:700; color:var(--tx); flex:1; }
+
+    /* ── Mobile Bottom Nav ── */
+    .mobile-bottom-nav {
+      display:none; position:fixed; bottom:0; left:0; right:0; z-index:60;
+      background:var(--p1); border-top:2px solid var(--or2);
+      padding:4px 0;
+    }
+    .mobile-bottom-nav .mnav-items { display:flex; justify-content:space-around; align-items:center; }
+    .mobile-bottom-nav .mnav-btn {
+      display:flex; flex-direction:column; align-items:center; gap:1px;
+      padding:5px 8px; cursor:pointer; border:none; background:transparent;
+      color:var(--tx3); -webkit-tap-highlight-color:transparent;
+    }
+    .mobile-bottom-nav .mnav-btn.active { color:var(--or); }
+    .mobile-bottom-nav .mnav-btn .mnav-icon { font-size:19px; }
+    .mobile-bottom-nav .mnav-btn .mnav-label { font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:0.05em; }
+    @media (max-width:767px) {
+      .mobile-bottom-nav { display:block; }
+      aside { display:none !important; }
+      #mainContent { margin-left:0 !important; padding-bottom:72px !important; }
+    }
+    @media (min-width:768px) and (max-width:1023px) {
+      :root { --sb: 80px; }
+      .nav-item .nav-label { display:none; }
+      .sidebar-brand-text { display:none; }
+    }
+
+    /* ── Misc ── */
+    .hidden { display:none !important; }
+    .top-nav-link.active-nav { color:var(--or) !important; border-bottom-color:var(--or) !important; }
+    .custom-scrollbar::-webkit-scrollbar { width:3px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background:var(--or2); }
+
+    /* ── Skeleton ── */
+    @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+    .skeleton {
+      background:linear-gradient(90deg,rgba(255,255,255,0.03) 25%,rgba(255,255,255,0.07) 50%,rgba(255,255,255,0.03) 75%);
+      background-size:200% 100%; animation:shimmer 1.6s linear infinite;
+    }
+  </style>
 </head>
 <body>
-  <div class="dashboard">
-    <!-- Sidebar: Column 1 -->
-    <aside class="sidebar">
-      <div class="brand-section">
-        <div class="brand-logo">
-          <span></span>
-          Lineage AI
-        </div>
-        <p class="brand-tagline">Tactical Terminal</p>
-      </div>
 
-      <nav class="nav-section">
-        <button class="nav-item active" data-section="members" onclick="switchSection('members')">
-          <i class="material-symbols-outlined">group</i>
-          Members
-        </button>
-        <button class="nav-item" data-section="battles" onclick="switchSection('battles')">
-          <i class="material-symbols-outlined">swords</i>
-          Battles
-        </button>
-        <button class="nav-item" data-section="sieges" onclick="switchSection('sieges')">
-          <i class="material-symbols-outlined">fort</i>
-          Sieges
-        </button>
-        <button class="nav-item" data-section="alliances" onclick="switchSection('alliances')">
-          <i class="material-symbols-outlined">handshake</i>
-          Alliances
-        </button>
-        <button class="nav-item" data-section="treasury" onclick="switchSection('treasury')">
-          <i class="material-symbols-outlined">account_balance</i>
-          Treasury
-        </button>
-      </nav>
-
-      <div class="user-section mt-auto pt-8 border-t border-white/5">
-        <div id="userInfo" class="hidden">
-          <div class="flex items-center gap-3 p-3 bg-surface-container-low rounded-lg mb-4">
-            <img id="userAvatar" src="" class="w-10 h-10 rounded-full border-2 border-copper-dim cursor-pointer" onclick="logout()">
-            <div class="flex flex-col">
-              <span id="userName" class="text-xs font-bold uppercase tracking-tight">...</span>
-              <span id="adminBadge" class="hidden text-[8px] font-bold text-copper-primary uppercase">Sys_Admin</span>
-            </div>
-          </div>
-        </div>
-        <button id="loginBtn" class="btn btn-primary w-full" onclick="openLoginModal()">
-          <i class="material-symbols-outlined">login</i>
-          Auth Required
-        </button>
-      </div>
-    </aside>
-
-    <!-- Main Stage: Column 2 -->
-    <main class="main-stage">
-      <div class="ambient-glow"></div>
-      
-      <!-- Section: Members -->
-      <section id="members" class="section active">
-        <div class="header-bar">
-          <div class="page-title">
-            <h2>Members</h2>
-            <p>Blood Pledge Personnel Directory</p>
-          </div>
-          <div class="flex gap-3">
-             <input type="text" id="membersSearch" placeholder="Filter records..." class="atelier-input text-xs w-64" oninput="setFilter('members', this.value)">
-             <button class="btn btn-outline" onclick="exportToCSV('members')">
-                <i class="material-symbols-outlined">download</i>
-                Export
-             </button>
-          </div>
-        </div>
-
-        <div class="atelier-grid">
-          <div class="atelier-card bevel shadow-carbon col-span-12 xl:col-span-8">
-            <span class="card-label">System Health</span>
-            <div class="flex justify-between items-end">
-              <div>
-                <span class="stat-value" id="memberCountBadge">0</span>
-                <span class="stat-unit">Total Population</span>
-              </div>
-              <div class="w-48 h-48">
-                <canvas id="classChart"></canvas>
-              </div>
-            </div>
-          </div>
-
-          <div id="memberAddCard" class="atelier-card bevel shadow-carbon col-span-12 xl:col-span-4 auth-required hidden">
-            <span class="card-label">Append Record</span>
-            <div class="space-y-4">
-              <div>
-                <label>Character ID</label>
-                <input type="text" id="mName" class="atelier-input" placeholder="ID...">
-              </div>
-              <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <label>Class</label>
-                  <select id="mJob" class="atelier-input">
-                    <option value="" disabled selected>Select...</option>
-                    <option value="王族">Prince</option>
-                    <option value="騎士">Knight</option>
-                    <option value="妖精">Elf</option>
-                    <option value="法師">Wizard</option>
-                    <option value="黑妖">Dark Elf</option>
-                  </select>
-                </div>
-                <div>
-                  <label>Tier</label>
-                  <select id="mTier" class="atelier-input">
-                    <option value="核心">Core</option>
-                    <option value="一般" selected>Regular</option>
-                    <option value="試煉">Trial</option>
-                    <option value="外交">Diplomat</option>
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label>Metadata</label>
-                <input type="text" id="mNotes" class="atelier-input" placeholder="Role, squad, notes...">
-              </div>
-              <button onclick="addMember()" class="btn btn-primary w-full mt-4">
-                Execute.Insert()
-              </button>
-            </div>
-          </div>
-
-          <div class="col-span-12">
-            <div class="table-container">
-              <table id="membersTable">
-                <thead>
-                  <tr>
-                    <th>Character ID</th>
-                    <th>Class</th>
-                    <th>Tier</th>
-                    <th>Metadata</th>
-                    <th>LINE</th>
-                    <th class="admin-col hidden text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Section: Battles -->
-      <section id="battles" class="section">
-        <div class="header-bar">
-          <div class="page-title">
-            <h2>Battles</h2>
-            <p>Encounter Logs & Loot Valuation</p>
-          </div>
-          <div class="flex gap-3">
-             <input type="text" id="battlesSearch" placeholder="Filter encounters..." class="atelier-input text-xs w-64" oninput="setFilter('battles', this.value)">
-             <button class="btn btn-outline" onclick="exportToCSV('battles')">
-                <i class="material-symbols-outlined">download</i>
-                Export
-             </button>
-          </div>
-        </div>
-
-        <div class="atelier-grid">
-          <div class="atelier-card bevel shadow-carbon col-span-12 xl:col-span-8">
-            <span class="card-label">Protocol Status</span>
-            <div class="flex flex-col justify-center h-full min-h-[200px]">
-               <h3 class="card-title text-2xl">Battle Protocol Active</h3>
-               <p class="text-secondary text-sm mb-6 max-w-lg">Log all encounters and loot valuations promptly to ensure accurate dividend distribution across the blood pledge.</p>
-               <div class="bg-surface-container-high p-4 rounded-lg font-mono text-[11px] border border-copper-dim/10">
-                  <p id="battleStatusText" class="text-copper-primary">> AWAITING NEW LOGS...</p>
-                  <p class="text-white/40">> STATUS: NOMINAL</p>
-               </div>
-            </div>
-          </div>
-
-          <div id="battleAddCard" class="atelier-card bevel shadow-carbon col-span-12 xl:col-span-4 auth-required hidden">
-            <span class="card-label">Log Encounter</span>
-            <div class="space-y-4">
-              <div>
-                <label>Target</label>
-                <select id="bBossSelect" class="atelier-input" onchange="handleBossSelect(this)">
-                  <option value="死亡騎士">Death Knight</option>
-                  <option value="克特">Kurtz</option>
-                  <option value="大惡魔">Demon</option>
-                  <option value="巴風特">Baphomet</option>
-                  <option value="__custom__">Custom...</option>
-                </select>
-                <div id="bCustomBossGroup" style="display:none;" class="mt-2">
-                  <input type="text" id="bBossCustom" class="atelier-input" placeholder="Enter target...">
-                </div>
-              </div>
-              <div>
-                <label>Timestamp</label>
-                <input type="datetime-local" id="bTime" class="atelier-input">
-              </div>
-              <div>
-                <label>Pool Value (Adena)</label>
-                <input type="number" id="bAuctionPool" class="atelier-input" placeholder="0">
-              </div>
-              <div>
-                <label>Attendance</label>
-                <div id="bAttendance" class="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar"></div>
-              </div>
-              <div class="pt-4 border-t border-white/5">
-                <div class="flex justify-between items-center mb-4">
-                   <label class="mb-0">Loot Drops</label>
-                   <button onclick="addLootRow()" class="btn btn-outline py-1 px-3 text-[10px]">Add Item</button>
-                </div>
-                <div id="bDropsList" class="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
-                   <div class="loot-row flex gap-2">
-                     <input type="text" placeholder="Item" class="atelier-input py-2 text-xs flex-1">
-                     <input type="number" placeholder="Value" class="atelier-input py-2 text-xs w-24">
-                   </div>
-                </div>
-              </div>
-              <button onclick="addBattle()" class="btn btn-primary w-full mt-4">
-                Execute.Log()
-              </button>
-            </div>
-          </div>
-
-          <div class="col-span-12">
-            <div class="table-container">
-              <table id="battlesTable">
-                <thead>
-                  <tr>
-                    <th>Time</th>
-                    <th>Target</th>
-                    <th>Pax</th>
-                    <th>Pool</th>
-                    <th>Dividend</th>
-                    <th class="admin-col hidden text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Section: Sieges -->
-      <section id="sieges" class="section">
-        <div class="header-bar">
-          <div class="page-title">
-            <h2>Sieges</h2>
-            <p>War Operations & Reward Distribution</p>
-          </div>
-          <div class="flex gap-3">
-             <input type="text" id="siegesSearch" placeholder="Filter operations..." class="atelier-input text-xs w-64" oninput="setFilter('sieges', this.value)">
-             <button class="btn btn-outline" onclick="exportToCSV('sieges')">
-                <i class="material-symbols-outlined">download</i>
-                Export
-             </button>
-          </div>
-        </div>
-
-        <div class="atelier-grid">
-          <div class="atelier-card bevel shadow-carbon col-span-12 xl:col-span-8">
-            <span class="card-label">Operational Status</span>
-            <div class="flex flex-col justify-center h-full min-h-[200px]">
-               <h3 class="card-title text-2xl">Siege Protocols Engaged</h3>
-               <p class="text-secondary text-sm mb-6 max-w-lg">Critical war operations. Ensure all participating allies are logged accurately for ledger calculations.</p>
-               <div class="bg-surface-container-high p-4 rounded-lg font-mono text-[11px] border border-danger/10">
-                  <p id="siegeStatusText" class="text-danger">> MONITORING CASTLE STATUS...</p>
-                  <p class="text-white/40">> READY FOR DEPLOYMENT</p>
-               </div>
-            </div>
-          </div>
-
-          <div id="siegeAddCard" class="atelier-card bevel shadow-carbon col-span-12 xl:col-span-4 auth-required hidden">
-            <span class="card-label">Log Siege</span>
-            <div class="space-y-4">
-              <div>
-                <label>Timestamp</label>
-                <input type="datetime-local" id="sDate" class="atelier-input">
-              </div>
-              <div>
-                <label>Castle</label>
-                <select id="sCastle" class="atelier-input">
-                  <option value="肯特城">Kent Castle</option>
-                  <option value="妖魔堡壘">Orc Fortress</option>
-                  <option value="風木城">Windawood Castle</option>
-                  <option value="奇岩城">Giran Castle</option>
-                </select>
-              </div>
-              <div>
-                <label>Reward (Adena)</label>
-                <input type="number" id="sReward" class="atelier-input" placeholder="0">
-              </div>
-              <div>
-                <label>Attendance</label>
-                <div id="sAttendance" class="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar"></div>
-              </div>
-              <button onclick="addSiege()" class="btn btn-primary w-full mt-4 bg-danger border-none text-white">
-                Execute.Log()
-              </button>
-            </div>
-          </div>
-
-          <div class="col-span-12">
-            <div class="table-container">
-              <table id="siegesTable">
-                <thead>
-                  <tr>
-                    <th>Time</th>
-                    <th>Castle</th>
-                    <th>Pax</th>
-                    <th>Reward</th>
-                    <th>Dividend</th>
-                    <th class="admin-col hidden text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Section: Alliances -->
-      <section id="alliances" class="section">
-        <div class="header-bar">
-          <div class="page-title">
-            <h2>Alliances</h2>
-            <p>External Allied Units & Treaties</p>
-          </div>
-          <div class="flex gap-3">
-             <input type="text" id="alliancesSearch" placeholder="Search allies..." class="atelier-input text-xs w-64" oninput="setFilter('alliances', this.value)">
-             <button class="btn btn-outline" onclick="exportToCSV('alliances')">
-                <i class="material-symbols-outlined">download</i>
-                Export
-             </button>
-          </div>
-        </div>
-
-        <div class="atelier-grid">
-          <div class="atelier-card bevel shadow-carbon col-span-12 xl:col-span-8">
-            <span class="card-label">Diplomacy Protocol</span>
-            <div class="flex flex-col justify-center h-full min-h-[200px]">
-               <h3 class="card-title text-2xl">Diplomatic Ties</h3>
-               <p class="text-secondary text-sm mb-6 max-w-lg">Registered external allies. These units are eligible for participation in joint operations and dividend pools.</p>
-               <div class="bg-surface-container-high p-4 rounded-lg font-mono text-[11px] border border-info/10">
-                  <p class="text-info">> SCANNING ALLIED NETWORKS...</p>
-                  <p class="text-white/40">> STATUS: TRUSTED_NODE</p>
-               </div>
-            </div>
-          </div>
-
-          <div id="allianceAddCard" class="atelier-card bevel shadow-carbon col-span-12 xl:col-span-4 auth-required hidden">
-            <span class="card-label">Append Ally</span>
-            <div class="space-y-4">
-              <div>
-                <label>Character ID</label>
-                <input type="text" id="aName" class="atelier-input" placeholder="ID...">
-              </div>
-              <div>
-                <label>Class</label>
-                <select id="aJob" class="atelier-input">
-                  <option value="王族">Prince</option>
-                  <option value="騎士">Knight</option>
-                  <option value="妖精">Elf</option>
-                  <option value="法師">Wizard</option>
-                  <option value="黑妖">Dark Elf</option>
-                </select>
-              </div>
-              <div>
-                <label>Metadata</label>
-                <input type="text" id="aNotes" class="atelier-input" placeholder="Notes...">
-              </div>
-              <button onclick="addAlliance()" class="btn btn-primary w-full mt-4">
-                Execute.Insert()
-              </button>
-            </div>
-          </div>
-
-          <div class="col-span-12">
-            <div class="table-container">
-              <table id="alliancesTable">
-                <thead>
-                  <tr>
-                    <th>Character ID</th>
-                    <th>Class</th>
-                    <th>Metadata</th>
-                    <th class="admin-col hidden text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Section: Treasury -->
-      <section id="treasury" class="section">
-        <div class="header-bar">
-          <div class="page-title">
-            <h2>Treasury</h2>
-            <p>Dividend Aggregation & Distribution</p>
-          </div>
-          <div class="flex gap-3">
-             <input type="text" id="treasurySearch" placeholder="Search ledger..." class="atelier-input text-xs w-64" oninput="setFilter('treasury', this.value)">
-             <button class="btn btn-outline" onclick="exportToCSV('treasury')">
-                <i class="material-symbols-outlined">download</i>
-                Export
-             </button>
-          </div>
-        </div>
-
-        <div class="atelier-grid">
-          <div class="atelier-card bevel shadow-carbon col-span-12 xl:col-span-8">
-            <span class="card-label">Treasury Engine</span>
-            <div class="flex flex-col justify-center h-full min-h-[200px]">
-               <h3 class="card-title text-2xl">Ledger Auto-Aggregation</h3>
-               <p class="text-secondary text-sm mb-6 max-w-lg">The system automatically computes per-member dividends based on battle and siege records. All values are in Adena.</p>
-               <div class="grid grid-cols-2 gap-4">
-                  <div class="p-4 bg-surface-container-high rounded-lg border border-white/5">
-                     <span class="block text-[10px] text-tertiary uppercase font-bold mb-1">Total Distributed</span>
-                     <span class="text-xl font-bold" id="totalDistDisplay">0</span>
-                  </div>
-                  <div class="p-4 bg-surface-container-high rounded-lg border border-white/5">
-                     <span class="block text-[10px] text-tertiary uppercase font-bold mb-1">Active Accounts</span>
-                     <span class="text-xl font-bold" id="activeAcctsDisplay">0</span>
-                  </div>
-               </div>
-            </div>
-          </div>
-
-          <div class="atelier-card bevel shadow-carbon col-span-12 xl:col-span-4">
-             <span class="card-label">Net Distribution</span>
-             <div class="h-48">
-                <canvas id="treasuryChart"></canvas>
-             </div>
-          </div>
-
-          <div class="col-span-12">
-            <div class="table-container">
-              <table id="treasuryTable">
-                <thead>
-                  <tr>
-                    <th>Character ID</th>
-                    <th>Ops</th>
-                    <th>Battle Div</th>
-                    <th>Siege Div</th>
-                    <th class="text-copper-primary">Net Total</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </section>
-    </main>
-
-    <!-- Event Horizon: Column 3 -->
-    <aside class="event-horizon">
-      <div class="feed-title">Event Horizon</div>
-      
-      <div class="flex-1 overflow-hidden flex flex-col">
-        <!-- Live Clock -->
-        <div class="p-6 bg-surface-container-low rounded-xl border border-copper-dim/10 mb-8">
-          <span class="text-[10px] font-bold text-tertiary uppercase tracking-widest mb-1 block">Live_Clock_UTC</span>
-          <div id="sysClockDisplay" class="text-4xl font-mono font-bold text-copper-primary tracking-tighter">00:00:00</div>
-        </div>
-
-        <div class="flex-1 overflow-y-auto no-scrollbar">
-           <ul class="activity-feed" id="activityFeed">
-              <!-- Populated by app.js -->
-           </ul>
-        </div>
-      </div>
-
-      <div class="mt-8 pt-8 border-t border-white/5">
-         <button class="btn btn-outline w-full" onclick="fetchData()">
-            <i class="material-symbols-outlined">sync</i>
-            Data_Sync.Run()
-         </button>
-      </div>
-    </aside>
+<!-- ═══ TOP HEADER ═══ -->
+<header style="position:fixed;top:0;left:0;right:0;height:var(--hh);z-index:50;
+  background:var(--p1);border-bottom:2px solid var(--or2);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 16px;">
+  <div style="display:flex;align-items:center;gap:16px;">
+    <div style="border-right:1px solid var(--bd);padding-right:14px;margin-right:4px;">
+      <div id="sysClockDisplay" style="font-size:15px;font-weight:700;color:var(--or);font-family:monospace;letter-spacing:0.08em;">00:00:00</div>
+      <div style="font-size:11px;color:var(--tx2);text-transform:uppercase;letter-spacing:0.10em;">SYS.CLOCK</div>
+    </div>
+    <div>
+      <div style="font-size:18px;font-weight:900;color:var(--or);text-transform:uppercase;letter-spacing:0.05em;">Bloodstone Legion</div>
+      <div style="font-size:11px;color:var(--tx2);text-transform:uppercase;letter-spacing:0.12em;">Royal Command Center</div>
+    </div>
+    <nav style="display:flex;gap:2px;margin-left:12px;" class="hidden-mobile">
+      <a class="top-nav-link" href="#" onclick="switchSection('overview');setTopNavActive(this);return false;"
+        style="font-size:13px;font-weight:700;color:var(--or);text-transform:uppercase;letter-spacing:0.06em;
+        padding:4px 10px;border-bottom:2px solid var(--or);text-decoration:none;">概覽</a>
+      <a class="top-nav-link" href="#" onclick="switchSection('members');setTopNavActive(this);return false;"
+        style="font-size:13px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:0.06em;
+        padding:4px 10px;border-bottom:2px solid transparent;text-decoration:none;">成員</a>
+      <a class="top-nav-link" href="#" onclick="switchSection('battles');setTopNavActive(this);return false;"
+        style="font-size:13px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:0.06em;
+        padding:4px 10px;border-bottom:2px solid transparent;text-decoration:none;">首領戰</a>
+      <a class="top-nav-link" href="#" onclick="switchSection('sieges');setTopNavActive(this);return false;"
+        style="font-size:13px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:0.06em;
+        padding:4px 10px;border-bottom:2px solid transparent;text-decoration:none;">攻城戰</a>
+      <a class="top-nav-link" href="#" onclick="switchSection('alliances');setTopNavActive(this);return false;"
+        style="font-size:13px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:0.06em;
+        padding:4px 10px;border-bottom:2px solid transparent;text-decoration:none;">外交</a>
+      <a class="top-nav-link" href="#" onclick="switchSection('treasury');setTopNavActive(this);return false;"
+        style="font-size:13px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:0.06em;
+        padding:4px 10px;border-bottom:2px solid transparent;text-decoration:none;">金庫</a>
+    </nav>
   </div>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <div id="userInfo" style="display:none;align-items:center;gap:8px;border-right:1px solid var(--bd);padding-right:10px;margin-right:4px;">
+      <div style="text-align:right;">
+        <div id="userName" style="font-size:11px;font-weight:700;color:var(--or);text-transform:uppercase;letter-spacing:0.06em;"></div>
+        <div id="adminBadge" style="display:none;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;">Admin</div>
+      </div>
+      <div style="position:relative;cursor:pointer;" onclick="logout()">
+        <img id="userAvatar" src="" alt="Avatar" style="width:30px;height:30px;border-radius:0;border:2px solid var(--or2);object-fit:cover;"/>
+        <div style="position:absolute;bottom:-1px;right:-1px;width:7px;height:7px;background:#4ade80;border:1px solid var(--bg);"></div>
+      </div>
+    </div>
+    <button id="loginBtn" onclick="openLoginModal()"
+      style="border:2px solid var(--or2);outline:1px solid rgba(186,117,23,0.3);outline-offset:2px;
+      color:var(--or);background:transparent;padding:5px 12px;font-size:10px;font-weight:700;
+      text-transform:uppercase;letter-spacing:0.08em;cursor:pointer;">
+      SYS.AUTH
+    </button>
+  </div>
+</header>
 
-  <!-- Mobile Navigation -->
-  <nav class="mobile-nav">
-    <button class="mobile-nav-item active" data-section="members" onclick="switchSection('members')">
-      <i class="material-symbols-outlined">group</i>
-      <span>Members</span>
+<!-- ═══ SIDEBAR ═══ -->
+<aside id="mainSidebar" style="position:fixed;left:0;top:var(--hh);width:var(--sb);
+  height:calc(100vh - var(--hh));z-index:40;
+  background:var(--p1);border-right:1px solid var(--bd);
+  display:flex;flex-direction:column;overflow:hidden;">
+  <!-- Brand -->
+  <div style="padding:12px 8px 10px;border-bottom:1px solid var(--bd);text-align:center;">
+    <div style="font-size:18px;color:var(--or);line-height:1;">⚔</div>
+    <div class="sidebar-brand-text" style="font-size:10px;font-weight:900;color:var(--or);text-transform:uppercase;letter-spacing:0.10em;margin-top:4px;">LINEAGE</div>
+  </div>
+  <!-- Nav Items -->
+  <nav style="flex:1;padding:6px 0;">
+    <button class="nav-item active" data-section="overview" onclick="switchSection('overview')">
+      <span class="material-symbols-outlined nav-icon" style="font-variation-settings:'FILL' 1;">dashboard</span>
+      <span class="nav-label">概覽</span>
     </button>
-    <button class="mobile-nav-item" data-section="battles" onclick="switchSection('battles')">
-      <i class="material-symbols-outlined">swords</i>
-      <span>Battles</span>
+    <button class="nav-item" data-section="members" onclick="switchSection('members')">
+      <span class="material-symbols-outlined nav-icon">group</span>
+      <span class="nav-label">成員</span>
     </button>
-    <button class="mobile-nav-item" data-section="sieges" onclick="switchSection('sieges')">
-      <i class="material-symbols-outlined">fort</i>
-      <span>Sieges</span>
+    <button class="nav-item" data-section="battles" onclick="switchSection('battles')">
+      <span class="material-symbols-outlined nav-icon">swords</span>
+      <span class="nav-label">首領</span>
     </button>
-    <button class="mobile-nav-item" data-section="alliances" onclick="switchSection('alliances')">
-      <i class="material-symbols-outlined">handshake</i>
-      <span>Alliances</span>
+    <button class="nav-item" data-section="sieges" onclick="switchSection('sieges')">
+      <span class="material-symbols-outlined nav-icon">fort</span>
+      <span class="nav-label">攻城</span>
     </button>
-    <button class="mobile-nav-item" data-section="treasury" onclick="switchSection('treasury')">
-      <i class="material-symbols-outlined">account_balance</i>
-      <span>Treasury</span>
+    <button class="nav-item" data-section="alliances" onclick="switchSection('alliances')">
+      <span class="material-symbols-outlined nav-icon">handshake</span>
+      <span class="nav-label">外交</span>
+    </button>
+    <button class="nav-item" data-section="treasury" onclick="switchSection('treasury')">
+      <span class="material-symbols-outlined nav-icon">account_balance</span>
+      <span class="nav-label">金庫</span>
     </button>
   </nav>
+  <!-- Bottom -->
+  <div style="padding:8px;border-top:1px solid var(--bd);">
+    <div style="font-size:10px;color:var(--tx2);text-align:center;font-family:monospace;text-transform:uppercase;letter-spacing:0.08em;">v3.0</div>
+  </div>
+</aside>
 
-  <!-- MODALS -->
-  <div class="modal-overlay hidden" id="editMemberModal" onclick="closeEditModal(event)">
-    <div class="modal w-full max-w-md">
-      <div class="modal-header">
-        <h3 class="text-xl font-bold text-copper-primary">Mutate Member</h3>
-        <button class="text-tertiary hover:text-white" onclick="closeEditModal()"><i class="material-symbols-outlined">close</i></button>
+<!-- ═══ MAIN CONTENT ═══ -->
+<main id="mainContent" style="margin-left:var(--sb);margin-top:var(--hh);
+  height:calc(100vh - var(--hh));overflow-y:auto;padding:16px 20px;
+  background:var(--bg);" class="custom-scrollbar">
+
+  <!-- ═══ OVERVIEW ═══ -->
+  <section id="overview" class="section active">
+
+    <!-- KPI 4-Grid -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">// 血盟成員</div>
+        <div class="kpi-value kpi-animate" id="kpiMemberCount">—</div>
+        <div class="kpi-sub">MEMBERS</div>
       </div>
-      <div class="modal-body space-y-5">
-        <input type="hidden" id="editMemberId">
-        <div>
-          <label>Character ID</label>
-          <input type="text" id="editMemberName" class="atelier-input">
-        </div>
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label>Class</label>
-            <select id="editMemberJob" class="atelier-input">
-              <option value="王族">Prince</option>
-              <option value="騎士">Knight</option>
-              <option value="妖精">Elf</option>
-              <option value="法師">Wizard</option>
-              <option value="黑妖">Dark Elf</option>
-            </select>
-          </div>
-          <div>
-            <label>Tier</label>
-            <select id="editMemberTier" class="atelier-input">
-              <option value="核心">Core</option>
-              <option value="一般">Regular</option>
-              <option value="試煉">Trial</option>
-              <option value="外交">Diplomat</option>
-            </select>
-          </div>
-        </div>
-        <div>
-          <label>Metadata</label>
-          <input type="text" id="editMemberNotes" class="atelier-input">
-        </div>
+      <div class="kpi-card">
+        <div class="kpi-label">// 公積金</div>
+        <div class="kpi-value kpi-animate" id="kpiTreasury">—</div>
+        <div class="kpi-sub">ADENA</div>
       </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline" onclick="closeEditModal()">Abort</button>
-        <button class="btn btn-primary" onclick="updateMember()">Commit_Changes</button>
+      <div class="kpi-card">
+        <div class="kpi-label">// 首領擊殺</div>
+        <div class="kpi-value kpi-animate" id="kpiBattleCount">—</div>
+        <div class="kpi-sub">BOSS KILLS</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">// 聯盟人數</div>
+        <div class="kpi-value kpi-animate" id="kpiAllianceCount">—</div>
+        <div class="kpi-sub">ALLIES</div>
       </div>
     </div>
-  </div>
 
-  <!-- Alliance Edit Modal -->
-  <div class="modal-overlay hidden" id="editAllianceModal" onclick="closeEditAllianceModal(event)">
-    <div class="modal w-full max-w-md">
-      <div class="modal-header">
-        <h3 class="text-xl font-bold text-info">Mutate Ally</h3>
-        <button class="text-tertiary hover:text-white" onclick="closeEditAllianceModal()"><i class="material-symbols-outlined">close</i></button>
-      </div>
-      <div class="modal-body space-y-5">
-        <input type="hidden" id="editAllianceId">
-        <div>
-          <label>Character ID</label>
-          <input type="text" id="editAllianceName" class="atelier-input">
-        </div>
-        <div>
-          <label>Class</label>
-          <select id="editAllianceJob" class="atelier-input">
-            <option value="王族">Prince</option>
-            <option value="騎士">Knight</option>
-            <option value="妖精">Elf</option>
-            <option value="法師">Wizard</option>
-            <option value="黑妖">Dark Elf</option>
-          </select>
-        </div>
-        <div>
-          <label>Metadata</label>
-          <input type="text" id="editAllianceNotes" class="atelier-input">
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline" onclick="closeEditAllianceModal()">Abort</button>
-        <button class="btn btn-primary bg-info border-none text-white" onclick="updateAlliance()">Commit_Changes</button>
-      </div>
-    </div>
-  </div>
+    <!-- Main Grid -->
+    <div style="display:grid;grid-template-columns:repeat(12,1fr);gap:10px;">
 
-  <!-- Detail Modal -->
-  <div class="modal-overlay hidden" id="detailModal" onclick="closeDetailModal(event)">
-    <div class="modal w-full max-w-2xl">
-      <div class="modal-header">
-        <h3 id="detailModalTitle" class="text-xl font-bold text-copper-primary">Log Detail</h3>
-        <button class="text-tertiary hover:text-white" onclick="closeDetailModal()"><i class="material-symbols-outlined">close</i></button>
-      </div>
-      <div class="modal-body">
-        <div class="mb-8">
-          <label class="mb-4">Participants (<span id="detailAttendanceCount">0</span>)</label>
-          <div id="detailAttendanceList" class="grid grid-cols-3 gap-2"></div>
-        </div>
-        <div id="detailDropsGroup" class="hidden">
-          <label class="mb-4">Loot Table</label>
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr><th>Item</th><th class="text-right">Value (Adena)</th></tr>
-              </thead>
-              <tbody id="detailDropsList"></tbody>
-            </table>
+      <!-- 成員概況 col-4 -->
+      <div class="s1-panel" style="grid-column:span 12;">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;">
+
+          <!-- 成員概況 -->
+          <div style="border-right:1px solid var(--bd);padding:12px;">
+            <div class="s1-panel-header" style="margin:-12px -12px 10px;"><span class="s1-panel-title">// 成員概況</span></div>
+            <div id="overviewTierBars" class="space-y-2"></div>
+            <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--bd);">
+              <div style="font-size:10px;color:var(--or);text-transform:uppercase;letter-spacing:0.08em;font-weight:900;margin-bottom:8px;">職業分佈</div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:70px;height:70px;flex-shrink:0;"><canvas id="classChart"></canvas></div>
+                <div id="overviewClassLegend" style="font-size:10px;flex:1;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 最近動態 -->
+          <div style="border-right:1px solid var(--bd);padding:12px;">
+            <div class="s1-panel-header" style="margin:-12px -12px 10px;">
+              <span class="s1-panel-title">// 最近動態</span>
+              <button onclick="switchSection('battles')" style="font-size:10px;color:var(--tx3);background:none;border:none;cursor:pointer;text-transform:uppercase;letter-spacing:0.08em;">全部 →</button>
+            </div>
+            <ul id="activityFeed" style="max-height:220px;overflow-y:auto;" class="custom-scrollbar"></ul>
+          </div>
+
+          <!-- 出席排行 + 快速操作 -->
+          <div style="padding:12px;">
+            <div class="s1-panel-header" style="margin:-12px -12px 10px;"><span class="s1-panel-title">// 出席排行</span></div>
+            <div id="topContributorsList" style="margin-bottom:12px;"></div>
+            <div style="border-top:1px solid var(--bd);padding-top:10px;">
+              <div style="font-size:10px;color:var(--or);text-transform:uppercase;letter-spacing:0.08em;font-weight:900;margin-bottom:8px;">// 快速操作</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
+                <button onclick="switchSection('battles')" class="btn btn-xs" style="justify-content:center;flex-direction:column;padding:6px;gap:2px;">
+                  <span class="material-symbols-outlined" style="font-size:22px;">swords</span><span style="font-size:11px;font-weight:700;letter-spacing:0.04em;">首領戰</span>
+                </button>
+                <button onclick="switchSection('sieges')" class="btn btn-xs" style="justify-content:center;flex-direction:column;padding:6px;gap:2px;">
+                  <span class="material-symbols-outlined" style="font-size:22px;">fort</span><span style="font-size:11px;font-weight:700;letter-spacing:0.04em;">攻城戰</span>
+                </button>
+                <button onclick="switchSection('members')" class="btn btn-xs" style="justify-content:center;flex-direction:column;padding:6px;gap:2px;">
+                  <span class="material-symbols-outlined" style="font-size:22px;">group</span><span style="font-size:11px;font-weight:700;letter-spacing:0.04em;">成員</span>
+                </button>
+                <button onclick="switchSection('treasury')" class="btn btn-xs" style="justify-content:center;flex-direction:column;padding:6px;gap:2px;">
+                  <span class="material-symbols-outlined" style="font-size:22px;">account_balance</span><span style="font-size:11px;font-weight:700;letter-spacing:0.04em;">金庫</span>
+                </button>
+              </div>
+              <button onclick="openLineBroadcastModal()" class="admin-only hidden btn btn-xs btn-success" style="width:100%;margin-top:5px;justify-content:center;">
+                <span class="material-symbols-outlined" style="font-size:16px;">send</span> LINE 廣播
+              </button>
+            </div>
           </div>
         </div>
       </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline" onclick="closeDetailModal()">Close View</button>
+
+      <!-- 金庫動態 col-6 -->
+      <div class="s1-panel" style="grid-column:span 12;margin-top:0;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;">
+          <div style="border-right:1px solid var(--bd);padding:12px;">
+            <div class="s1-panel-header" style="margin:-12px -12px 10px;">
+              <span class="s1-panel-title">// 金庫動態</span>
+              <span id="overviewClanBank" style="font-size:13px;font-weight:700;color:var(--or);">—</span>
+            </div>
+            <div style="height:130px;"><canvas id="treasuryChart"></canvas></div>
+          </div>
+          <div style="padding:12px;">
+            <div class="s1-panel-header" style="margin:-12px -12px 10px;"><span class="s1-panel-title">// 戰鬥總覽</span></div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px;">
+              <div style="text-align:center;padding:8px;border:1px solid var(--bd);background:var(--p2);">
+                <div style="font-size:10px;color:var(--or);text-transform:uppercase;font-weight:900;letter-spacing:0.07em;margin-bottom:5px;">首領戰</div>
+                <div style="font-size:18px;font-weight:700;color:var(--or);" id="ovBattleTotal">—</div>
+              </div>
+              <div style="text-align:center;padding:8px;border:1px solid var(--bd);background:var(--p2);border-top:2px solid var(--or2);">
+                <div style="font-size:10px;color:var(--or);text-transform:uppercase;font-weight:900;letter-spacing:0.07em;margin-bottom:5px;">勝率</div>
+                <div style="font-size:18px;font-weight:700;color:var(--or);" id="ovBattleWinRate">—</div>
+              </div>
+              <div style="text-align:center;padding:8px;border:1px solid var(--bd);background:var(--p2);">
+                <div style="font-size:10px;color:var(--or);text-transform:uppercase;font-weight:900;letter-spacing:0.07em;margin-bottom:5px;">攻城戰</div>
+                <div style="font-size:18px;font-weight:700;color:var(--or);" id="ovSiegeTotal">—</div>
+              </div>
+            </div>
+            <div style="font-size:10px;color:var(--or);text-transform:uppercase;letter-spacing:0.08em;font-weight:900;margin-bottom:8px;">近期戰鬥</div>
+            <div id="ovRecentBattles" style="max-height:80px;overflow-y:auto;" class="custom-scrollbar"></div>
+          </div>
+        </div>
       </div>
+
     </div>
-  </div>
+  </section>
 
-  <!-- Login Modal -->
-  <div class="modal-overlay hidden" id="loginModal" onclick="closeLoginModal(event)">
-    <div class="modal w-full max-w-sm text-center">
-      <div class="modal-header border-none pb-0 justify-center">
-        <h3 class="text-xl font-bold text-danger">System Auth</h3>
+  <!-- ═══ MEMBERS ═══ -->
+  <section id="members" class="section">
+    <div class="sec-header">
+      <div>
+        <div class="sec-title">MEMBERS</div>
+        <div class="sec-sub">Blood Pledge Personnel Directory</div>
       </div>
-      <div class="modal-body">
-        <p class="text-xs text-tertiary uppercase tracking-widest font-bold mb-8">Authentication required. All login attempts are logged.</p>
-        <div id="googleSignInDiv" class="flex justify-center min-h-[44px]"></div>
-        <div id="loginError" class="hidden mt-6 p-4 bg-danger/10 border border-danger/20 text-danger text-[10px] font-bold uppercase"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- LINE Broadcast Modal -->
-  <div id="lineBroadcastModal" class="modal-overlay hidden" onclick="closeBroadcastModal(event)">
-    <div class="modal w-full max-w-lg border-l-4 border-[#06c755]">
-      <div class="modal-header">
-        <div>
-          <h3 class="text-xl font-bold text-[#06c755]">LINE Broadcast</h3>
-          <p id="broadcastTargetName" class="text-[10px] text-danger font-bold uppercase tracking-widest mt-1"></p>
-        </div>
-        <button onclick="document.getElementById('lineBroadcastModal').classList.add('hidden')" class="text-tertiary hover:text-white"><i class="material-symbols-outlined">close</i></button>
-      </div>
-      <div class="modal-body">
-        <div class="space-y-6 mb-8">
-           <div>
-             <label class="text-[10px] tracking-widest mb-4 block uppercase font-bold text-tertiary">Broadcast Route</label>
-             <div class="space-y-2">
-               <label class="flex items-start gap-4 p-4 rounded-lg bg-surface-container-low border border-white/5 cursor-pointer hover:border-[#06c755]/30 transition-all">
-                 <input type="radio" name="broadcastMode" value="all" class="mt-1 accent-[#06c755]" onchange="updateBroadcastUI()">
-                 <div>
-                   <div class="font-bold text-sm">Global Broadcast</div>
-                   <div class="text-[10px] text-tertiary uppercase mt-1">Send to all bot followers</div>
-                 </div>
-               </label>
-               <label class="flex items-start gap-4 p-4 rounded-lg bg-surface-container-low border border-white/5 cursor-pointer hover:border-[#06c755]/30 transition-all">
-                 <input type="radio" name="broadcastMode" value="bound" checked class="mt-1 accent-[#06c755]" onchange="updateBroadcastUI()">
-                 <div>
-                   <div class="font-bold text-sm">Bound Members Only</div>
-                   <div class="text-[10px] text-tertiary uppercase mt-1">Send to linked LINE accounts</div>
-                 </div>
-               </label>
-               <label class="flex items-start gap-4 p-4 rounded-lg bg-surface-container-low border border-white/5 cursor-pointer hover:border-[#06c755]/30 transition-all">
-                 <input type="radio" name="broadcastMode" value="tier" class="mt-1 accent-[#06c755]" onchange="updateBroadcastUI()">
-                 <div class="flex-1">
-                   <div class="font-bold text-sm">Precision Tiering</div>
-                   <div class="text-[10px] text-tertiary uppercase mt-1">Target specific member tiers</div>
-                   <div id="tierCheckboxes" class="hidden mt-4 flex flex-wrap gap-2">
-                    <label class="flex items-center gap-2 bg-copper-glow border border-copper-dim/20 px-3 py-1 rounded text-copper-primary cursor-pointer transition-colors hover:bg-copper-glow/80">
-                      <input type="checkbox" value="核心" checked class="accent-copper-primary" onchange="updateBroadcastUI()"> 
-                      <span class="text-[10px] font-bold">CORE</span>
-                    </label>
-                    <label class="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1 rounded text-white/50 cursor-pointer transition-colors hover:bg-white/10 hover:text-white/80">
-                      <input type="checkbox" value="一般" class="accent-white" onchange="updateBroadcastUI()"> 
-                      <span class="text-[10px] font-bold">REGULAR</span>
-                    </label>
-                    <label class="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1 rounded text-white/50 cursor-pointer transition-colors hover:bg-white/10 hover:text-white/80">
-                      <input type="checkbox" value="試煉" class="accent-white" onchange="updateBroadcastUI()"> 
-                      <span class="text-[10px] font-bold">TRIAL</span>
-                    </label>
-                    <label class="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1 rounded text-white/50 cursor-pointer transition-colors hover:bg-white/10 hover:text-white/80">
-                      <input type="checkbox" value="外交" class="accent-white" onchange="updateBroadcastUI()"> 
-                      <span class="text-[10px] font-bold">DIPLOMAT</span>
-                    </label>
-                  </div>
-                 </div>
-               </label>
-             </div>
-           </div>
-
-           <!-- Preview -->
-           <div id="broadcastPreview" class="bg-black/40 border border-white/5 p-3 rounded font-mono text-[10px] text-secondary hidden">
-             <span id="broadcastPreviewText"></span>
-           </div>
-
-           <!-- Content -->
-           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-             <div>
-               <label class="block font-black uppercase text-[10px] mb-2 text-tertiary tracking-widest">Assembly Time</label>
-               <input type="datetime-local" id="broadcastTime" class="atelier-input text-xs w-full">
-             </div>
-             <div>
-               <label class="block font-black uppercase text-[10px] mb-2 text-tertiary tracking-widest">Op Commands</label>
-               <input type="text" id="broadcastNotes" class="atelier-input text-xs w-full" placeholder="ALL UNITS STANDBY!">
-             </div>
-           </div>
-
-           <p id="broadcastResult" class="font-black text-[10px] uppercase text-center min-h-[1em]"></p>
-        </div>
-
-        <div class="flex justify-end gap-3 pt-6 border-t border-white/5">
-           <button class="btn btn-outline" onclick="document.getElementById('lineBroadcastModal').classList.add('hidden')">ABORT</button>
-           <button id="broadcastSendBtn" class="btn btn-primary bg-[#06c755] border-none text-surface-lowest px-8" onclick="sendBroadcast()">EXECUTE.DISPATCH()</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 rounded-lg bg-copper-primary text-surface-lowest font-bold text-sm shadow-2xl transition-all duration-500 opacity-0 pointer-events-none translate-y-4 z-[2000]"></div>
-
-  <script src="app.js"></script>
-  <script>
-    function updateClock() {
-        const clockEl = document.getElementById('sysClockDisplay');
-        if(clockEl) {
-            const now = new Date();
-            clockEl.textContent = now.toLocaleTimeString('en-GB', { hour12: false });
-        }
-    }
-    setInterval(updateClock, 1000);
-    updateClock();
-
-    function handleGoogleCredential(response) {
-      window.handleGoogleLogin(response.credential);
-    }
-    window.addEventListener('load', () => {
-      const clientId = window.GOOGLE_CLIENT_ID || '';
-      if (!clientId) return;
-      if (window.google && window.google.accounts) {
-        google.accounts.id.initialize({
-          client_id: clientId,
-          callback: handleGoogleCredential,
-          auto_select: false,
-        });
-      }
-    });
-  </script>
-
-  <!-- LINE Binding Modal -->
-  <div id="lineBindModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onclick="closeLineBindModal(event)">
-    <div class="modal max-w-sm border-l-4 border-[#06c755]">
-      <div class="flex justify-between items-start mb-6 border-b border-white/10 pb-4">
-        <div>
-          <h3 class="text-xl font-headline font-black uppercase text-[#06c755]">LINE Binding</h3>
-          <p id="bindMemberName" class="font-bold text-white uppercase text-[10px] mt-1 tracking-widest"></p>
-        </div>
-        <button onclick="document.getElementById('lineBindModal').classList.add('hidden')" class="text-slate-500 hover:text-white"><span class="material-symbols-outlined">close</span></button>
-      </div>
-      <div class="space-y-4">
-        <div>
-          <label class="block font-black uppercase text-[10px] mb-1 text-tertiary tracking-widest">LINE User ID</label>
-          <input type="text" id="bindLineUserId" class="atelier-input w-full font-mono text-xs" placeholder="Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
-          <p class="text-tertiary text-[9px] mt-2 font-bold uppercase tracking-wider">Members send "BIND" to Bot to obtain ID</p>
-        </div>
-        <div class="bg-black/40 p-4 border border-white/5 font-mono text-[9px] space-y-2 text-secondary uppercase tracking-widest">
-          <p class="font-black text-white mb-2 underline">BOT_COMMAND_CHEAT_SHEET</p>
-          <p>&gt; "BIND" &rarr; OBTAIN LINE_ID</p>
-          <p>&gt; "STATS" &rarr; PERSONAL_RECORDS</p>
-          <p>&gt; "DIVIDEND" &rarr; RECENT_PAYOUTS</p>
-        </div>
-        <p class="text-slate-600 text-[9px] font-bold uppercase tracking-tighter">LEAVE EMPTY TO UNBIND RECORD</p>
-        <p id="bindResult" class="font-black text-[10px] uppercase text-center min-h-[1em]"></p>
-      </div>
-      <div class="flex gap-3 mt-6 pt-4 border-t border-white/5">
-        <button onclick="document.getElementById('lineBindModal').classList.add('hidden')" class="btn btn-outline flex-1 py-2">ABORT</button>
-        <button onclick="saveLineBinding()" class="btn btn-primary flex-1 py-2 font-black bg-[#06c755] border-none text-surface-lowest">
-          EXECUTE.BIND()
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+        <input type="text" id="membersSearch" placeholder="搜尋成員..." class="atelier-input" style="width:180px;font-size:12px;" oninput="setFilter('members', this.value)">
+        <button class="btn btn-sm" onclick="exportToCSV('members')">
+          <span class="material-symbols-outlined" style="font-size:13px;">download</span> Export
         </button>
       </div>
     </div>
+
+    <!-- Tier Stats Strip -->
+    <div id="memberTierStrip" style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:12px;"></div>
+
+    <div style="display:grid;grid-template-columns:repeat(12,1fr);gap:10px;">
+
+      <!-- Stats -->
+      <div class="s1-panel" style="grid-column:span 12;display:grid;grid-template-columns:1fr 1fr;">
+        <div style="border-right:1px solid var(--bd);padding:14px;">
+          <div class="s1-panel-header" style="margin:-14px -14px 12px;">
+            <span class="s1-panel-title">// Personnel Status</span>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:14px;">
+            <div>
+              <div style="font-size:52px;font-weight:900;color:var(--or);line-height:1;" id="memberCountBadge">0</div>
+              <div style="font-size:10px;color:var(--tx2);text-transform:uppercase;letter-spacing:0.10em;margin-top:5px;">Total Population</div>
+              <div style="font-size:10px;color:var(--or2);text-transform:uppercase;letter-spacing:0.1em;margin-top:2px;font-weight:700;" id="memberCountLabel"></div>
+            </div>
+            <div style="width:100px;height:100px;flex-shrink:0;"><canvas id="classChart2"></canvas></div>
+          </div>
+        </div>
+        <!-- Add Member -->
+        <div id="memberAddCard" class="auth-required hidden" style="padding:14px;">
+          <div class="s1-panel-header" style="margin:-14px -14px 12px;">
+            <span class="s1-panel-title">// Append Personnel</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="display:grid;grid-template-columns:2fr 1fr;gap:6px;">
+              <div>
+                <label>Character ID</label>
+                <input type="text" id="mName" class="atelier-input" placeholder="角色名稱...">
+              </div>
+              <div>
+                <label>Level</label>
+                <input type="number" id="mLevel" class="atelier-input" placeholder="1–99" min="1" max="99">
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+              <div>
+                <label>Class 職業</label>
+                <select id="mJob" class="atelier-input">
+                  <option value="" disabled selected>Select...</option>
+                  <option value="王族">👑 王族</option>
+                  <option value="騎士">🛡 騎士</option>
+                  <option value="妖精">🧝 妖精</option>
+                  <option value="法師">🔮 法師</option>
+                  <option value="黑妖">🌑 黑妖</option>
+                </select>
+              </div>
+              <div>
+                <label>Tier 階級</label>
+                <select id="mTier" class="atelier-input">
+                  <option value="核心">核心 Core</option>
+                  <option value="一般" selected>一般 Regular</option>
+                  <option value="試煉">試煉 Trial</option>
+                  <option value="預備">預備 Reserve</option>
+                  <option value="外交">外交 Diplomat</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label>Notes 備註</label>
+              <input type="text" id="mNotes" class="atelier-input" placeholder="分隊、職責...">
+            </div>
+            <button onclick="addMember()" class="btn" style="justify-content:center;">
+              <span class="material-symbols-outlined" style="font-size:14px;">person_add</span> Execute.Insert()
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Members Table -->
+      <div class="s1-panel" style="grid-column:span 12;">
+        <!-- Control Bar -->
+        <div style="padding:8px 12px;border-bottom:1px solid var(--bd);background:var(--p2);display:flex;flex-wrap:wrap;align-items:center;gap:8px;">
+          <span style="font-size:10px;color:var(--tx3);font-weight:900;text-transform:uppercase;letter-spacing:0.1em;">排序</span>
+          <button id="sortByTierBtn" onclick="setMemberSort('tier')"
+            class="btn btn-xs" style="border-color:rgba(239,159,39,0.5);color:var(--or);background:var(--or3);">TIER ▾</button>
+          <button id="sortByLevelBtn" onclick="setMemberSort('level')"
+            class="btn btn-xs" style="border-color:var(--bd);color:var(--tx3);">LEVEL ▾</button>
+          <div style="width:1px;height:14px;background:var(--bd);margin:0 2px;"></div>
+          <span style="font-size:10px;color:var(--tx3);font-weight:900;text-transform:uppercase;letter-spacing:0.1em;">篩選</span>
+          <div id="tierFilterChips" style="display:flex;flex-wrap:wrap;gap:3px;">
+            <button onclick="setMemberTierFilter(null)" class="tier-chip tier-chip-all btn btn-xs" style="border-color:rgba(239,159,39,0.5);color:var(--or);background:var(--or3);">ALL</button>
+            <button onclick="setMemberTierFilter('核心')" class="tier-chip btn btn-xs" style="border-color:var(--bd);color:var(--tx3);">核心</button>
+            <button onclick="setMemberTierFilter('一般')" class="tier-chip btn btn-xs" style="border-color:var(--bd);color:var(--tx3);">一般</button>
+            <button onclick="setMemberTierFilter('試煉')" class="tier-chip btn btn-xs" style="border-color:var(--bd);color:var(--tx3);">試煉</button>
+            <button onclick="setMemberTierFilter('預備')" class="tier-chip btn btn-xs" style="border-color:var(--bd);color:var(--tx3);">預備</button>
+            <button onclick="setMemberTierFilter('外交')" class="tier-chip btn btn-xs" style="border-color:var(--bd);color:var(--tx3);">外交</button>
+          </div>
+          <span id="memberCountLabel2" style="font-size:10px;color:var(--tx3);font-weight:700;text-transform:uppercase;margin-left:auto;"></span>
+        </div>
+        <div style="overflow-y:auto;max-height:520px;" class="custom-scrollbar">
+          <table id="membersTable" style="width:100%;border-collapse:collapse;">
+            <thead style="position:sticky;top:0;z-index:10;">
+              <tr>
+                <th>Character</th><th>Lv</th>
+                <th class="hidden-sm">Class</th>
+                <th>Tier</th>
+                <th class="hidden-md">出席</th>
+                <th class="hidden-lg">Notes</th>
+                <th>LINE</th>
+                <th class="admin-col hidden" style="text-align:right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ BATTLES ═══ -->
+  <section id="battles" class="section">
+    <div class="sec-header">
+      <div><div class="sec-title">BATTLES</div><div class="sec-sub">首領討伐紀錄 · 戰利品估值</div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+        <input type="text" id="battlesSearch" placeholder="搜尋戰鬥紀錄..." class="atelier-input" style="width:180px;font-size:12px;" oninput="setFilter('battles', this.value)">
+        <button class="btn btn-sm" onclick="exportToCSV('battles')"><span class="material-symbols-outlined" style="font-size:13px;">download</span> Export</button>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(12,1fr);gap:10px;">
+
+      <!-- Boss Analytics -->
+      <div class="s1-panel" style="grid-column:span 12;">
+        <div class="s1-panel-header">
+          <span class="s1-panel-title">// 首領擊殺統計 Boss Analytics</span>
+          <span id="battleStatusText" style="font-size:11px;color:var(--or2);font-family:monospace;text-transform:uppercase;"></span>
+        </div>
+        <div style="padding:12px;">
+          <div id="bossStatsCards" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:12px;" class="custom-scrollbar"></div>
+          <div style="font-size:10px;color:var(--or2);text-transform:uppercase;letter-spacing:0.12em;font-weight:900;margin-bottom:6px;">// 出席排行 Top Attendees</div>
+          <div id="battleLeaderboard" style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;"></div>
+        </div>
+      </div>
+
+      <!-- Add Battle -->
+      <div id="battleAddCard" class="s1-panel auth-required hidden" style="grid-column:span 4;">
+        <div class="s1-panel-header"><span class="s1-panel-title">// Log Encounter 登記首領戰</span></div>
+        <div style="padding:12px;display:flex;flex-direction:column;gap:8px;">
+          <div>
+            <label>首領 Target</label>
+            <input type="text" id="bBossNameInput" class="atelier-input" placeholder="輸入首領名稱..." oninput="updateBattlePreview()">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <div><label>時間 Time</label><input type="datetime-local" id="bTime" class="atelier-input"></div>
+            <div><label>結果 Result</label>
+              <select id="bResult" class="atelier-input">
+                <option value="success">✅ 成功擊殺</option>
+                <option value="failed">❌ 討伐失敗</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label>拍賣金額 Pool (天幣)</label>
+            <input type="number" id="bAuctionPool" class="atelier-input" placeholder="0" oninput="updateBattlePreview()">
+            <div id="battlePreview" style="margin-top:5px;padding:7px 10px;border:1px solid var(--bd);background:var(--p2);display:none;">
+              <div style="display:flex;justify-content:space-between;"><span style="font-size:10px;color:var(--tx3);text-transform:uppercase;font-weight:700;">預估每人分紅</span><span id="battlePreviewAmt" style="font-size:12px;font-weight:700;color:var(--or);">0</span></div>
+              <div style="display:flex;justify-content:space-between;margin-top:2px;"><span style="font-size:10px;color:var(--tx3);text-transform:uppercase;font-weight:700;">出席人數</span><span id="battlePreviewCount" style="font-size:11px;color:var(--tx2);">0 人</span></div>
+            </div>
+          </div>
+          <div><label>備註 Notes</label><input type="text" id="bNotes" class="atelier-input" placeholder="戰況備註..."></div>
+          <div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+              <label style="margin:0;">幹部點名 Attendance</label>
+              <div style="display:flex;gap:8px;">
+                <button type="button" onclick="selectAllAttendance('bAttendance', true); updateBattlePreview();" style="font-size:10px;font-weight:700;color:var(--or);background:none;border:none;cursor:pointer;text-transform:uppercase;">全選</button>
+                <span style="color:var(--bd2);">|</span>
+                <button type="button" onclick="selectAllAttendance('bAttendance', false); updateBattlePreview();" style="font-size:10px;font-weight:700;color:var(--tx3);background:none;border:none;cursor:pointer;text-transform:uppercase;">清除</button>
+              </div>
+            </div>
+            <input type="text" id="bAttendanceSearch" placeholder="搜尋成員..." oninput="filterAttendance('bAttendance', this.value)" class="atelier-input" style="margin-bottom:4px;">
+            <div id="bAttendance" style="max-height:140px;overflow-y:auto;font-size:12px;" class="custom-scrollbar" onchange="updateBattlePreview()"></div>
+          </div>
+          <div style="border-top:1px solid var(--bd);padding-top:8px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+              <label style="margin:0;">掉落物品 Loot Drops</label>
+              <button onclick="addLootRow()" class="btn btn-xs">+ 新增</button>
+            </div>
+            <div id="bDropsList" style="max-height:100px;overflow-y:auto;" class="custom-scrollbar">
+              <div class="loot-row" style="display:flex;gap:4px;margin-bottom:3px;">
+                <input type="text" placeholder="物品名稱" class="atelier-input loot-name" style="flex:1;">
+                <input type="number" placeholder="價格" class="atelier-input loot-price" style="width:80px;" oninput="updateBattlePreview()">
+                <button class="btn btn-icon btn-danger" onclick="removeLootRow(this)"><span class="material-symbols-outlined" style="font-size:13px;">close</span></button>
+              </div>
+            </div>
+          </div>
+          <button onclick="addBattle()" class="btn" style="justify-content:center;">⚔ 提交討伐紀錄</button>
+        </div>
+      </div>
+
+      <!-- Battles Table -->
+      <div class="s1-panel" style="grid-column:span 8;" id="battlesTablePanel">
+        <div class="s1-panel-header">
+          <span class="s1-panel-title">// Boss Filter</span>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;">
+            <button id="bossFilter-all" onclick="setBossFilter(null)" class="btn btn-xs boss-filter-btn" style="border-color:rgba(239,159,39,0.5);color:var(--or);background:var(--or3);">全部</button>
+            <div id="bossFilterBtns" style="display:flex;gap:3px;flex-wrap:wrap;"></div>
+          </div>
+        </div>
+        <div style="overflow-y:auto;max-height:520px;" class="custom-scrollbar">
+          <table id="battlesTable" style="width:100%;border-collapse:collapse;">
+            <thead style="position:sticky;top:0;z-index:10;">
+              <tr><th>時間</th><th>首領</th><th class="hidden-sm">人數</th><th class="hidden-md">拍賣金額</th><th>每人分紅</th><th>結果</th><th class="hidden-lg">狀態</th><th class="admin-col hidden" style="text-align:right;">操作</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══ SIEGES ═══ -->
+  <section id="sieges" class="section">
+    <div class="sec-header">
+      <div><div class="sec-title">SIEGES</div><div class="sec-sub">攻城戰作戰記錄 · 薪津分配</div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+        <input type="text" id="siegesSearch" placeholder="搜尋攻城記錄..." class="atelier-input" style="width:180px;font-size:12px;" oninput="setFilter('sieges', this.value)">
+        <button class="btn btn-sm" onclick="exportToCSV('sieges')"><span class="material-symbols-outlined" style="font-size:13px;">download</span> Export</button>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(12,1fr);gap:10px;">
+
+      <!-- Siege Analytics -->
+      <div class="s1-panel" style="grid-column:span 8;">
+        <div class="s1-panel-header">
+          <span class="s1-panel-title">// 攻城戰統計 Siege Analytics</span>
+          <span id="siegeStatusText" style="font-size:11px;color:var(--or2);font-family:monospace;text-transform:uppercase;"></span>
+        </div>
+        <div style="padding:12px;display:flex;flex-direction:column;gap:10px;">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">
+            <div class="kpi-card"><div class="kpi-label">// 總場次</div><div class="kpi-value" id="siegeKpiTotal" style="font-size:20px;">—</div></div>
+            <div class="kpi-card"><div class="kpi-label">// 平均出席</div><div class="kpi-value" id="siegeKpiAvgAtt" style="font-size:20px;">—</div></div>
+            <div class="kpi-card"><div class="kpi-label">// 總薪津</div><div class="kpi-value" id="siegeKpiTotalPay" style="font-size:16px;">—</div></div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--or2);text-transform:uppercase;letter-spacing:0.12em;font-weight:900;margin-bottom:5px;">// 城堡參與次數</div>
+            <div id="siegeCastleStats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;"></div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--or2);text-transform:uppercase;letter-spacing:0.12em;font-weight:900;margin-bottom:5px;">// 攻城出席排行</div>
+            <div id="siegeLeaderboard" style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add Siege -->
+      <div id="siegeAddCard" class="s1-panel auth-required hidden" style="grid-column:span 4;">
+        <div class="s1-panel-header"><span class="s1-panel-title">// Log Siege 登記攻城戰</span></div>
+        <div style="padding:12px;display:flex;flex-direction:column;gap:8px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <div><label>時間 Time</label><input type="datetime-local" id="sDate" class="atelier-input"></div>
+            <div><label>類型 Type</label>
+              <select id="sSiegeType" class="atelier-input">
+                <option value="attack">⚔️ 攻城方</option>
+                <option value="defend">🛡️ 守城方</option>
+              </select>
+            </div>
+          </div>
+          <div><label>城堡 Castle</label>
+            <select id="sCastle" class="atelier-input" onchange="handleCastleSelect(this)">
+              <option value="肯特城">肯特城 (Kent)</option>
+              <option value="歐肯城">歐肯城 (Oren)</option>
+              <option value="溫達伍德城">溫達伍德城 (Windawood)</option>
+              <option value="奇岩城">奇岩城 (Giran)</option>
+              <option value="亞丁城">亞丁城 (Aden)</option>
+              <option value="銀河城">銀河城 (Rune)</option>
+              <option value="神聖城">神聖城 (Godard)</option>
+              <option value="妖魔堡壘">妖魔堡壘 (Orc Fortress)</option>
+              <option value="__custom__">自訂城堡...</option>
+            </select>
+            <input type="text" id="sCastleCustom" class="atelier-input hidden" style="margin-top:4px;" placeholder="輸入城堡名稱...">
+          </div>
+          <div>
+            <label>薪津基礎 Reward (天幣)</label>
+            <input type="number" id="sReward" class="atelier-input" placeholder="0" oninput="updateSiegePreview()">
+            <div id="siegePreview" style="margin-top:5px;padding:7px 10px;border:1px solid var(--bd);background:var(--p2);display:none;">
+              <div style="display:flex;justify-content:space-between;"><span style="font-size:10px;color:var(--tx3);text-transform:uppercase;font-weight:700;">預估每人薪津</span><span id="siegePreviewAmt" style="font-size:12px;font-weight:700;color:var(--or);">0</span></div>
+              <div style="display:flex;justify-content:space-between;margin-top:2px;"><span style="font-size:10px;color:var(--tx3);text-transform:uppercase;font-weight:700;">出席人數</span><span id="siegePreviewCount" style="font-size:11px;color:var(--tx2);">0 人</span></div>
+            </div>
+          </div>
+          <div><label>備註 Notes</label><input type="text" id="sSiegeNotes" class="atelier-input" placeholder="戰況備註..."></div>
+          <div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+              <label style="margin:0;">幹部點名 Attendance</label>
+              <div style="display:flex;gap:8px;">
+                <button type="button" onclick="selectAllAttendance('sAttendance', true); updateSiegePreview();" style="font-size:10px;font-weight:700;color:var(--or);background:none;border:none;cursor:pointer;text-transform:uppercase;">全選</button>
+                <span style="color:var(--bd2);">|</span>
+                <button type="button" onclick="selectAllAttendance('sAttendance', false); updateSiegePreview();" style="font-size:10px;font-weight:700;color:var(--tx3);background:none;border:none;cursor:pointer;text-transform:uppercase;">清除</button>
+              </div>
+            </div>
+            <input type="text" id="sAttendanceSearch" placeholder="搜尋成員..." oninput="filterAttendance('sAttendance', this.value)" class="atelier-input" style="margin-bottom:4px;">
+            <div id="sAttendance" style="max-height:140px;overflow-y:auto;font-size:12px;" class="custom-scrollbar" onchange="updateSiegePreview()"></div>
+          </div>
+          <button onclick="addSiege()" class="btn" style="justify-content:center;">🏰 Execute.Log()</button>
+        </div>
+      </div>
+
+      <!-- Sieges Table -->
+      <div class="s1-panel" style="grid-column:span 12;">
+        <div class="s1-panel-header"><span class="s1-panel-title">// 攻城戰記錄</span></div>
+        <div style="overflow-y:auto;max-height:480px;" class="custom-scrollbar">
+          <table id="siegesTable" style="width:100%;border-collapse:collapse;">
+            <thead style="position:sticky;top:0;z-index:10;">
+              <tr><th>時間</th><th>類型</th><th>城堡</th><th class="hidden-sm">人數</th><th class="hidden-md">薪津基礎</th><th>每人薪津</th><th class="hidden-lg">狀態</th><th class="admin-col hidden" style="text-align:right;">操作</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══ ALLIANCES ═══ -->
+  <section id="alliances" class="section">
+    <div class="sec-header">
+      <div><div class="sec-title">ALLIANCES</div><div class="sec-sub">外交聯盟成員 · 聯合作戰</div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+        <input type="text" id="alliancesSearch" placeholder="搜尋聯盟成員..." class="atelier-input" style="width:180px;font-size:12px;" oninput="setFilter('alliances', this.value)">
+        <button class="btn btn-sm" onclick="exportToCSV('alliances')"><span class="material-symbols-outlined" style="font-size:13px;">download</span> Export</button>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(12,1fr);gap:10px;">
+
+      <!-- Alliance Overview -->
+      <div class="s1-panel" style="grid-column:span 8;">
+        <div class="s1-panel-header"><span class="s1-panel-title">// Alliance Overview 外交概況</span></div>
+        <div style="padding:12px;display:flex;flex-direction:column;gap:10px;">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">
+            <div class="kpi-card"><div class="kpi-label">// 聯盟人數</div><div class="kpi-value" id="allyKpiCount" style="font-size:20px;">—</div></div>
+            <div class="kpi-card"><div class="kpi-label">// 所屬血盟</div><div class="kpi-value" id="allyKpiPledges" style="font-size:20px;">—</div></div>
+            <div class="kpi-card"><div class="kpi-label">// 參與作戰</div><div class="kpi-value" id="allyKpiOps" style="font-size:20px;">—</div></div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--or2);text-transform:uppercase;letter-spacing:0.12em;font-weight:900;margin-bottom:5px;">// 職業分佈</div>
+            <div id="allyClassBars"></div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--or2);text-transform:uppercase;letter-spacing:0.12em;font-weight:900;margin-bottom:5px;">// 所屬血盟列表</div>
+            <div id="allyPledgeList" style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;max-height:80px;overflow-y:auto;" class="custom-scrollbar"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add Alliance -->
+      <div id="allianceAddCard" class="s1-panel auth-required hidden" style="grid-column:span 4;">
+        <div class="s1-panel-header"><span class="s1-panel-title">// Append Ally 新增聯盟</span></div>
+        <div style="padding:12px;display:flex;flex-direction:column;gap:8px;">
+          <div><label>Character ID</label><input type="text" id="aName" class="atelier-input" placeholder="角色名稱..."></div>
+          <div><label>血盟 Pledge Name</label><input type="text" id="aPledgeName" class="atelier-input" placeholder="所屬血盟名稱..."></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <div><label>Class 職業</label>
+              <select id="aJob" class="atelier-input">
+                <option value="王族">👑 王族</option><option value="騎士">🛡 騎士</option>
+                <option value="妖精">🧝 妖精</option><option value="法師">🔮 法師</option>
+                <option value="黑妖">🌑 黑妖</option>
+              </select>
+            </div>
+            <div><label>Level</label><input type="number" id="aLevel" class="atelier-input" placeholder="1–99" min="1" max="99"></div>
+          </div>
+          <div><label>Notes 備註</label><input type="text" id="aNotes" class="atelier-input" placeholder="備注..."></div>
+          <button onclick="addAlliance()" class="btn" style="justify-content:center;"><span class="material-symbols-outlined" style="font-size:14px;">group_add</span> Execute.Insert()</button>
+        </div>
+      </div>
+
+      <!-- Alliances Table -->
+      <div class="s1-panel" style="grid-column:span 12;">
+        <div class="s1-panel-header"><span class="s1-panel-title">// Alliance Roster</span></div>
+        <div style="overflow-y:auto;max-height:480px;" class="custom-scrollbar">
+          <table id="alliancesTable" style="width:100%;border-collapse:collapse;">
+            <thead style="position:sticky;top:0;z-index:10;">
+              <tr><th>角色名稱</th><th>所屬血盟</th><th class="hidden-sm">職業</th><th class="hidden-md">出席</th><th class="hidden-lg">備註</th><th>LINE</th><th class="admin-col hidden" style="text-align:right;">操作</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ TREASURY ═══ -->
+  <section id="treasury" class="section">
+    <div class="sec-header">
+      <div><div class="sec-title">TREASURY</div><div class="sec-sub">公積金管理 · 收支紀錄 · 分紅統計</div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+        <input type="text" id="treasurySearch" placeholder="搜尋明細..." class="atelier-input" style="width:180px;font-size:12px;" oninput="setFilter('treasury', this.value)">
+        <button class="btn btn-sm" onclick="exportToCSV('treasury')"><span class="material-symbols-outlined" style="font-size:13px;">download</span> Export</button>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(12,1fr);gap:10px;">
+
+      <!-- 餘額大卡 -->
+      <div class="s1-panel" style="grid-column:span 4;border-top:2px solid var(--or);">
+        <div class="s1-panel-header"><span class="s1-panel-title">// 公積金餘額</span></div>
+        <div style="padding:14px;">
+          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:12px;">
+            <span id="treasuryBalanceDisplay" style="font-size:36px;font-weight:900;color:var(--or);line-height:1;">—</span>
+            <span style="font-size:11px;color:var(--tx3);">天幣</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
+            <div style="padding:8px;border:1px solid rgba(74,222,128,0.25);background:rgba(74,222,128,0.04);">
+              <div style="font-size:10px;color:#4ade80;text-transform:uppercase;font-weight:900;margin-bottom:3px;">累計收入</div>
+              <div style="font-size:15px;font-weight:700;color:#4ade80;" id="treasuryTotalIncome">—</div>
+            </div>
+            <div style="padding:8px;border:1px solid rgba(248,113,113,0.25);background:rgba(248,113,113,0.04);">
+              <div style="font-size:10px;color:#f87171;text-transform:uppercase;font-weight:900;margin-bottom:3px;">累計支出</div>
+              <div style="font-size:15px;font-weight:700;color:#f87171;" id="treasuryTotalExpense">—</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <div style="padding:8px;border:1px solid var(--bd);background:var(--p2);">
+              <div style="font-size:10px;color:var(--or2);text-transform:uppercase;font-weight:900;margin-bottom:3px;">已分配</div>
+              <div style="font-size:15px;font-weight:700;color:var(--or);" id="totalDistDisplay">0</div>
+            </div>
+            <div style="padding:8px;border:1px solid var(--bd);background:var(--p2);">
+              <div style="font-size:10px;color:var(--or2);text-transform:uppercase;font-weight:900;margin-bottom:3px;">參與帳戶</div>
+              <div style="font-size:15px;font-weight:700;color:var(--or);" id="activeAcctsDisplay">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 收支圖表 -->
+      <div class="s1-panel" style="grid-column:span 8;">
+        <div class="s1-panel-header"><span class="s1-panel-title">// 收支走勢 (最近 8 筆)</span></div>
+        <div style="padding:12px;height:180px;"><canvas id="treasuryChart"></canvas></div>
+      </div>
+
+      <!-- 城堡稅收 + 手動收支 (Admin) -->
+      <div class="s1-panel admin-only hidden" style="grid-column:span 4;">
+        <div class="s1-panel-header"><span class="s1-panel-title">// 城堡稅收登錄</span></div>
+        <div style="padding:10px;">
+          <div id="castleTaxList" style="max-height:120px;overflow-y:auto;margin-bottom:6px;" class="custom-scrollbar">
+            <div style="display:flex;gap:4px;align-items:center;margin-bottom:3px;">
+              <input type="text" placeholder="城堡名稱" data-role="castle-name" class="atelier-input" style="flex:1;">
+              <input type="number" placeholder="稅金" data-role="castle-amount" min="0" class="atelier-input" style="width:80px;">
+              <button onclick="removeCastleTaxRow(this)" class="btn btn-icon btn-danger"><span class="material-symbols-outlined" style="font-size:13px;">close</span></button>
+            </div>
+          </div>
+          <div style="display:flex;gap:5px;margin-bottom:10px;">
+            <button class="btn btn-xs" style="flex:1;justify-content:center;" onclick="addCastleTaxRow()">+ 新增</button>
+            <button class="btn btn-xs" style="flex:1;justify-content:center;" onclick="submitCastleTax()">登錄稅收</button>
+          </div>
+          <div style="border-top:1px solid var(--bd);padding-top:10px;">
+            <div style="font-size:10px;color:var(--or2);text-transform:uppercase;letter-spacing:0.1em;font-weight:900;margin-bottom:8px;">// 手動收支</div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
+                <select id="txType" class="atelier-input"><option value="income">收入</option><option value="expense">支出</option></select>
+                <select id="txCategory" class="atelier-input">
+                  <option value="其他收入">其他收入</option><option value="薪津支出">薪津支出</option>
+                  <option value="裝備採購">裝備採購</option><option value="活動獎勵">活動獎勵</option>
+                  <option value="其他支出">其他支出</option>
+                </select>
+              </div>
+              <input type="number" id="txAmount" class="atelier-input" placeholder="金額（天幣）">
+              <input type="text" id="txNote" class="atelier-input" placeholder="說明備註...">
+              <button onclick="addManualTransaction()" class="btn" style="justify-content:center;font-size:10px;">Execute.Tx()</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 收支明細 -->
+      <div class="s1-panel" style="grid-column:span 4;">
+        <div class="s1-panel-header"><span class="s1-panel-title">// 收支明細 Transactions</span></div>
+        <div style="overflow-y:auto;max-height:320px;" class="custom-scrollbar">
+          <table id="transactionsTable" style="width:100%;border-collapse:collapse;">
+            <thead style="position:sticky;top:0;z-index:10;">
+              <tr><th>日期</th><th class="hidden-sm">分類</th><th>說明</th><th style="text-align:right;">金額</th></tr>
+            </thead>
+            <tbody id="transactionsTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 個人分紅 -->
+      <div class="s1-panel" style="grid-column:span 4;">
+        <div class="s1-panel-header"><span class="s1-panel-title">// 個人分紅累計</span></div>
+        <div style="overflow-y:auto;max-height:320px;" class="custom-scrollbar">
+          <table id="treasuryTable" style="width:100%;border-collapse:collapse;">
+            <thead style="position:sticky;top:0;z-index:10;">
+              <tr><th>角色名稱</th><th class="hidden-sm">出席數</th><th class="hidden-md">首領</th><th class="hidden-md">攻城</th><th style="text-align:right;color:#f87171;">總分紅</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<!-- ═══ MOBILE BOTTOM NAV ═══ -->
+<nav class="mobile-bottom-nav" id="mobileBottomNav">
+  <div class="mnav-items">
+    <button class="mnav-btn active" data-section="overview" onclick="switchSection('overview'); setMobileNavActive('overview')">
+      <span class="material-symbols-outlined mnav-icon" style="font-variation-settings:'FILL' 1;">dashboard</span>
+      <span class="mnav-label">概覽</span>
+    </button>
+    <button class="mnav-btn" data-section="members" onclick="switchSection('members'); setMobileNavActive('members')">
+      <span class="material-symbols-outlined mnav-icon">group</span>
+      <span class="mnav-label">成員</span>
+    </button>
+    <button class="mnav-btn" data-section="battles" onclick="switchSection('battles'); setMobileNavActive('battles')">
+      <span class="material-symbols-outlined mnav-icon">swords</span>
+      <span class="mnav-label">首領</span>
+    </button>
+    <button class="mnav-btn" data-section="sieges" onclick="switchSection('sieges'); setMobileNavActive('sieges')">
+      <span class="material-symbols-outlined mnav-icon">fort</span>
+      <span class="mnav-label">攻城</span>
+    </button>
+    <button class="mnav-btn" data-section="alliances" onclick="switchSection('alliances'); setMobileNavActive('alliances')">
+      <span class="material-symbols-outlined mnav-icon">handshake</span>
+      <span class="mnav-label">外交</span>
+    </button>
+    <button class="mnav-btn" data-section="treasury" onclick="switchSection('treasury'); setMobileNavActive('treasury')">
+      <span class="material-symbols-outlined mnav-icon">account_balance</span>
+      <span class="mnav-label">金庫</span>
+    </button>
   </div>
+</nav>
+
+<!-- ═══ TOAST ═══ -->
+<div class="toast-wrap" id="toastContainer"></div>
+
+<!-- ═══ MODALS ═══ -->
+
+<!-- Edit Member Modal -->
+<div id="editMemberModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;" onclick="closeEditModal(event)">
+  <div style="background:var(--p1);border:2px solid var(--or2);outline:1px solid rgba(186,117,23,0.3);outline-offset:3px;width:100%;max-width:440px;padding:20px;" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;border-bottom:1px solid var(--bd);padding-bottom:12px;">
+      <div style="font-size:13px;font-weight:900;color:var(--or);text-transform:uppercase;letter-spacing:0.1em;">// Mutate Member</div>
+      <button onclick="closeEditModal()" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:16px;">✕</button>
+    </div>
+    <input type="hidden" id="editMemberId">
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;">
+        <div><label>Character ID</label><input type="text" id="editMemberName" class="atelier-input"></div>
+        <div><label>Level</label><input type="number" id="editMemberLevel" class="atelier-input" placeholder="1–99" min="1" max="99"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div><label>Class 職業</label>
+          <select id="editMemberJob" class="atelier-input">
+            <option value="王族">王族</option><option value="騎士">騎士</option>
+            <option value="妖精">妖精</option><option value="法師">法師</option><option value="黑妖">黑妖</option>
+          </select>
+        </div>
+        <div><label>Tier 階級</label>
+          <select id="editMemberTier" class="atelier-input">
+            <option value="核心">核心 Core</option><option value="一般">一般 Regular</option>
+            <option value="試煉">試煉 Trial</option><option value="預備">預備 Reserve</option><option value="外交">外交 Diplomat</option>
+          </select>
+        </div>
+      </div>
+      <div><label>備註 Notes</label><input type="text" id="editMemberNotes" class="atelier-input"></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:12px;border-top:1px solid var(--bd);">
+      <button class="btn btn-sm" onclick="closeEditModal()">Abort</button>
+      <button class="btn btn-sm" onclick="updateMember()" style="background:var(--or3);">Commit_Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Alliance Modal -->
+<div id="editAllianceModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;" onclick="closeEditAllianceModal(event)">
+  <div style="background:var(--p1);border:2px solid var(--or2);outline:1px solid rgba(186,117,23,0.3);outline-offset:3px;width:100%;max-width:440px;padding:20px;" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;border-bottom:1px solid var(--bd);padding-bottom:12px;">
+      <div style="font-size:13px;font-weight:900;color:var(--or);text-transform:uppercase;letter-spacing:0.1em;">// Mutate Ally</div>
+      <button onclick="closeEditAllianceModal()" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:16px;">✕</button>
+    </div>
+    <input type="hidden" id="editAllianceId">
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div><label>Character ID</label><input type="text" id="editAllianceName" class="atelier-input"></div>
+      <div><label>血盟名稱</label><input type="text" id="editAlliancePledgeName" class="atelier-input" placeholder="所屬血盟..."></div>
+      <div><label>Class 職業</label>
+        <select id="editAllianceJob" class="atelier-input">
+          <option value="王族">Prince</option><option value="騎士">Knight</option>
+          <option value="妖精">Elf</option><option value="法師">Wizard</option><option value="黑妖">Dark Elf</option>
+        </select>
+      </div>
+      <div><label>備註</label><input type="text" id="editAllianceNotes" class="atelier-input"></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:12px;border-top:1px solid var(--bd);">
+      <button class="btn btn-sm" onclick="closeEditAllianceModal()">Abort</button>
+      <button class="btn btn-sm" onclick="updateAlliance()" style="background:var(--or3);">Commit_Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div id="detailModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;" onclick="closeDetailModal(event)">
+  <div style="background:var(--p1);border:2px solid var(--or2);outline:1px solid rgba(186,117,23,0.3);outline-offset:3px;width:100%;max-width:600px;padding:20px;" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;border-bottom:1px solid var(--bd);padding-bottom:12px;">
+      <div id="detailModalTitle" style="font-size:13px;font-weight:900;color:var(--or);text-transform:uppercase;letter-spacing:0.1em;">Log Detail</div>
+      <button onclick="closeDetailModal()" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:16px;">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div>
+        <label>Participants (<span id="detailAttendanceCount">0</span>)</label>
+        <div id="detailAttendanceList" style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;font-size:13px;color:var(--tx);margin-top:5px;"></div>
+      </div>
+      <div id="detailDropsGroup" style="display:none;">
+        <label>Loot Table</label>
+        <div style="overflow-y:auto;max-height:140px;margin-top:5px;" class="custom-scrollbar">
+          <table style="width:100%;border-collapse:collapse;">
+            <thead><tr><th>Item</th><th style="text-align:right;">Value (Adena)</th></tr></thead>
+            <tbody id="detailDropsList"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:16px;padding-top:12px;border-top:1px solid var(--bd);">
+      <button class="btn btn-sm" onclick="closeDetailModal()">Close View</button>
+    </div>
+  </div>
+</div>
+
+<!-- Login Modal -->
+<div id="loginModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;align-items:center;justify-content:center;" onclick="closeLoginModal(event)">
+  <div style="background:var(--p1);border:2px solid rgba(248,113,113,0.5);outline:1px solid rgba(248,113,113,0.2);outline-offset:3px;width:100%;max-width:360px;padding:24px;text-align:center;" onclick="event.stopPropagation()">
+    <div style="font-size:14px;font-weight:900;color:#f87171;text-transform:uppercase;letter-spacing:0.15em;margin-bottom:16px;border-bottom:1px solid rgba(248,113,113,0.2);padding-bottom:12px;">// System Auth</div>
+    <div style="font-size:11px;color:rgba(248,113,113,0.7);text-transform:uppercase;letter-spacing:0.12em;font-weight:700;margin-bottom:20px;">Authentication required.<br>All login attempts are logged.</div>
+    <div id="googleSignInDiv" style="display:flex;justify-content:center;min-height:44px;"></div>
+    <div id="loginError" style="display:none;margin-top:14px;padding:10px;border:1px solid rgba(248,113,113,0.4);background:rgba(248,113,113,0.06);color:#f87171;font-size:11px;font-weight:700;text-transform:uppercase;"></div>
+  </div>
+</div>
+
+<!-- LINE Broadcast Modal -->
+<div id="lineBroadcastModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;" onclick="closeBroadcastModal(event)">
+  <div style="background:var(--p1);border:2px solid rgba(6,199,85,0.5);outline:1px solid rgba(6,199,85,0.2);outline-offset:3px;width:100%;max-width:520px;padding:20px;max-height:90vh;overflow-y:auto;" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;border-bottom:1px solid var(--bd);padding-bottom:12px;">
+      <div>
+        <div style="font-size:13px;font-weight:900;color:#06c755;text-transform:uppercase;letter-spacing:0.1em;">// LINE Broadcast</div>
+        <div id="broadcastTargetName" style="font-size:11px;color:var(--or2);text-transform:uppercase;letter-spacing:0.08em;margin-top:3px;font-weight:700;"></div>
+      </div>
+      <button onclick="document.getElementById('lineBroadcastModal').style.display='none'" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:16px;">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div>
+        <label>Broadcast Route</label>
+        <div style="display:flex;flex-direction:column;gap:5px;margin-top:4px;">
+          <label style="display:flex;gap:10px;align-items:flex-start;padding:8px;border:1px solid var(--bd);background:var(--p2);cursor:pointer;font-size:13px;color:var(--tx2);text-transform:none;letter-spacing:0;">
+            <input type="radio" name="broadcastMode" value="all" style="accent-color:#06c755;margin-top:2px;" onchange="updateBroadcastUI()">
+            <div><div style="font-weight:700;font-size:12px;color:var(--tx);">Global Broadcast</div><div style="font-size:11px;color:var(--tx3);margin-top:2px;">Send to all bot followers</div></div>
+          </label>
+          <label style="display:flex;gap:10px;align-items:flex-start;padding:8px;border:1px solid var(--bd);background:var(--p2);cursor:pointer;font-size:13px;color:var(--tx2);text-transform:none;letter-spacing:0;">
+            <input type="radio" name="broadcastMode" value="bound" checked style="accent-color:#06c755;margin-top:2px;" onchange="updateBroadcastUI()">
+            <div><div style="font-weight:700;font-size:12px;color:var(--tx);">Bound Members Only</div><div style="font-size:11px;color:var(--tx3);margin-top:2px;">Send to linked LINE accounts</div></div>
+          </label>
+          <label style="display:flex;gap:10px;align-items:flex-start;padding:8px;border:1px solid var(--bd);background:var(--p2);cursor:pointer;font-size:13px;color:var(--tx2);text-transform:none;letter-spacing:0;">
+            <input type="radio" name="broadcastMode" value="tier" style="accent-color:#06c755;margin-top:2px;" onchange="updateBroadcastUI()">
+            <div style="flex:1;">
+              <div style="font-weight:700;font-size:12px;color:var(--tx);">Precision Tiering</div>
+              <div style="font-size:11px;color:var(--tx3);margin-top:2px;">Target specific member tiers</div>
+              <div id="tierCheckboxes" style="display:none;margin-top:8px;display:flex;flex-wrap:wrap;gap:5px;">
+                <label style="display:flex;gap:5px;align-items:center;border:1px solid rgba(239,159,39,0.4);background:var(--or3);padding:3px 8px;cursor:pointer;font-size:11px;color:var(--or);text-transform:uppercase;letter-spacing:0.05em;font-weight:700;">
+                  <input type="checkbox" value="核心" checked style="accent-color:var(--or);" onchange="updateBroadcastUI()">CORE</label>
+                <label style="display:flex;gap:5px;align-items:center;border:1px solid var(--bd);background:var(--p2);padding:3px 8px;cursor:pointer;font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.05em;font-weight:700;">
+                  <input type="checkbox" value="一般" style="accent-color:var(--or);" onchange="updateBroadcastUI()">REGULAR</label>
+                <label style="display:flex;gap:5px;align-items:center;border:1px solid var(--bd);background:var(--p2);padding:3px 8px;cursor:pointer;font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.05em;font-weight:700;">
+                  <input type="checkbox" value="試煉" style="accent-color:var(--or);" onchange="updateBroadcastUI()">TRIAL</label>
+                <label style="display:flex;gap:5px;align-items:center;border:1px solid var(--bd);background:var(--p2);padding:3px 8px;cursor:pointer;font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.05em;font-weight:700;">
+                  <input type="checkbox" value="外交" style="accent-color:var(--or);" onchange="updateBroadcastUI()">DIPLOMAT</label>
+              </div>
+            </div>
+          </label>
+        </div>
+      </div>
+      <div id="broadcastPreview" style="display:none;background:var(--bg);border:1px solid var(--bd);padding:8px 10px;font-family:monospace;font-size:10px;color:var(--tx2);">
+        <span id="broadcastPreviewText"></span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div><label>Assembly Time</label><input type="datetime-local" id="broadcastTime" class="atelier-input"></div>
+        <div><label>Op Commands</label><input type="text" id="broadcastNotes" class="atelier-input" placeholder="ALL UNITS STANDBY!"></div>
+      </div>
+      <p id="broadcastResult" style="font-size:11px;font-weight:700;text-transform:uppercase;text-align:center;min-height:1em;color:var(--or2);"></p>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:12px;border-top:1px solid var(--bd);">
+      <button class="btn btn-sm" onclick="document.getElementById('lineBroadcastModal').style.display='none'">ABORT</button>
+      <button id="broadcastSendBtn" onclick="sendBroadcast()" class="btn btn-sm btn-success">EXECUTE.DISPATCH()</button>
+    </div>
+  </div>
+</div>
+
+<!-- LINE Bind Modal -->
+<div id="lineBindModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;" onclick="closeLineBindModal(event)">
+  <div style="background:var(--p1);border:2px solid rgba(6,199,85,0.5);outline:1px solid rgba(6,199,85,0.2);outline-offset:3px;width:100%;max-width:380px;padding:20px;" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;border-bottom:1px solid var(--bd);padding-bottom:12px;">
+      <div>
+        <div style="font-size:13px;font-weight:900;color:#06c755;text-transform:uppercase;letter-spacing:0.1em;">// LINE Binding</div>
+        <div id="bindMemberName" style="font-size:11px;color:var(--tx);text-transform:uppercase;letter-spacing:0.08em;margin-top:3px;font-weight:700;"></div>
+      </div>
+      <button onclick="document.getElementById('lineBindModal').style.display='none'" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:16px;">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div>
+        <label>LINE User ID</label>
+        <input type="text" id="bindLineUserId" class="atelier-input" style="font-family:monospace;font-size:12px;" placeholder="Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+        <div style="font-size:10px;color:var(--tx3);margin-top:5px;text-transform:uppercase;letter-spacing:0.08em;font-weight:700;">Members send "BIND" to Bot to obtain ID</div>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--bd);padding:10px;font-family:monospace;font-size:11px;color:var(--tx2);text-transform:uppercase;letter-spacing:0.06em;">
+        <div style="font-weight:900;color:var(--or);margin-bottom:5px;">BOT_COMMAND_CHEAT_SHEET</div>
+        <div>&gt; "BIND" → OBTAIN LINE_ID</div>
+        <div>&gt; "STATS" → PERSONAL_RECORDS</div>
+        <div>&gt; "DIVIDEND" → RECENT_PAYOUTS</div>
+      </div>
+      <div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;font-weight:700;">Leave empty to unbind record</div>
+      <p id="bindResult" style="font-size:11px;font-weight:700;text-transform:uppercase;text-align:center;min-height:1em;color:var(--or2);"></p>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px;padding-top:12px;border-top:1px solid var(--bd);">
+      <button onclick="document.getElementById('lineBindModal').style.display='none'" class="btn btn-sm" style="flex:1;justify-content:center;">ABORT</button>
+      <button onclick="saveLineBinding()" class="btn btn-sm btn-success" style="flex:1;justify-content:center;">EXECUTE.BIND()</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settlement Modal -->
+<div id="settleModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;align-items:center;justify-content:center;" onclick="closeSettleModal(event)">
+  <div style="background:var(--p1);border:2px solid var(--or2);outline:1px solid rgba(186,117,23,0.3);outline-offset:3px;width:100%;max-width:520px;padding:20px;max-height:90vh;overflow-y:auto;" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;border-bottom:1px solid var(--bd);padding-bottom:12px;">
+      <div>
+        <div id="settleModalTitle" style="font-size:13px;font-weight:900;color:var(--or);text-transform:uppercase;letter-spacing:0.1em;">結算確認</div>
+        <div id="settleModalSubtitle" style="font-size:11px;color:var(--or2);text-transform:uppercase;letter-spacing:0.08em;margin-top:3px;"></div>
+      </div>
+      <button onclick="closeSettleModal()" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:16px;">✕</button>
+    </div>
+
+    <!-- Battle Settle Fields -->
+    <div id="settleFieldsBattle" style="display:none;">
+      <div style="margin-bottom:12px;">
+        <label>公積金比例 (%)</label>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:4px;">
+          <input type="range" id="battleReservePct" min="0" max="50" value="0" step="5" style="flex:1;accent-color:var(--or);" oninput="renderSettlePreview()">
+          <span id="battleReservePctDisplay" style="font-size:16px;font-weight:700;color:var(--or);width:40px;text-align:right;">0%</span>
+        </div>
+        <div style="font-size:10px;color:var(--tx3);margin-top:4px;">結算前預留的比例，0% 表示全數分配</div>
+      </div>
+    </div>
+
+    <!-- Siege Settle Fields -->
+    <div id="settleFieldsSiege" style="display:none;">
+      <div style="margin-bottom:12px;">
+        <label>薪津來源</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:4px;">
+          <label style="display:flex;gap:8px;align-items:flex-start;padding:8px;border:1px solid var(--bd);background:var(--p2);cursor:pointer;font-size:12px;color:var(--tx2);text-transform:none;letter-spacing:0;">
+            <input type="radio" name="settleSource" value="reward" style="accent-color:var(--or);" checked onchange="renderSettlePreview()">
+            <div><div style="font-weight:700;font-size:11px;color:var(--tx);">獎勵池扣除</div><div style="font-size:11px;color:var(--tx3);margin-top:1px;">從本次城堡獎勵中扣除</div></div>
+          </label>
+          <label style="display:flex;gap:8px;align-items:flex-start;padding:8px;border:1px solid var(--bd);background:var(--p2);cursor:pointer;font-size:12px;color:var(--tx2);text-transform:none;letter-spacing:0;">
+            <input type="radio" name="settleSource" value="treasury" style="accent-color:var(--or);" onchange="renderSettlePreview()">
+            <div><div style="font-weight:700;font-size:11px;color:var(--tx);">從公積金支出</div><div style="font-size:11px;color:var(--tx3);margin-top:1px;">直接從血盟金庫扣除</div></div>
+          </label>
+        </div>
+      </div>
+      <div style="margin-bottom:12px;">
+        <label>薪津金額 (天幣/人)</label>
+        <input type="number" id="siegeSettleAmt" class="atelier-input" style="margin-top:4px;" placeholder="0" oninput="renderSettlePreview()">
+      </div>
+    </div>
+
+    <!-- Preview -->
+    <div id="settlePreview" style="display:none;margin-bottom:12px;border:1px solid var(--bd);background:var(--p2);padding:10px;">
+      <div style="font-size:10px;color:var(--or2);font-weight:900;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">// Settlement Preview</div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-size:11px;color:var(--tx3);">出席人數</span><span id="settlePreviewCount" style="font-size:11px;font-weight:700;color:var(--tx);">—</span></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-size:11px;color:var(--tx3);">每人分紅</span><span id="settlePreviewPerPerson" style="font-size:11px;font-weight:700;color:var(--or);">—</span></div>
+      <div style="display:flex;justify-content:space-between;border-top:1px solid var(--bd);padding-top:6px;margin-top:4px;"><span style="font-size:11px;color:var(--tx3);">金庫變動</span><span id="settlePreviewTreasury" style="font-size:11px;font-weight:700;color:#f87171;">—</span></div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:12px;border-top:1px solid var(--bd);">
+      <button class="btn btn-sm" onclick="closeSettleModal()">Abort</button>
+      <button id="confirmSettleBtn" class="btn btn-sm" onclick="confirmSettle()" style="background:var(--or3);">Commit_Settlement</button>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
