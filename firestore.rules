@@ -6,83 +6,68 @@ service cloud.firestore {
     function isSignedIn() {
       return request.auth != null;
     }
-
     function getUserData() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
-
-    function isRole(role) {
-      return isSignedIn() && getUserData().role == role;
-    }
-
     function getRoleLevel() {
       return getUserData().roleLevel;
     }
-
     // minLevel: 1=新人, 2=成員, 3=幹部, 4=元帥, 5=公主/公會主
     function isAtLeast(minLevel) {
       return isSignedIn() && getRoleLevel() >= minLevel;
     }
+    function isOwner()   { return isAtLeast(5); }
+    function isAdmin()   { return isAtLeast(4); }
+    function isOfficer() { return isAtLeast(3); }
 
-    function isOwner() {
-      return isAtLeast(5);
-    }
-
-    function isOfficer() {
-      return isAtLeast(3);
-    }
-
-    function isAdmin() {
-      return isAtLeast(4);
-    }
+    // NOTE: All privileged WRITES go through the backend (Firebase Admin SDK),
+    // which bypasses these rules. The client only READS (onSnapshot, profile).
+    // Read rules therefore use isSignedIn() only and do NOT require a
+    // /users/{uid} document, so LINE custom-token members can read immediately.
 
     // ── /users/{uid} ──────────────────────────────────────────────────
-    // 本人可讀寫自己的文件；管理員（roleLevel >= 4）可讀寫所有人
     match /users/{uid} {
       allow read:  if request.auth.uid == uid || isAdmin();
       allow write: if request.auth.uid == uid || isAdmin();
     }
 
-    // ── /members/{id} ─────────────────────────────────────────────────
-    // 已登入者可讀；幹部以上（roleLevel >= 3）可寫
-    match /members/{id} {
-      allow read:  if isSignedIn();
-      allow write: if isOfficer();
-    }
+    // ── Core collections — both legacy (PascalCase) and canonical names ──
+    // members
+    match /members/{id}        { allow read: if isSignedIn(); allow write: if isOfficer(); }
+    match /members/{id}/{sub=**} { allow read: if isSignedIn(); allow write: if isOfficer(); }
+    match /Members/{id}        { allow read: if isSignedIn(); allow write: if isOfficer(); }
+    match /Members/{id}/{sub=**} { allow read: if isSignedIn(); allow write: if isOfficer(); }
 
-    // ── /bossBattles/{id} ─────────────────────────────────────────────
-    // 已登入者可讀；幹部以上可寫
-    match /bossBattles/{id} {
-      allow read:  if isSignedIn();
-      allow write: if isOfficer();
-    }
+    // boss battles
+    match /bossBattles/{id}        { allow read: if isSignedIn(); allow write: if isOfficer(); }
+    match /bossBattles/{id}/{sub=**} { allow read: if isSignedIn(); allow write: if isOfficer(); }
+    match /Battles/{id}        { allow read: if isSignedIn(); allow write: if isOfficer(); }
+    match /Battles/{id}/{sub=**} { allow read: if isSignedIn(); allow write: if isOfficer(); }
 
-    // ── /sieges/{id} ──────────────────────────────────────────────────
-    // 已登入者可讀；幹部以上可寫
-    match /sieges/{id} {
-      allow read:  if isSignedIn();
-      allow write: if isOfficer();
-    }
+    // sieges
+    match /sieges/{id}  { allow read: if isSignedIn(); allow write: if isOfficer(); }
+    match /Sieges/{id}  { allow read: if isSignedIn(); allow write: if isOfficer(); }
 
-    // ── /treasury/{id} ────────────────────────────────────────────────
-    // 已登入者可讀；幹部以上可寫
-    match /treasury/{id} {
-      allow read:  if isSignedIn();
-      allow write: if isOfficer();
-    }
+    // treasury (balance doc) + transactions (records)
+    match /treasury/{id}     { allow read: if isSignedIn(); allow write: if isOfficer(); }
+    match /Treasury/{id}     { allow read: if isSignedIn(); allow write: if isOfficer(); }
+    match /transactions/{id} { allow read: if isSignedIn(); allow write: if isOfficer(); }
+    match /Transactions/{id} { allow read: if isSignedIn(); allow write: if isOfficer(); }
 
-    // ── /alliances/{id} ───────────────────────────────────────────────
-    // 已登入者可讀；幹部以上可寫
-    match /alliances/{id} {
-      allow read:  if isSignedIn();
-      allow write: if isOfficer();
-    }
+    // alliances
+    match /alliances/{id} { allow read: if isSignedIn(); allow write: if isOfficer(); }
+    match /Alliances/{id} { allow read: if isSignedIn(); allow write: if isOfficer(); }
+
+    // global activity log (Overview feed / realtime)
+    match /activityLog/{id} { allow read: if isSignedIn(); allow write: if isOfficer(); }
 
     // ── /settings/{id} ────────────────────────────────────────────────
-    // 所有登入者可讀；只有 owner（roleLevel == 5）可寫
-    match /settings/{id} {
-      allow read:  if isSignedIn();
-      allow write: if isOwner();
-    }
+    // All signed-in users may read (needed for role/permission config);
+    // only the owner (roleLevel == 5) may write via client. Backend writes
+    // (PUT /api/settings) use the Admin SDK and bypass this.
+    match /settings/{id} { allow read: if isSignedIn(); allow write: if isOwner(); }
+
+    // bindCodes: backend-only (Admin SDK). No client access.
+    match /bindCodes/{id} { allow read, write: if false; }
   }
 }

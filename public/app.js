@@ -13,16 +13,22 @@ let filters = { members: '', battles: '', sieges: '', alliances: '', treasury: '
 // ── Charts ───────────────────────────────────────
 let classChartInstance = null;
 let treasuryChartInstance = null;
+let treasuryTrendChartInstance = null;
 
 // (duplicate early declarations removed → canonical versions defined below)
 
+const _filterTimers = {};
 function setFilter(section, query) {
   filters[section] = query.toLowerCase();
-  if (section === 'members') renderMembers();
-  else if (section === 'battles') renderBattles();
-  else if (section === 'sieges') renderSieges();
-  else if (section === 'alliances') renderAlliances();
-  else if (section === 'treasury') renderTreasury();
+  // 300ms debounce so rapid typing doesn't re-render on every keystroke
+  clearTimeout(_filterTimers[section]);
+  _filterTimers[section] = setTimeout(() => {
+    if (section === 'members') renderMembers();
+    else if (section === 'battles') renderBattles();
+    else if (section === 'sieges') renderSieges();
+    else if (section === 'alliances') renderAlliances();
+    else if (section === 'treasury') renderTreasury();
+  }, 300);
 }
 
 
@@ -51,12 +57,121 @@ function getAttendanceHtml(attIds) {
 }
 
 
+// ── LINE (LIFF) member login + rank-based access ──
+async function tryLineLogin() {
+  const liffId = window._liffId;
+  if (!liffId || typeof liff === 'undefined') return false;
+  try {
+    await liff.init({ liffId });
+    if (!liff.isLoggedIn()) {
+      if (liff.isInClient()) { liff.login(); return false; } // redirect inside LINE app
+      return false; // desktop browser outside LINE -> remain guest
+    }
+    const profile = await liff.getProfile();
+    const lineUserId = profile.userId;
+    const res = await fetch(`${API_BASE}/me?lineUserId=${encodeURIComponent(lineUserId)}`);
+    const j = await res.json();
+    if (j && j.ok && j.data) {
+      auth.lineUserId = lineUserId;
+      auth.isMember = true;
+      auth.member = j.data.member || null;
+      auth.roleLevel = j.data.roleLevel || 0;
+      auth.roleName = j.data.role || '';
+      auth.permissions = j.data.permissions || null;
+      auth.battleCount = j.data.battleCount || 0;
+      auth.siegeCount = j.data.siegeCount || 0;
+      auth.memberBound = !!j.data.bound;
+      auth.actionPerms = j.data.actionPerms || null;
+      try {
+        const ar = await fetch(`${API_BASE}/line-auth`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lineUserId, displayName: profile.displayName }) });
+        const aj = await ar.json();
+        if (aj && aj.customToken && window.firebase && firebase.auth) {
+          const cred = await firebase.auth().signInWithCustomToken(aj.customToken);
+          auth.firebaseUser = cred.user;
+          auth.firebaseToken = await cred.user.getIdToken();
+        }
+      } catch (e) { console.warn('[line-login] firebase session failed:', e && e.message); }
+      console.info('[line-login] member:', auth.roleName, 'level', auth.roleLevel);
+      return true;
+    }
+  } catch (e) { console.warn('[line-login] failed:', e && e.message); }
+  return false;
+}
+
+function canViewModule(mod) { if (auth.isAdmin) return true; if (!auth.permissions) return true; return auth.permissions[mod] ? auth.permissions[mod].view : true; }
+function canEditModule(mod) { if (auth.isAdmin) return true; if (!auth.permissions) return false; return auth.permissions[mod] ? auth.permissions[mod].edit : false; }
+
+function applyPermissions() {
+  // "我的檔案" tab only for logged-in LINE members
+  document.querySelectorAll('[data-section="myprofile"]').forEach(b => { b.style.display = auth.isMember ? '' : 'none'; });
+  // Gate module nav by view permission (owner / open mode = unrestricted)
+  ['overview', 'members', 'battles', 'sieges', 'alliances', 'treasury'].forEach(mod => {
+    const show = canViewModule(mod);
+    document.querySelectorAll(`.nav-item[data-section="${mod}"], .mnav-btn[data-section="${mod}"]`).forEach(b => { b.style.display = show ? '' : 'none'; });
+  });
+  const canEditMembers = auth.isAdmin || canEditModule('members');
+  document.querySelectorAll('#membersTable .admin-col').forEach(el => el.classList.toggle('hidden', !canEditMembers));
+  // Officers (roleLevel>=3) can create + settle battles/sieges
+  document.querySelectorAll('#battles .admin-col').forEach(el => el.classList.toggle('hidden', !(auth.isAdmin || canEditModule('battles'))));
+  document.querySelectorAll('#sieges .admin-col').forEach(el => el.classList.toggle('hidden', !(auth.isAdmin || canEditModule('sieges'))));
+  const showCard = (mod) => auth.isAdmin || auth.openMode || auth.isLoggedIn || canEditModule(mod);
+  const bc = document.getElementById('battleAddCard'); if (bc) bc.classList.toggle('hidden', !showCard('battles'));
+  const sc = document.getElementById('siegeAddCard'); if (sc) sc.classList.toggle('hidden', !showCard('sieges'));
+  // Treasury ops card: visible to anyone who can record income/expense/castle-tax
+  const canTreasuryOps = canDoActionClient('treasuryIncome') || canDoActionClient('treasuryExpense') || canDoActionClient('treasuryCastleTax');
+  const toc = document.getElementById('treasuryOpsCard'); if (toc) toc.classList.toggle('hidden', !canTreasuryOps);
+  // Permission-config card: owner only
+  const tpc = document.getElementById('treasuryPermCard'); if (tpc) tpc.classList.toggle('hidden', !auth.isAdmin);
+  const mac = document.getElementById('memberAddCard'); if (mac) mac.classList.toggle('hidden', !(auth.isAdmin || auth.openMode || canDoActionClient('memberCreate')));
+  document.querySelectorAll('[onclick*="openLineBroadcastModal"]').forEach(b => b.classList.toggle('hidden', !canDoActionClient('lineBroadcast')));
+  // Limit income/expense options to what the actor may do (non-owner)
+  const txType = document.getElementById('txType');
+  if (txType && txType.options && !auth.isAdmin) {
+    const allowIncome = canDoActionClient('treasuryIncome');
+    const allowExpense = canDoActionClient('treasuryExpense');
+    [...txType.options].forEach(o => { o.hidden = (o.value === 'income' && !allowIncome) || (o.value === 'expense' && !allowExpense); });
+    const cur = txType.selectedOptions[0];
+    if (cur && cur.hidden) { const first = [...txType.options].find(o => !o.hidden); if (first) txType.value = first.value; }
+  }
+}
+
+async function renderMyProfile() {
+  if (!auth.isMember || !auth.member) return;
+  const m = auth.member;
+  const id = m.ID || m.id;
+  const set = (eid, v) => { const el = document.getElementById(eid); if (el) el.textContent = v; };
+  const name = m.name || m.Name || '—';
+  set('myProfileName', name);
+  set('myProfileRole', auth.roleName || '');
+  set('myProfileJob', m.job || '—');
+  set('myProfileTier', m.tier || '一般');
+  set('myProfileLevel', m.level || '—');
+  set('myProfileBattles', auth.battleCount || 0);
+  set('myProfileSieges', auth.siegeCount || 0);
+  const av = document.getElementById('myProfileAvatar'); if (av) av.textContent = (name.charAt(0) || '?').toUpperCase();
+  try {
+    const j = (u) => fetch(u).then(r => r.ok ? r.json() : null).catch(() => null);
+    const [att, lv] = await Promise.all([j(`${API_BASE}/members/${id}/attendance-history`), j(`${API_BASE}/members/${id}/level-history`)]);
+    const attEl = document.getElementById('myProfileAttHistory');
+    if (attEl) {
+      const list = (att && att.ok ? att.data : []) || [];
+      attEl.innerHTML = list.length ? list.slice(0, 10).map(h => { const icon = h.type === 'siege' ? '🏰' : '⚔️'; const d = h.date ? new Date(h.date).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }) : ''; return `<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid var(--bd);"><span>${icon} ${h.name || ''}</span><span style="color:var(--tx3);">${d}</span></div>`; }).join('') : '<div style="font-size:12px;color:var(--tx3);">尚無出席記錄</div>';
+    }
+    const lvEl = document.getElementById('myProfileLevelHistory');
+    if (lvEl) {
+      const list = (lv && lv.ok ? lv.data : []) || [];
+      lvEl.innerHTML = list.length ? list.slice(0, 10).map(h => { const d = h.changedAt ? new Date(h.changedAt).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }) : ''; return `<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid var(--bd);"><span>${h.prevLevel != null ? h.prevLevel + ' → ' : ''}Lv${h.level}</span><span style="color:var(--tx3);">${d}</span></div>`; }).join('') : '<div style="font-size:12px;color:var(--tx3);">尚無等級異動</div>';
+    }
+  } catch (e) { console.warn('myProfile history failed', e); }
+}
+
 // ── Init ─────────────────────────────────────────
 async function init() {
   // 1. Fetch server config (open mode / Google Client ID)
   try {
     const cfgRes = await fetch(`${API_BASE}/config`);
     const cfg = await cfgRes.json();
+    window._liffId = cfg.liffId || '';
     if (cfg.openMode) {
       // No ADMIN_EMAILS configured — give everyone admin access
       auth.isAdmin = true;
@@ -101,13 +216,47 @@ async function init() {
     }
   }
 
+  // 2.5 LINE (LIFF) member login — only when no owner (Google) session
+  if (!auth.isLoggedIn && !auth.isAdmin) {
+    await tryLineLogin();
+  }
+
   await fetchData();
   renderAuthUI();
+  applyPermissions();
+  // Default landing: members -> 我的檔案; owner -> overview
+  if (auth.isMember && !auth.isAdmin) { switchSection('myprofile'); renderMyProfile(); }
 
-
+  // Attach Firestore realtime listeners (auto-refresh on remote changes)
+  startRealtimeSync();
 
   // Start Telemetry Simulation
   startTelemetry();
+}
+
+// ── Realtime sync (Firestore onSnapshot) ─────────
+let _realtimeStarted = false;
+let _realtimeTimer = null;
+function startRealtimeSync() {
+  if (_realtimeStarted) return;
+  const fdb = window._firebaseDb;
+  if (!fdb || typeof fdb.collection !== 'function') return; // client SDK unavailable -> silent degrade
+  _realtimeStarted = true;
+  const cols = ['Members', 'Battles', 'Sieges', 'Transactions', 'Alliances'];
+  const seen = {};
+  const scheduleRefresh = () => {
+    clearTimeout(_realtimeTimer);
+    _realtimeTimer = setTimeout(() => { fetchData(); }, 800); // debounce bursts into one refresh
+  };
+  cols.forEach(col => {
+    try {
+      fdb.collection(col).onSnapshot(
+        () => { if (!seen[col]) { seen[col] = true; return; } scheduleRefresh(); }, // ignore initial attach
+        (err) => { console.warn('[realtime] listener disabled for', col, err && err.message); }
+      );
+    } catch (e) { console.warn('[realtime] attach failed', col, e && e.message); }
+  });
+  console.log('[realtime] onSnapshot listeners attached');
 }
 
 // ── Telemetry Simulation ─────────────────────────
@@ -309,6 +458,7 @@ function switchSection(sectionId) {
   const el = document.getElementById(sectionId);
   if (el) el.classList.add('active');
   setMobileNavActive(sectionId);
+  if (sectionId === 'treasury' && auth.isAdmin && typeof loadTreasuryPermConfig === 'function') { loadTreasuryPermConfig(); }
   // Sync top-nav underline
   document.querySelectorAll('.top-nav-link').forEach(a => a.classList.remove('active-nav'));
   const topLink = document.querySelector(`.top-nav-link[onclick*="${sectionId}"]`);
@@ -373,6 +523,23 @@ function renderActivityFeed() {
   const feed = document.getElementById('activityFeed');
   if (!feed) return;
   const items = [];
+
+  // Server-side activity log (real backend events) — newest, shown first
+  (state.serverFeed || []).forEach(ev => {
+    const icon = ev.module === 'treasury' ? '\uD83D\uDCB0' : ev.module === 'members' ? '\uD83D\uDC64' : ev.module === 'sieges' ? '\uD83C\uDFF0' : '\u2694\uFE0F';
+    items.push({ ts: new Date(ev.createdAt || 0), html:
+      `<li class="feed-item">
+        <div class="feed-icon bg-amber-900/30">${icon}</div>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-baseline gap-1.5 flex-wrap">
+            <span class="text-[10px] font-black text-primary uppercase tracking-wide">${ev.action || ''}</span>
+            <span class="text-[10px] font-bold text-white/80 truncate">${ev.target || ''}</span>
+          </div>
+          <div class="text-[11px] text-slate-500 font-bold mt-0.5">${ev.detail || ''}</div>
+        </div>
+        <span class="text-[10px] font-black uppercase text-amber-700/60 flex-shrink-0">\u25CF</span>
+      </li>` });
+  });
 
   [...state.battles].forEach(b => {
     const isOk = (b.result||b.status) === 'success';
@@ -451,42 +618,60 @@ function renderActivityFeed() {
 function authHeaders() {
   const headers = { 'Content-Type': 'application/json' };
   if (auth.token) headers['x-google-token'] = auth.token;
+  if (auth.firebaseToken) headers['x-firebase-token'] = auth.firebaseToken;
   return headers;
 }
+const authHeader = authHeaders; // alias for legacy call sites
 
 // ── Data Fetching ─────────────────────────────────
-async function fetchData() {
-  try {
-    const [m, b, s, a, tr, txList] = await Promise.all([
-      fetch(`${API_BASE}/members`).then(r => r.json()),
-      fetch(`${API_BASE}/battles`).then(r => r.json()),
-      fetch(`${API_BASE}/sieges`).then(r => r.json()),
-      fetch(`${API_BASE}/alliances`).then(r => r.json()),
-      fetch(`${API_BASE}/treasury`).then(r => r.json()).catch(() => null),
-      fetch(`${API_BASE}/transactions`).then(r => r.json()).catch(() => [])
-    ]);
-    state.members = m || [];
-    state.battles = b || [];
-    state.sieges = s || [];
-    state.alliances = a || [];
-    state.treasury = tr || { balance: 0 };
-    state.transactions = Array.isArray(txList) ? txList : [];
+function setLoading(on) { try { document.body.classList.toggle('lin-loading', !!on); } catch (e) {} }
 
-    renderMembers();
-    renderBattles();
-    renderSieges();
-    renderAlliances();
-    renderTreasury();
-    renderTransactions();
-    renderOverview();
-  renderMemberTierStrip();
-  renderSiegeStats();
-  renderAllianceStats();
-  renderActivityFeed();
-    renderCheckboxes();
-    updateMemberCountBadge();
-    renderCharts();
-    updateStatusTexts();
+async function fetchData() {
+  setLoading(true);
+  try {
+    // Error Boundary: each request fails independently and falls back.
+    state._errors = {};
+    const safeJson = (url, fallback) => fetch(url)
+      .then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))
+      .catch(err => { console.warn('fetch failed:', url, err.message); state._errors[url] = true; return fallback; });
+    const asList = (v) => Array.isArray(v) ? v : ((v && Array.isArray(v.data)) ? v.data : []);
+    const [m, b, s, a, tr, txList, ov, feed] = await Promise.all([
+      safeJson(`${API_BASE}/members`, []),
+      safeJson(`${API_BASE}/battles`, []),
+      safeJson(`${API_BASE}/sieges`, []),
+      safeJson(`${API_BASE}/alliances`, []),
+      safeJson(`${API_BASE}/treasury`, null),
+      safeJson(`${API_BASE}/transactions`, []),
+      safeJson(`${API_BASE}/overview`, null),
+      safeJson(`${API_BASE}/activity-feed`, null),
+    ]);
+    state.members = asList(m);
+    state.battles = asList(b);
+    state.sieges = asList(s);
+    state.alliances = asList(a);
+    state.treasury = tr || { balance: 0 };
+    state.transactions = asList(txList);
+    state.overview = (ov && ov.ok && ov.data) ? ov.data : (ov && ov.kpi ? ov : null);
+    state.serverFeed = (feed && feed.ok && Array.isArray(feed.data)) ? feed.data : (Array.isArray(feed) ? feed : []);
+
+    const safeRender = (fn, name) => { try { fn(); } catch (e) { console.error('render ' + name + ' failed:', e); } };
+    safeRender(renderMembers, 'members');
+    safeRender(renderBattles, 'battles');
+    safeRender(renderSieges, 'sieges');
+    safeRender(renderAlliances, 'alliances');
+    safeRender(renderTreasury, 'treasury');
+    safeRender(renderTransactions, 'transactions');
+    safeRender(renderOverview, 'overview');
+    safeRender(renderMemberTierStrip, 'tierStrip');
+    safeRender(renderSiegeStats, 'siegeStats');
+    safeRender(renderAllianceStats, 'allianceStats');
+    safeRender(renderActivityFeed, 'activityFeed');
+    safeRender(renderMyProfile, 'myprofile');
+    safeRender(applyPermissions, 'permissions');
+    safeRender(renderCheckboxes, 'checkboxes');
+    safeRender(updateMemberCountBadge, 'memberBadge');
+    safeRender(renderCharts, 'charts');
+    safeRender(updateStatusTexts, 'statusTexts');
 
     // ── Populate Event Horizon feed with data summary ──
     const now = new Date().toLocaleTimeString('en-GB', { hour12: false });
@@ -519,6 +704,8 @@ async function fetchData() {
   } catch (err) {
     console.error('Fetch error:', err);
     showToast('無法連線至伺服器', 'error');
+  } finally {
+    setLoading(false);
   }
 }
 
@@ -745,6 +932,7 @@ async function updateMember() {
   if (!name || !job) { showToast('請填寫角色名稱與職業', 'error'); return; }
 
   try {
+    if (auth.firebaseUser) { try { auth.firebaseToken = await auth.firebaseUser.getIdToken(); } catch (e) {} }
     const res = await fetch(`${API_BASE}/members/${id}`, {
       method: 'PUT', headers: authHeaders(),
       body: JSON.stringify({ name, job, notes, tier, level })
@@ -897,12 +1085,13 @@ function renderMembers() {
         ? `<span class="inline-flex items-center gap-1 bg-secondary/10 text-secondary border border-secondary/25 text-[10px] px-1.5 py-0.5 font-black uppercase rounded-sm"><span style="width:5px;height:5px;background:currentColor;border-radius:50%;display:inline-block;"></span>LINE</span>`
         : `<span class="text-slate-700 text-[10px] font-black">—</span>`;
 
-      const adminActions = auth.isAdmin ? `
+      const canEditMembers = auth.isAdmin || canEditModule('members');
+      const adminActions = canEditMembers ? `
         <td class="py-2.5 pr-4 text-right admin-col">
           <div class="flex items-center justify-end gap-2.5 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button class="text-[11px] font-black text-secondary hover:underline tracking-tight" onclick="openLineBindModal('members','${id}','${name.replace(/'/g,"\\'")}')">LINE</button>
+            ${auth.isAdmin ? `<button class="text-[11px] font-black text-secondary hover:underline tracking-tight" onclick="openLineBindModal('members','${id}','${name.replace(/'/g,"\\'")}')">LINE</button>` : ''}
             <button class="text-[11px] font-black text-amber-400 hover:underline tracking-tight" onclick="openEditModal('${id}')">編輯</button>
-            <button class="text-[11px] font-black text-primary hover:underline tracking-tight" onclick="deleteMember('${id}','${name.replace(/'/g,"\\'")}')">刪除</button>
+            ${canDoActionClient('memberDelete') ? `<button class="text-[11px] font-black text-primary hover:underline tracking-tight" onclick="deleteMember('${id}','${name.replace(/'/g,"\\'")}')">刪除</button>` : ''}
           </div>
         </td>` : '<td class="py-2.5 pr-4 text-right admin-col hidden"></td>';
 
@@ -1277,11 +1466,12 @@ function renderBattles() {
       ? `<span class="tier-badge" style="color:#34d399;border-color:rgba(52,211,153,0.4);background:rgba(52,211,153,0.08);">已結算</span>`
       : `<span class="tier-badge" style="color:#f59e0b;border-color:rgba(245,158,11,0.35);background:rgba(245,158,11,0.07);">待結算</span>`;
 
-    const adminActions = auth.isAdmin ? `
+    const canEditBattles = auth.isAdmin || canEditModule('battles');
+    const adminActions = canEditBattles ? `
       <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity flex-wrap">
         ${!isSettled ? `<button class="text-[10px] font-black text-emerald-400 hover:underline tracking-tight" onclick="event.stopPropagation(); openSettleModal('battle','${id}')">結算</button>` : ''}
-        <button class="text-[10px] font-black text-secondary hover:underline tracking-tight" onclick="event.stopPropagation(); openBroadcastModal('battle','${id}','${boss.replace(/'/g, "\\'")}')">LINE</button>
-        <button class="text-[10px] font-black text-error hover:underline tracking-tight" onclick="event.stopPropagation(); deleteBattle('${id}', '${boss.replace(/'/g, "\\'")}')">刪除</button>
+        ${canDoActionClient('lineBroadcast') ? `<button class="text-[10px] font-black text-secondary hover:underline tracking-tight" onclick="event.stopPropagation(); openBroadcastModal('battle','${id}','${boss.replace(/'/g, "\\'")}')">LINE</button>` : ''}
+        ${canDoActionClient('battleDelete') ? `<button class="text-[10px] font-black text-error hover:underline tracking-tight" onclick="event.stopPropagation(); deleteBattle('${id}', '${boss.replace(/'/g, "\\'")}')">刪除</button>` : ''}
       </div>
     ` : '';
 
@@ -1345,7 +1535,7 @@ function renderBattles() {
         </td>
         <td class="py-2.5">${resultBadge}</td>
         <td class="py-2.5 hidden lg:table-cell">${statusBadge}</td>
-        <td class="py-2.5 pr-3 text-right ${auth.isAdmin ? 'admin-col' : 'admin-col hidden'}">
+        <td class="py-2.5 pr-3 text-right ${(auth.isAdmin || canEditModule('battles') || canEditModule('sieges')) ? 'admin-col' : 'admin-col hidden'}">
           ${adminActions}
         </td>
       </tr>
@@ -1444,11 +1634,12 @@ function renderSieges() {
       ? `<span class="tier-badge" style="color:#34d399;border-color:rgba(52,211,153,0.4);background:rgba(52,211,153,0.08);">已結算</span>`
       : `<span class="tier-badge" style="color:#f59e0b;border-color:rgba(245,158,11,0.35);background:rgba(245,158,11,0.07);">待結算</span>`;
 
-    const adminActions = auth.isAdmin ? `
+    const canEditSieges = auth.isAdmin || canEditModule('sieges');
+    const adminActions = canEditSieges ? `
       <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity flex-wrap">
         ${!isSettled ? `<button class="text-[10px] font-black text-emerald-400 hover:underline tracking-tight" onclick="event.stopPropagation(); openSettleModal('siege','${id}')">SETTLE</button>` : ''}
-        <button class="text-[10px] font-black text-secondary hover:underline tracking-tight" onclick="event.stopPropagation(); openBroadcastModal('siege','${id}','${castle.replace(/'/g, "\\'")}')">LINE_CALL</button>
-        <button class="text-[10px] font-black text-error hover:underline tracking-tight" onclick="event.stopPropagation(); deleteSiege('${id}', '${castle.replace(/'/g, "\\'")}')">PURGE</button>
+        ${canDoActionClient('lineBroadcast') ? `<button class="text-[10px] font-black text-secondary hover:underline tracking-tight" onclick="event.stopPropagation(); openBroadcastModal('siege','${id}','${castle.replace(/'/g, "\\'")}')">LINE_CALL</button>` : ''}
+        ${canDoActionClient('siegeDelete') ? `<button class="text-[10px] font-black text-error hover:underline tracking-tight" onclick="event.stopPropagation(); deleteSiege('${id}', '${castle.replace(/'/g, "\\'")}')">PURGE</button>` : ''}
       </div>
     ` : '';
 
@@ -1468,7 +1659,7 @@ function renderSieges() {
            <span class="text-[13px] font-black text-secondary tracking-tight">${subsidy > 0 ? Number(subsidy).toLocaleString() : '—'}</span>
         </td>
         <td class="py-2.5 hidden lg:table-cell">${statusBadge}</td>
-        <td class="py-2.5 pr-3 text-right ${auth.isAdmin ? 'admin-col' : 'admin-col hidden'}">
+        <td class="py-2.5 pr-3 text-right ${(auth.isAdmin || canEditModule('battles') || canEditModule('sieges')) ? 'admin-col' : 'admin-col hidden'}">
           ${adminActions}
         </td>
       </tr>
@@ -1825,11 +2016,35 @@ function renderTransactions() {
 }
 
 // ── Charts ────────────────────────────────────────
+function renderTreasuryTrendChart() {
+  if (!window.Chart) return;
+  const ctx = document.getElementById('treasuryTrendChart');
+  if (!ctx) return;
+  const trend = (state.overview && state.overview.treasuryTrend) || [];
+  if (treasuryTrendChartInstance) treasuryTrendChartInstance.destroy();
+  treasuryTrendChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: trend.map(t => (t.month || '').slice(2)),
+      datasets: [
+        { label: '收入', data: trend.map(t => t.income), borderColor: '#34d399', backgroundColor: 'rgba(52,211,153,0.12)', borderWidth: 2, fill: true, tension: 0.3, pointRadius: 2 },
+        { label: '支出', data: trend.map(t => t.expense), borderColor: '#f87171', backgroundColor: 'rgba(248,113,113,0.10)', borderWidth: 2, fill: true, tension: 0.3, pointRadius: 2 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: true, labels: { boxWidth: 10, font: { size: 10 } } } },
+      scales: { x: { grid: { display: false }, ticks: { font: { size: 9 } } }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { font: { size: 9 } } } }
+    }
+  });
+}
+
 function renderCharts() {
   if (!window.Chart) return;
   Chart.defaults.color = 'rgba(255,255,255,0.4)';
   Chart.defaults.font.family = "'Inter', sans-serif";
   Chart.defaults.font.weight = '600';
+  renderTreasuryTrendChart();
 
   // 1. Class Distribution Chart (Members)
   const ctxClass = document.getElementById('classChart');
@@ -2214,20 +2429,117 @@ async function saveLineBinding() {
 // ── Settle Modal ─────────────────────────────────────
 let _settleTarget = null;
 
+// ── Settlement Wizard helpers ─────────────────────────
+function _settleParseArr(v) { try { return Array.isArray(v) ? v : JSON.parse(v || '[]'); } catch { return []; } }
+function _settleMemberName(id) {
+  const p = [...state.members, ...state.alliances].find(m => (m.ID || m.id) === id);
+  return p ? (p.name || p.Name || id) : id;
+}
+function _settleParseDrops(v) {
+  return _settleParseArr(v).map(d => ({ id: d.id, itemName: d.itemName || d.name || '未命名', price: Number(d.price || d.highestBid || 0) }));
+}
+function _settleDropsPool() {
+  const fromDrops = (_settleTarget.drops || []).reduce((s, d) => s + Number(d.price || 0), 0);
+  if (fromDrops > 0) return fromDrops;
+  const r = _settleTarget.record;
+  return Number(r.auctionPool || (typeof r.drops === 'number' ? r.drops : 0) || 0);
+}
+function _settleSteps() { return _settleTarget.type === 'battle' ? [1, 2, 3] : [1, 3]; }
+function _settleRenderStepper() {
+  const labels = { 1: '出席', 2: '掉寶', 3: '分配' };
+  const el = document.getElementById('settleStepper'); if (!el) return;
+  el.innerHTML = _settleSteps().map((n, i) => {
+    const active = n === _settleTarget.step;
+    return `<div style="flex:1;text-align:center;padding:6px 4px;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:0.06em;border-bottom:2px solid ${active ? 'var(--or)' : 'var(--bd)'};color:${active ? 'var(--or)' : 'var(--tx3)'};">${i + 1}. ${labels[n]}</div>`;
+  }).join('');
+}
+function _settleShowStep(n) {
+  _settleTarget.step = n;
+  ['settleStep1', 'settleStep2', 'settleStep3'].forEach(p => { const e = document.getElementById(p); if (e) e.style.display = 'none'; });
+  const cur = document.getElementById('settleStep' + n); if (cur) cur.style.display = '';
+  if (n === 1) _settleRenderStep1();
+  else if (n === 2) _settleRenderStep2();
+  else if (n === 3) renderSettlePreview();
+  const steps = _settleSteps(); const idx = steps.indexOf(n); const isLast = idx === steps.length - 1;
+  const back = document.getElementById('settleBackBtn'), next = document.getElementById('settleNextBtn'), exec = document.getElementById('settleExecBtn');
+  if (back) back.style.display = idx > 0 ? '' : 'none';
+  if (next) next.style.display = isLast ? 'none' : '';
+  if (exec) exec.style.display = isLast ? '' : 'none';
+  _settleRenderStepper();
+}
+function _settleRenderStep1() {
+  const el = document.getElementById('settleAttList'); if (!el) return;
+  if (!_settleTarget.attIds.length) { el.innerHTML = '<div style="font-size:11px;color:var(--tx3);grid-column:1/-1;text-align:center;padding:12px;">尚無出席名單</div>'; return; }
+  el.innerHTML = _settleTarget.attIds.map(id => {
+    const removed = _settleTarget.removed.includes(id);
+    return `<label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:4px 6px;border:1px solid var(--bd);background:${removed ? 'transparent' : 'var(--bg)'};opacity:${removed ? 0.4 : 1};cursor:pointer;"><input type="checkbox" ${removed ? '' : 'checked'} onchange="settleToggleAtt('${id}')" style="accent-color:var(--or);"> ${_settleMemberName(id)}</label>`;
+  }).join('');
+}
+function settleToggleAtt(id) {
+  const i = _settleTarget.removed.indexOf(id);
+  if (i >= 0) _settleTarget.removed.splice(i, 1); else _settleTarget.removed.push(id);
+  _settleRenderStep1();
+}
+function _settleRenderStep2() {
+  const el = document.getElementById('settleDropsList'); if (!el) return;
+  const drops = _settleTarget.drops || [];
+  el.innerHTML = !drops.length
+    ? '<div style="font-size:11px;color:var(--tx3);text-align:center;padding:12px;">尚無掉寶，可於上方新增</div>'
+    : drops.map(d => `<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--bd);"><span style="flex:1;font-size:12px;color:var(--tx);">${d.itemName}</span><input type="number" value="${d.price || 0}" min="0" step="1000" onchange="settleSetDropPrice('${d.id}', this.value)" class="atelier-input" style="width:110px;font-size:11px;"><button onclick="settleDeleteDrop('${d.id}')" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:13px;">🗑</button></div>`).join('');
+  const tot = document.getElementById('settleDropsTotal'); if (tot) tot.textContent = _settleDropsPool().toLocaleString();
+}
+async function settleAddDrop() {
+  const inp = document.getElementById('settleNewDrop'); const name = (inp && inp.value || '').trim();
+  if (!name) { showToast('請輸入物品名稱', 'error'); return; }
+  try {
+    const res = await fetch(`${API_BASE}/battles/${_settleTarget.id}/drops`, { method: 'POST', headers: authHeaders(), body: JSON.stringify({ itemName: name }) });
+    const data = await res.json();
+    if (res.ok && data.dropId) { _settleTarget.drops.push({ id: data.dropId, itemName: name, price: 0 }); if (inp) inp.value = ''; _settleRenderStep2(); }
+    else showToast(data.error || '新增失敗', 'error');
+  } catch (e) { showToast('網路錯誤', 'error'); }
+}
+async function settleSetDropPrice(dropId, val) {
+  const price = Math.max(0, Number(val) || 0);
+  const d = _settleTarget.drops.find(x => x.id === dropId); if (d) d.price = price;
+  const tot = document.getElementById('settleDropsTotal'); if (tot) tot.textContent = _settleDropsPool().toLocaleString();
+  try { await fetch(`${API_BASE}/battles/${_settleTarget.id}/drops/${dropId}`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ price }) }); }
+  catch (e) { console.warn('set drop price failed', e); }
+}
+async function settleDeleteDrop(dropId) {
+  try { await fetch(`${API_BASE}/battles/${_settleTarget.id}/drops/${dropId}`, { method: 'DELETE', headers: authHeaders() }); } catch (e) {}
+  _settleTarget.drops = _settleTarget.drops.filter(d => d.id !== dropId); _settleRenderStep2();
+}
+async function settleGoStep(dir) {
+  const steps = _settleSteps(); let idx = steps.indexOf(_settleTarget.step);
+  if (dir > 0) {
+    if (_settleTarget.step === 1 && _settleTarget.removed.length) {
+      for (const rid of _settleTarget.removed.slice()) {
+        try { await fetch(`${API_BASE}/battles/${_settleTarget.id}/attendance/${rid}`, { method: 'DELETE', headers: authHeaders() }); } catch (e) {}
+      }
+      _settleTarget.attIds = _settleTarget.attIds.filter(id => !_settleTarget.removed.includes(id));
+      _settleTarget.removed = [];
+    }
+    idx = Math.min(steps.length - 1, idx + 1);
+  } else { idx = Math.max(0, idx - 1); }
+  _settleShowStep(steps[idx]);
+}
+
 function openSettleModal(type, id) {
   const collection = type === 'battle' ? state.battles : state.sieges;
   const record = collection.find(r => (r.ID || r.id) == id);
   if (!record) return;
-  _settleTarget = { type, id, record };
+  _settleTarget = {
+    type, id, record, step: 1,
+    attIds: _settleParseArr(record.attendance).map(String),
+    removed: [],
+    drops: type === 'battle' ? _settleParseDrops(record.drops) : [],
+  };
   document.getElementById('settleTitle').textContent =
-    type === 'battle'
-      ? `結算：${record.bossName || '首領戰'}`
-      : `結算：${record.castle || '攻城戰'}`;
+    type === 'battle' ? `結算精靈：${record.bossName || '首領戰'}` : `結算精靈：${record.castle || '攻城戰'}`;
   const subsidyRow = document.getElementById('settleSubsidyRow');
   if (subsidyRow) subsidyRow.style.display = type === 'siege' ? '' : 'none';
-  renderSettlePreview();
-  const modal = document.getElementById('settleModal');
-  modal.style.display = 'flex';
+  _settleShowStep(1);
+  document.getElementById('settleModal').style.display = 'flex';
 }
 
 function closeSettleModal(e) {
@@ -2239,44 +2551,31 @@ function closeSettleModal(e) {
 
 function renderSettlePreview() {
   if (!_settleTarget) return;
-  const { type, record } = _settleTarget;
-  const reserveInput = document.getElementById('settleReserve');
-  const subsidyInput = document.getElementById('settleSubsidy');
-  const previewEl = document.getElementById('settlePreview');
-  const reservePct = parseFloat(reserveInput?.value || 0);
-  const subsidyPer = parseFloat(subsidyInput?.value || 0);
-
-  const parseAtt = (att) => {
-    try { return JSON.parse(att || '[]'); } catch { return []; }
-  };
-
+  const { type } = _settleTarget;
+  const previewEl = document.getElementById('settlePreview'); if (!previewEl) return;
+  const reservePct = parseFloat(document.getElementById('settleReserve')?.value || 0);
+  const subsidyPer = parseFloat(document.getElementById('settleSubsidy')?.value || 0);
+  const attCount = _settleTarget.attIds.length;
   if (type === 'battle') {
-    const drops = Number(record.drops || 0);
-    const reserve = Math.floor(drops * reservePct / 100);
-    const distributable = drops - reserve;
-    const attendees = parseAtt(record.attendance).filter(a => a.present);
-    const perPerson = attendees.length > 0 ? Math.floor(distributable / attendees.length) : 0;
-    previewEl.innerHTML = `
-      <div class="grid grid-cols-2 gap-2 text-sm">
-        <span class="text-[#b8a87a]">總掉落:</span><span class="text-white">${drops.toLocaleString()} 金</span>
-        <span class="text-[#b8a87a]">公積金 (${reservePct}%):</span><span class="text-[#ffd700]">${reserve.toLocaleString()} 金</span>
-        <span class="text-[#b8a87a]">可分配:</span><span class="text-white">${distributable.toLocaleString()} 金</span>
-        <span class="text-[#b8a87a]">出席人數:</span><span class="text-white">${attendees.length} 人</span>
-        <span class="text-[#b8a87a]">每人分得:</span><span class="text-[#51cf66] font-bold">${perPerson.toLocaleString()} 金</span>
-      </div>`;
+    const pool = _settleDropsPool();
+    const reserve = Math.floor(pool * reservePct / 100);
+    const distributable = pool - reserve;
+    const per = attCount > 0 ? Math.floor(distributable / attCount) : 0;
+    previewEl.innerHTML = `<div style="display:grid;grid-template-columns:1fr auto;gap:6px;">
+      <span style="color:var(--tx2);">總拍賣池</span><span style="color:var(--tx);text-align:right;">${pool.toLocaleString()} 天幣</span>
+      <span style="color:var(--tx2);">公積金 (${reservePct}%)</span><span style="color:var(--or);text-align:right;">${reserve.toLocaleString()} 天幣</span>
+      <span style="color:var(--tx2);">可分配</span><span style="color:var(--tx);text-align:right;">${distributable.toLocaleString()} 天幣</span>
+      <span style="color:var(--tx2);">出席人數</span><span style="color:var(--tx);text-align:right;">${attCount} 人</span>
+      <span style="color:var(--tx2);font-weight:700;">每人分得</span><span style="color:#51cf66;font-weight:700;text-align:right;">${per.toLocaleString()} 天幣</span>
+    </div>`;
   } else {
-    const loot = Number(record.loot || 0);
-    const reserve = Math.floor(loot * reservePct / 100);
-    const attendees = parseAtt(record.attendance).filter(a => a.present);
-    const totalSubsidy = subsidyPer * attendees.length;
-    previewEl.innerHTML = `
-      <div class="grid grid-cols-2 gap-2 text-sm">
-        <span class="text-[#b8a87a]">戰利品:</span><span class="text-white">${loot.toLocaleString()} 金</span>
-        <span class="text-[#b8a87a]">公積金 (${reservePct}%):</span><span class="text-[#ffd700]">${reserve.toLocaleString()} 金</span>
-        <span class="text-[#b8a87a]">出席人數:</span><span class="text-white">${attendees.length} 人</span>
-        <span class="text-[#b8a87a]">薪津/人:</span><span class="text-white">${subsidyPer.toLocaleString()} 金</span>
-        <span class="text-[#b8a87a]">薪津總計:</span><span class="text-[#ff6b35] font-bold">-${totalSubsidy.toLocaleString()} 金</span>
-      </div>`;
+    const totalSubsidy = subsidyPer * attCount;
+    previewEl.innerHTML = `<div style="display:grid;grid-template-columns:1fr auto;gap:6px;">
+      <span style="color:var(--tx2);">公積金比例</span><span style="color:var(--or);text-align:right;">${reservePct}%</span>
+      <span style="color:var(--tx2);">出席人數</span><span style="color:var(--tx);text-align:right;">${attCount} 人</span>
+      <span style="color:var(--tx2);">薪津/人</span><span style="color:var(--tx);text-align:right;">${subsidyPer.toLocaleString()} 天幣</span>
+      <span style="color:var(--tx2);font-weight:700;">薪津總計</span><span style="color:#ff6b35;font-weight:700;text-align:right;">-${totalSubsidy.toLocaleString()} 天幣</span>
+    </div>`;
   }
 }
 
@@ -2294,7 +2593,7 @@ async function confirmSettle() {
   try {
     const res = await fetch(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(body)
     });
     const data = await res.json();
@@ -2311,35 +2610,68 @@ async function confirmSettle() {
 }
 
 // ── Member Profile Modal ──────────────────────────────
-function openMemberProfile(id) {
+async function openMemberProfile(id) {
   const member = state.members.find(m => (m.ID || m.id) == id);
-  if (!member) return;
   const modal = document.getElementById('memberProfileModal');
   if (!modal) return;
+  const setTxt = (eid, v) => { const el = document.getElementById(eid); if (el) el.textContent = v; };
 
-  document.getElementById('profileName').textContent = member.name || '—';
-  document.getElementById('profileJob').textContent = member.job || '—';
-  document.getElementById('profileTier').textContent = member.tier || '一般';
-  document.getElementById('profileLine').textContent = member.lineId || '未綁定';
-  document.getElementById('profileNote').textContent = member.note || '—';
+  // Immediate basic info from local state (correct field names)
+  if (member) {
+    setTxt('profileName', member.name || member.Name || '—');
+    setTxt('profileJob', member.job || member.class || '—');
+    setTxt('profileTier', member.tier || '一般');
+    setTxt('profileLine', member.lineUserId || member.lineId || '未綁定');
+    setTxt('profileNote', member.notes || member.note || '—');
+  }
+  // Local fallback counts: attendance is an array of member-ID strings
+  const parseArr = (v) => { try { return Array.isArray(v) ? v : JSON.parse(v || '[]'); } catch { return []; } };
+  const localB = state.battles.filter(b => parseArr(b.attendance).includes(String(id))).length;
+  const localS = state.sieges.filter(s => parseArr(s.attendance).includes(String(id))).length;
+  setTxt('profileBattleCount', localB);
+  setTxt('profileSiegeCount', localS);
 
-  const parseAtt = (att) => {
-    try { return JSON.parse(att || '[]'); } catch { return []; }
-  };
-
-  const battles = state.battles.filter(b =>
-    parseAtt(b.attendance).some(a => a.name === member.name && a.present)
-  );
-  const sieges = state.sieges.filter(s =>
-    parseAtt(s.attendance).some(a => a.name === member.name && a.present)
-  );
-
-  const elB = document.getElementById('profileBattleCount');
-  const elS = document.getElementById('profileSiegeCount');
-  if (elB) elB.textContent = battles.length;
-  if (elS) elS.textContent = sieges.length;
-
+  const histEl = document.getElementById('profileHistory');
+  if (histEl) histEl.innerHTML = '<div style="font-size:11px;color:var(--tx3);text-align:center;padding:8px;">載入中…</div>';
   modal.style.display = 'flex';
+
+  // Enrich from backend: authoritative counts + attendance / level history
+  try {
+    const j = (url) => fetch(url).then(r => r.ok ? r.json() : null).catch(() => null);
+    const [detail, attHist, lvHist] = await Promise.all([
+      j(`${API_BASE}/members/${id}`),
+      j(`${API_BASE}/members/${id}/attendance-history`),
+      j(`${API_BASE}/members/${id}/level-history`),
+    ]);
+    const d = detail && detail.ok ? detail.data : null;
+    if (d) {
+      if (d.battleCount != null) setTxt('profileBattleCount', d.battleCount);
+      if (d.siegeCount != null) setTxt('profileSiegeCount', d.siegeCount);
+      if (d.lineUserId) setTxt('profileLine', d.lineUserId);
+    }
+    if (histEl) {
+      const att = (attHist && attHist.ok ? attHist.data : []) || [];
+      const lv = (lvHist && lvHist.ok ? lvHist.data : []) || [];
+      let html = '<div style="font-size:10px;color:var(--or);text-transform:uppercase;letter-spacing:0.08em;font-weight:900;margin:0 0 6px;">近期出席</div>';
+      if (!att.length) html += '<div style="font-size:11px;color:var(--tx3);">尚無出席記錄</div>';
+      else html += att.slice(0, 8).map(h => {
+        const icon = h.type === 'siege' ? '🏰' : '⚔️';
+        const date = h.date ? new Date(h.date).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }) : '';
+        return `<div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;border-bottom:1px solid var(--bd);"><span>${icon} ${h.name || ''}</span><span style="color:var(--tx3);">${date}</span></div>`;
+      }).join('');
+      if (lv.length) {
+        html += '<div style="font-size:10px;color:var(--or);text-transform:uppercase;letter-spacing:0.08em;font-weight:900;margin:10px 0 6px;">等級歷史</div>';
+        html += lv.slice(0, 6).map(h => {
+          const date = h.changedAt ? new Date(h.changedAt).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }) : '';
+          return `<div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;border-bottom:1px solid var(--bd);"><span>${h.prevLevel != null ? h.prevLevel + ' → ' : ''}Lv${h.level}</span><span style="color:var(--tx3);">${date}</span></div>`;
+        }).join('');
+      }
+      histEl.innerHTML = html;
+    }
+  } catch (e) {
+    console.error('profile enrich failed:', e);
+    if (histEl) histEl.innerHTML = '<div style="font-size:11px;color:var(--tx3);">歷史載入失敗</div>';
+  }
 }
 
 function closeMemberProfile(e) {
@@ -2352,15 +2684,26 @@ function closeMemberProfile(e) {
 // ── Overview Panel ────────────────────────────────────
 function renderOverview() {
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-  const bal = Number(state.treasury?.balance || 0);
+  const ov = state.overview && state.overview.kpi ? state.overview : null;
+  const bal = Number((ov ? ov.kpi.treasuryBalance : state.treasury?.balance) || 0);
 
-  // KPI strip — with count-up animation trigger
+  // KPI strip — prefer server-aggregated values, fall back to client compute
   const kpis = [
-    ['kpiMemberCount',   state.members.length],
+    ['kpiMemberCount',   ov ? ov.kpi.memberCount : state.members.length],
     ['kpiTreasury',      bal.toLocaleString()],
-    ['kpiBattleCount',   state.battles.filter(b => (b.result || b.status) === 'success').length],
-    ['kpiAllianceCount', state.alliances.length],
+    ['kpiBattleCount',   ov ? ov.kpi.bossKills : state.battles.filter(b => (b.result || b.status) === 'success').length],
+    ['kpiAllianceCount', ov ? ov.kpi.allianceCount : state.alliances.length],
   ];
+  // Month-over-month income arrow on the treasury KPI
+  const deltaEl = document.getElementById('kpiTreasuryDelta');
+  if (deltaEl) {
+    if (ov) {
+      const pct = Number(ov.kpi.momIncomePct || 0);
+      const up = pct >= 0;
+      deltaEl.textContent = (up ? '\u25B2 ' : '\u25BC ') + Math.abs(pct) + '% 收入';
+      deltaEl.style.color = up ? '#34d399' : '#f87171';
+    } else { deltaEl.textContent = ''; }
+  }
   kpis.forEach(([id, val]) => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -2687,8 +3030,71 @@ function removeCastleTaxRow(btn) {
   btn.closest('div').remove();
 }
 
+function canDoActionClient(action) {
+  if (auth.isAdmin) return true;
+  if (!auth.actionPerms) return false;
+  return auth.actionPerms[action] === true;
+}
+
+async function addManualTransaction() {
+  const type = document.getElementById('txType') ? document.getElementById('txType').value : 'income';
+  const category = document.getElementById('txCategory') ? document.getElementById('txCategory').value : '其他';
+  const amount = parseFloat((document.getElementById('txAmount') || {}).value || 0);
+  const note = ((document.getElementById('txNote') || {}).value || '').trim();
+  if (!amount || amount <= 0) { showToast('請輸入有效金額', 'error'); return; }
+  const act = type === 'expense' ? 'treasuryExpense' : 'treasuryIncome';
+  if (!canDoActionClient(act)) { showToast(type === 'expense' ? '您沒有支出登記權限' : '您沒有收入登記權限', 'error'); return; }
+  try {
+    if (auth.firebaseUser) { try { auth.firebaseToken = await auth.firebaseUser.getIdToken(); } catch (e) {} }
+    const res = await fetch(`${API_BASE}/transactions`, { method: 'POST', headers: authHeaders(), body: JSON.stringify({ type, amount, category, note }) });
+    const data = await res.json();
+    if (res.ok) {
+      showToast(`已登記${type === 'expense' ? '支出' : '收入'} ${amount.toLocaleString()}`, 'success');
+      const a = document.getElementById('txAmount'); if (a) a.value = '';
+      const n = document.getElementById('txNote'); if (n) n.value = '';
+      await fetchData();
+    } else { showToast(data.error || '登記失敗', 'error'); }
+  } catch (e) { showToast('網路錯誤', 'error'); }
+}
+
+const _TREASURY_ROLE_OPTS = [[5, '會主'], [4, '元帥'], [3, '幹部'], [2, '成員'], [1, '新人']];
+const PERM_ACTIONS = [
+  { key: 'treasuryIncome', label: '收入登記', def: 3 },
+  { key: 'treasuryExpense', label: '支出登記', def: 4 },
+  { key: 'treasuryCastleTax', label: '城堡稅登錄', def: 3 },
+  { key: 'memberCreate', label: '新增成員', def: 3 },
+  { key: 'memberDelete', label: '刪除成員', def: 5 },
+  { key: 'battleDelete', label: '刪除首領戰', def: 4 },
+  { key: 'siegeDelete', label: '刪除攻城戰', def: 4 },
+  { key: 'lineBroadcast', label: 'LINE 召集', def: 3 },
+];
+function _roleOptionsHtml(val) {
+  return _TREASURY_ROLE_OPTS.map(([lv, n]) => `<option value="${lv}" ${Number(val) === lv ? 'selected' : ''}>${n}（Lv${lv}）</option>`).join('');
+}
+async function loadTreasuryPermConfig() {
+  let cfg = {};
+  try { const r = await fetch(`${API_BASE}/settings`); const j = await r.json(); cfg = (j && j.ok && j.data && j.data.permissions) || {}; } catch (e) {}
+  const el = document.getElementById('permConfigList'); if (!el) return;
+  el.innerHTML = PERM_ACTIONS.map(a => {
+    const val = cfg[a.key] != null ? cfg[a.key] : a.def;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><label style="font-size:11px;color:var(--tx2);flex:1;">${a.label}</label><select data-perm-key="${a.key}" class="atelier-input" style="width:120px;">${_roleOptionsHtml(val)}</select></div>`;
+  }).join('');
+}
+async function saveTreasuryPermConfig() {
+  const el = document.getElementById('permConfigList'); if (!el) return;
+  const permissions = {};
+  el.querySelectorAll('select[data-perm-key]').forEach(sel => { permissions[sel.getAttribute('data-perm-key')] = Number(sel.value); });
+  try {
+    const res = await fetch(`${API_BASE}/settings`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ permissions }) });
+    const d = await res.json();
+    if (res.ok) showToast('權限設定已更新', 'success');
+    else showToast(d.error || '儲存失敗（需擁有者）', 'error');
+  } catch (e) { showToast('網路錯誤', 'error'); }
+}
+
 async function submitCastleTax() {
-  if (!state.currentUser) { showToast('請先登入管理員帳號', 'error'); openLoginModal(); return; }
+  if (!canDoActionClient('treasuryCastleTax')) { showToast('您沒有城堡稅登錄權限', 'error'); return; }
+  if (auth.firebaseUser) { try { auth.firebaseToken = await auth.firebaseUser.getIdToken(); } catch (e) {} }
   const list = document.getElementById('castleTaxList');
   if (!list) return;
   const entries = [...list.querySelectorAll('div')].map(row => ({

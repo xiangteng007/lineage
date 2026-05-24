@@ -5,7 +5,10 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "test": "node --test test/aggregations.test.js test/permissions.test.js",
+    "seed": "node scripts/seed-settings.js",
+    "migrate": "node scripts/migrate-collections.js"
   },
   "dependencies": {
     "@line/bot-sdk": "^11.0.0",

@@ -5,6 +5,10 @@ const path = require('path');
 const https = require('https');
 const line = require('@line/bot-sdk');
 const firebase = require('./firebase');
+const agg = require('./lib/aggregations');
+const httpx = require('./lib/http');
+const { logActivity } = require('./lib/activity');
+const permissions = require('./lib/permissions');
 
 const lineConfig = {
   channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN || 'DUMMY_TOKEN',
@@ -81,7 +85,7 @@ async function handlePostbackEvent(event) {
 
 async function handleLineEvent(event) {
   if (event.type === 'follow') {
-    return sendLineReply(event.replyToken, '🛡️ 歡迎加入血盟通知系統！\n\n可用指令：\n・名單 → 查詢血盟成員\n・拍賣 → 最新首領戰分紅\n・綁定 → 取得您的 LINE ID\n・我的資料 → 個人出席統計\n・更新等級 85 → 自助更新角色等級\n・網頁 → 開啟管理系統');
+    return sendLineReply(event.replyToken, '🛡️ 歡迎加入血盟通知系統！\n\n可用指令：\n・名單 → 查詢血盟成員\n・拍賣 → 最新首領戰分紅\n・金庫 → 公積金與本月收支\n・出席排行 → 出席排行榜\n・攻城報名 → 近期攻城戰\n・綁定 → 取得您的 LINE ID\n・我的資料 / 我的記錄 → 個人統計\n・更新等級 85 → 自助更新等級\n・網頁 → 開啟管理系統');
   }
 
   if (event.type === 'postback') return handlePostbackEvent(event);
@@ -89,7 +93,7 @@ async function handleLineEvent(event) {
 
   const text = event.message.text.trim();
   const lineUserId = event.source.userId;
-  let replyText = '指令無法辨識。\n\n可用指令：\n・名單 / 拍賣 / 網頁\n・綁定 / 我的資料\n・更新等級 85';
+  let replyText = '指令無法辨識。\n\n可用指令：\n・名單 / 拍賣 / 網頁\n・綁定 / 我的資料 / 我的記錄\n・金庫 / 出席排行 / 攻城報名\n・更新等級 85';
 
   if (text === '名單') {
     const members = await firebase.getAllData('Members');
@@ -168,6 +172,61 @@ async function handleLineEvent(event) {
       const tierLabel = TIER_LABEL[person.tier] || '○一般';
       const levelStr = person.level ? ` ｜ 等級：Lv${person.level}` : '';
       replyText = `🛡️ ${person.name || person.Name} 的個人資料\n職業：${person.job || '—'}${levelStr} ｜ 分級：${tierLabel}\n\n⚔️ 首領戰出席：${battleCount} 次\n🏰 攻城戰出席：${siegeCount} 次\n💰 累計分紅：${totalDiv.toLocaleString()} 天幣\n\n📝 傳送「更新等級 數字」可自助更新等級`;
+    }
+
+  } else if (text === '金庫') {
+    const transactions = await firebase.getAllData('Transactions');
+    const balance = agg.computeBalance(transactions);
+    const tm = agg.monthlyTotals(transactions, new Date());
+    replyText = `💰 血盟金庫\n目前公積金：${balance.toLocaleString()} 天幣\n\n本月收入：+${tm.income.toLocaleString()}\n本月支出：-${tm.expense.toLocaleString()}\n本月淨額：${tm.net >= 0 ? '+' : ''}${tm.net.toLocaleString()}`;
+
+  } else if (text === '出席排行') {
+    const [battles, sieges, members] = await Promise.all([
+      firebase.getAllData('Battles'), firebase.getAllData('Sieges'), firebase.getAllData('Members')
+    ]);
+    const lb = agg.attendanceLeaderboard(battles, sieges, members, 10);
+    if (!lb.length) { replyText = '目前尚無出席記錄。'; }
+    else {
+      const medal = ['🥇', '🥈', '🥉'];
+      replyText = '🏆 出席排行榜 TOP 10\n\n' + lb.map((r, i) =>
+        `${medal[i] || (i + 1) + '.'} ${r.name} — ${r.count} 場`).join('\n');
+    }
+
+  } else if (text === '攻城報名' || text === '攻城') {
+    const sieges = await firebase.getAllData('Sieges');
+    const now = Date.now();
+    const upcoming = sieges
+      .filter(s => s.status !== 'settled')
+      .sort((a, b) => new Date(a.date || a.createdAt || 0) - new Date(b.date || b.createdAt || 0))
+      .slice(0, 5);
+    if (!upcoming.length) { replyText = '目前沒有待進行的攻城戰。'; }
+    else {
+      replyText = '🏰 近期攻城戰\n\n' + upcoming.map(s => {
+        const castle = s.castle || s.castleName || '未知城堡';
+        const d = s.date ? new Date(s.date).toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '待定';
+        let pre = []; try { pre = JSON.parse(s.preRegistered || '[]'); } catch (e) {}
+        return `・${castle}（${d}）報名 ${pre.length} 人`;
+      }).join('\n') + '\n\n請至網頁或由幹部協助報名。';
+    }
+
+  } else if (text === '我的記錄') {
+    const [members, alliances, battles, sieges] = await Promise.all([
+      firebase.getAllData('Members'), firebase.getAllData('Alliances'),
+      firebase.getAllData('Battles'), firebase.getAllData('Sieges')
+    ]);
+    const person = [...members, ...alliances].find(p => p.lineUserId === lineUserId);
+    if (!person) { replyText = '❌ 您尚未綁定血盟帳號。\n傳送「綁定」取得您的 LINE ID。'; }
+    else {
+      const pid = person.ID || person.id;
+      const inAtt = (r) => { try { const a = typeof r.attendance === 'string' ? JSON.parse(r.attendance) : (r.attendance || []); return a.includes(pid); } catch (e) { return false; } };
+      const myB = battles.filter(inAtt).sort((a, b) => new Date(b.time || b.createdAt || 0) - new Date(a.time || a.createdAt || 0)).slice(0, 5);
+      const myS = sieges.filter(inAtt).sort((a, b) => new Date(b.date || b.createdAt || 0) - new Date(a.date || a.createdAt || 0)).slice(0, 5);
+      let txt = `📋 ${person.name || person.Name} 的近期記錄\n`;
+      txt += `\n⚔️ 首領戰（近 5 場）\n`;
+      txt += myB.length ? myB.map(b => `・${b.bossName || '?'} ${b.time ? new Date(b.time).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }) : ''}`).join('\n') : '・無';
+      txt += `\n\n🏰 攻城戰（近 5 場）\n`;
+      txt += myS.length ? myS.map(s => `・${s.castle || '?'} ${s.date ? new Date(s.date).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }) : ''}`).join('\n') : '・無';
+      replyText = txt;
     }
 
   } else if (/^更新等級\s*\d+$/.test(text)) {
@@ -261,12 +320,113 @@ async function requireAuth(req, res, next) {
   next();
 }
 
+/**
+ * Role-gated middleware factory. Allows EITHER:
+ *   • the Google owner/admin (always roleLevel 5), OR
+ *   • a LINE member (verified Firebase ID token) whose resolved roleLevel >= minLevel.
+ * In open mode (no ADMIN_EMAILS) everything is allowed (dev).
+ */
+function requireRole(minLevel) {
+  return async function (req, res, next) {
+    const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+    if (adminEmails.length === 0) { req.actorRole = 5; return next(); }
+
+    // 1) Google owner / admin
+    const gtoken = req.headers['x-google-token'];
+    if (gtoken) {
+      const payload = await verifyGoogleToken(gtoken);
+      if (payload && payload.email && adminEmails.includes(payload.email.toLowerCase())) {
+        req.adminEmail = payload.email; req.actorRole = 5; return next();
+      }
+    }
+
+    // 2) LINE member via Firebase ID token (uid === lineUserId)
+    const ftoken = req.headers['x-firebase-token'];
+    if (ftoken) {
+      try {
+        const admin = require('firebase-admin');
+        const decoded = await admin.auth().verifyIdToken(ftoken);
+        const lineUserId = decoded.uid;
+        const members = await firebase.getAllData('Members');
+        const member = members.find(m => m.lineUserId === lineUserId) || null;
+        const level = permissions.resolveRoleLevel(member, false);
+        if (level >= minLevel) {
+          req.actorMember = member; req.actorLineId = lineUserId; req.actorRole = level;
+          req.userEmail = (member && (member.name || member.Name)) || lineUserId;
+          return next();
+        }
+        return res.status(403).json({ ok: false, code: 'FORBIDDEN', error: `權限不足（需 ${minLevel} 級以上）` });
+      } catch (e) {
+        return res.status(401).json({ ok: false, code: 'UNAUTHORIZED', error: '無效的登入憑證' });
+      }
+    }
+
+    return res.status(401).json({ ok: false, code: 'UNAUTHORIZED', error: '未登入' });
+  };
+}
+
+// ── Configurable permission config (settings/permissions, 60s cache) ──
+let _permCfg = null, _permCfgAt = 0;
+async function getActionPermConfig() {
+  const now = Date.now();
+  if (_permCfg && (now - _permCfgAt) < 60000) return _permCfg;
+  try {
+    const doc = await firebase.getDocument('settings', 'permissions');
+    _permCfg = (doc && typeof doc === 'object') ? doc : {};
+  } catch (e) { _permCfg = {}; }
+  _permCfgAt = now;
+  return _permCfg;
+}
+function invalidatePermConfig() { _permCfg = null; _permCfgAt = 0; }
+
+/** Resolve the acting user's roleLevel: Google owner=5, LINE member via firebase token, open mode=5. */
+async function resolveActor(req) {
+  const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+  if (adminEmails.length === 0) return { role: 5, openMode: true };
+  const gtoken = req.headers['x-google-token'];
+  if (gtoken) {
+    const payload = await verifyGoogleToken(gtoken);
+    if (payload && payload.email && adminEmails.includes(payload.email.toLowerCase())) {
+      return { role: 5, adminEmail: payload.email };
+    }
+  }
+  const ftoken = req.headers['x-firebase-token'];
+  if (ftoken) {
+    try {
+      const admin = require('firebase-admin');
+      const decoded = await admin.auth().verifyIdToken(ftoken);
+      const members = await firebase.getAllData('Members');
+      const member = members.find(m => m.lineUserId === decoded.uid) || null;
+      return { role: permissions.resolveRoleLevel(member, false), member, lineId: decoded.uid };
+    } catch (e) { return { role: 0, error: 'invalid' }; }
+  }
+  return { role: 0 };
+}
+
+/** Gate a configurable action by roleLevel + settings/permissions. `action` may be a string or function(req)->string. */
+function requireAction(action) {
+  return async function (req, res, next) {
+    const act = typeof action === 'function' ? action(req) : action;
+    const actor = await resolveActor(req);
+    if (actor.error) return res.status(401).json({ ok: false, code: 'UNAUTHORIZED', error: '無效的登入憑證' });
+    const cfg = await getActionPermConfig();
+    if (permissions.canDoAction(actor.role, act, cfg)) {
+      req.actorRole = actor.role;
+      req.adminEmail = actor.adminEmail;
+      req.userEmail = actor.adminEmail || (actor.member && (actor.member.name || actor.member.Name)) || actor.lineId;
+      return next();
+    }
+    return res.status(403).json({ ok: false, code: 'FORBIDDEN', error: `權限不足（${act}）` });
+  };
+}
+
 // ── System Config Endpoint ────────────────────────
 app.get('/api/config', (req, res) => {
   const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
   res.json({
     openMode: adminEmails.length === 0,
-    googleClientId: process.env.GOOGLE_CLIENT_ID || ''
+    googleClientId: process.env.GOOGLE_CLIENT_ID || '',
+    liffId: process.env.LINE_LIFF_ID || ''
   });
 });
 
@@ -306,7 +466,7 @@ function uid() {
 // ── LINE Broadcast API ───────────────────────────
 // broadcastMode: 'all' | 'bound' | 'tier'
 // tiers: array of tier names (used when broadcastMode === 'tier')
-app.post('/api/line/broadcast', requireAdmin, async (req, res) => {
+app.post('/api/line/broadcast', requireAction('lineBroadcast'), async (req, res) => {
   const { recordId, type, bossName, castle, time, notes, broadcastMode = 'bound', tiers = [] } = req.body;
   if (!recordId || !type) return res.status(400).json({ error: '缺少必要參數' });
 
@@ -449,33 +609,56 @@ app.delete('/api/alliances/:id/line-bind', requireAdmin, async (req, res) => {
 
 // ── Members ──────────────────────────────────────
 app.get('/api/members', async (req, res) => {
-  const members = await firebase.getAllData('Members');
-  res.json(members);
+  let members = await firebase.getAllData('Members');
+  const { search, role, active } = req.query;
+  const cls = req.query.class;
+  if (search) {
+    const q = String(search).toLowerCase();
+    members = members.filter(m => [m.name, m.Name, m.job, m.tier].filter(Boolean).some(v => String(v).toLowerCase().includes(q)));
+  }
+  if (cls) members = members.filter(m => (m.job || m.class) === cls);
+  if (role) members = members.filter(m => m.tier === role);
+  if (active === 'true') members = members.filter(m => m.isActive !== false);
+  else if (active === 'false') members = members.filter(m => m.isActive === false);
+  httpx.listResponse(res, members, req.query);
 });
 
-app.post('/api/members', async (req, res) => {
+app.post('/api/members', requireAction('memberCreate'), async (req, res) => {
   const member = { ID: uid(), createdAt: new Date().toISOString(), ...req.body };
   await firebase.addData('Members', member);
+  logActivity(firebase, { action: 'create', module: 'members', actor: req.userEmail || 'open_mode', target: member.name || member.Name || member.ID, detail: '新增成員' });
   res.json(member);
 });
 
-app.put('/api/members/:id', requireAdmin, async (req, res) => {
-  await firebase.updateData('Members', req.params.id, req.body);
-  res.json({ id: req.params.id, ...req.body });
+app.put('/api/members/:id', requireRole(3), async (req, res) => {
+  const body = { ...req.body };
+  // Anti-escalation: a non-owner cannot grant a roleLevel above their own.
+  if ((req.actorRole || 0) < 5 && body.roleLevel != null && Number(body.roleLevel) > (req.actorRole || 0)) {
+    delete body.roleLevel;
+  }
+  await firebase.updateData('Members', req.params.id, body);
+  logActivity(firebase, { action: 'update', module: 'members', actor: req.adminEmail || req.userEmail || 'officer', target: body.name || body.Name || req.params.id, detail: '編輯成員' + (body.tier ? `（階級 ${body.tier}）` : '') });
+  res.json({ id: req.params.id, ...body });
 });
 
-app.delete('/api/members/:id', requireAdmin, async (req, res) => {
+app.delete('/api/members/:id', requireAction('memberDelete'), async (req, res) => {
   await firebase.deleteData('Members', req.params.id);
   res.json({ ok: true });
 });
 
 // ── Battles ──────────────────────────────────────
 app.get('/api/battles', async (req, res) => {
-  const battles = await firebase.getAllData('Battles');
-  res.json(battles.sort((a, b) => new Date(b.time || b.createdAt) - new Date(a.time || a.createdAt)));
+  let battles = await firebase.getAllData('Battles');
+  const { boss, status, dateFrom, dateTo } = req.query;
+  if (boss) battles = battles.filter(b => b.bossName === boss || b.bossId === boss);
+  if (status) battles = battles.filter(b => b.status === status);
+  if (dateFrom) battles = battles.filter(b => new Date(b.time || b.createdAt) >= new Date(dateFrom));
+  if (dateTo) battles = battles.filter(b => new Date(b.time || b.createdAt) <= new Date(dateTo));
+  battles.sort((a, b) => new Date(b.time || b.createdAt) - new Date(a.time || a.createdAt));
+  httpx.listResponse(res, battles, req.query);
 });
 
-app.post('/api/battles', requireAuth, async (req, res) => {
+app.post('/api/battles', requireRole(3), async (req, res) => {
   const battle = { ID: uid(), time: new Date().toISOString(), attendance: '[]', drops: '[]', status: 'pending', createdBy: req.userEmail || 'open_mode', ...req.body };
   await firebase.addData('Battles', battle);
   res.json(battle);
@@ -486,25 +669,48 @@ app.put('/api/battles/:id', requireAdmin, async (req, res) => {
   res.json({ id: req.params.id, ...req.body });
 });
 
-app.delete('/api/battles/:id', requireAdmin, async (req, res) => {
+app.delete('/api/battles/:id', requireAction('battleDelete'), async (req, res) => {
   await firebase.deleteData('Battles', req.params.id);
   res.json({ ok: true });
 });
 
 // ── Treasury & Transactions ──────────────────────
 app.get('/api/treasury', async (req, res) => {
-  const treasury = await firebase.getAllData('Treasury');
+  const [treasury, transactions] = await Promise.all([
+    firebase.getAllData('Treasury'),
+    firebase.getAllData('Transactions'),
+  ]);
   const doc = treasury.length > 0 ? treasury[0] : null;
-  res.json({ balance: doc ? (Number(doc.balance) || 0) : 0 });
+  const storedBalance = doc ? (Number(doc.balance) || 0) : 0;
+  const balance = agg.computeBalance(transactions);
+  const now = new Date();
+  const thisMonth = agg.monthlyTotals(transactions, now);
+  const lastMonth = agg.monthlyTotals(transactions, new Date(now.getFullYear(), now.getMonth() - 1, 15));
+  res.json({
+    balance,                                 // authoritative: computed from transactions
+    storedBalance,                           // legacy Treasury doc value (reconciliation aid)
+    reconciled: balance === storedBalance,
+    monthIncome: thisMonth.income,
+    monthExpense: thisMonth.expense,
+    monthNet: thisMonth.net,
+    momIncomePct: agg.pctChange(thisMonth.income, lastMonth.income),
+    txCount: transactions.length,
+  });
 });
 
 app.get('/api/transactions', async (req, res) => {
-  const transactions = await firebase.getAllData('Transactions');
-  res.json(transactions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+  let transactions = await firebase.getAllData('Transactions');
+  const { type, category, dateFrom, dateTo } = req.query;
+  if (type) transactions = transactions.filter(t => t.type === type);
+  if (category) transactions = transactions.filter(t => t.category === category);
+  if (dateFrom) transactions = transactions.filter(t => new Date(t.createdAt) >= new Date(dateFrom));
+  if (dateTo) transactions = transactions.filter(t => new Date(t.createdAt) <= new Date(dateTo));
+  transactions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  httpx.listResponse(res, transactions, req.query);
 });
 
 // ── 手動收支 (income / expense) ──────────────────
-app.post('/api/transactions', requireAdmin, async (req, res) => {
+app.post('/api/transactions', requireAction(req => (req.body && req.body.type === 'expense') ? 'treasuryExpense' : 'treasuryIncome'), async (req, res) => {
   const { type, amount, category = '其他', source = '', note = '' } = req.body;
   if (!type || !['income', 'expense'].includes(type)) return res.status(400).json({ error: 'type 必須為 income 或 expense' });
   if (!amount || Number(amount) <= 0) return res.status(400).json({ error: '金額必須大於 0' });
@@ -533,12 +739,13 @@ app.post('/api/transactions', requireAdmin, async (req, res) => {
     createdBy: req.adminEmail || 'admin'
   };
   await firebase.addData('Transactions', tx);
+  logActivity(firebase, { action: type, module: 'treasury', actor: req.adminEmail || 'admin', target: category, detail: `${type === 'income' ? '收入' : '支出'} ${amt}` });
   res.json({ ok: true, transaction: tx, newBalance });
 });
 
 // ── 城堡稅收批次登錄 ─────────────────────────────
 // entries: [{ castle, amount }] — 每個城堡一筆
-app.post('/api/transactions/castle-tax', requireAdmin, async (req, res) => {
+app.post('/api/transactions/castle-tax', requireAction('treasuryCastleTax'), async (req, res) => {
   const { entries = [] } = req.body;
   if (!Array.isArray(entries) || entries.length === 0) return res.status(400).json({ error: '請提供城堡稅收項目' });
 
@@ -576,7 +783,7 @@ app.post('/api/transactions/castle-tax', requireAdmin, async (req, res) => {
 });
 
 // ── Loot Auction & Settlement ────────────────────
-app.post('/api/battles/:id/drops', requireAuth, async (req, res) => {
+app.post('/api/battles/:id/drops', requireRole(3), async (req, res) => {
   const { itemName } = req.body;
   if (!itemName) return res.status(400).json({ error: '缺少物品名稱' });
   
@@ -623,7 +830,7 @@ app.post('/api/battles/:id/drops/:dropId/bid', requireAuth, async (req, res) => 
   res.json({ ok: true, drop: drops[dropIndex] });
 });
 
-app.post('/api/battles/:id/settle', requireAdmin, async (req, res) => {
+app.post('/api/battles/:id/settle', requireRole(3), async (req, res) => {
   const { reservePercentage = 0 } = req.body;
 
   const battle = await firebase.getDocument('Battles', req.params.id);
@@ -674,6 +881,7 @@ app.post('/api/battles/:id/settle', requireAdmin, async (req, res) => {
     reserveDeduction,
     dividendPerPerson
   });
+  logActivity(firebase, { action: 'settle', module: 'battles', actor: req.adminEmail || 'admin', target: battle.bossName || '首領戰', detail: `結算 分紅/人 ${dividendPerPerson}` });
 
   const [members, alliances] = await Promise.all([firebase.getAllData('Members'), firebase.getAllData('Alliances')]);
   const boundParticipants = [...members, ...alliances]
@@ -741,7 +949,7 @@ app.post('/api/battles/:id/settle', requireAdmin, async (req, res) => {
 // source: 'reward' (從攻城獎勵扣) | 'treasury' (從公積金扣)
 // subsidyPerPerson: 每人薪津金額 (admin 每次手動輸入)
 // reservePercentage: 0-100, 僅 source='reward' 時生效
-app.post('/api/sieges/:id/settle', requireAdmin, async (req, res) => {
+app.post('/api/sieges/:id/settle', requireRole(3), async (req, res) => {
   const { subsidyPerPerson = 0, reservePercentage = 0, source = 'reward' } = req.body;
 
   const siege = await firebase.getDocument('Sieges', req.params.id);
@@ -808,6 +1016,7 @@ app.post('/api/sieges/:id/settle', requireAdmin, async (req, res) => {
     settledSource: source,
     settledAt: new Date().toISOString()
   });
+  logActivity(firebase, { action: 'settle', module: 'sieges', actor: req.adminEmail || 'admin', target: siege.castle || '攻城戰', detail: `薪津/人 ${perPerson}` });
 
   // ── LINE 推播分寶通知 ─────────────────────────
   const [members, alliances] = await Promise.all([firebase.getAllData('Members'), firebase.getAllData('Alliances')]);
@@ -862,11 +1071,18 @@ app.post('/api/sieges/:id/settle', requireAdmin, async (req, res) => {
 
 // ── Sieges ───────────────────────────────────────
 app.get('/api/sieges', async (req, res) => {
-  const sieges = await firebase.getAllData('Sieges');
-  res.json(sieges.sort((a, b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt)));
+  let sieges = await firebase.getAllData('Sieges');
+  const { castle, type, status, dateFrom, dateTo } = req.query;
+  if (castle) sieges = sieges.filter(s => s.castle === castle || s.castleName === castle);
+  if (type) sieges = sieges.filter(s => (s.siegeType || s.type) === type);
+  if (status) sieges = sieges.filter(s => s.status === status);
+  if (dateFrom) sieges = sieges.filter(s => new Date(s.date || s.createdAt) >= new Date(dateFrom));
+  if (dateTo) sieges = sieges.filter(s => new Date(s.date || s.createdAt) <= new Date(dateTo));
+  sieges.sort((a, b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt));
+  httpx.listResponse(res, sieges, req.query);
 });
 
-app.post('/api/sieges', requireAuth, async (req, res) => {
+app.post('/api/sieges', requireRole(3), async (req, res) => {
   const siege = { ID: uid(), date: new Date().toISOString(), attendance: '[]', reward: 0, createdBy: req.userEmail || 'open_mode', ...req.body };
   await firebase.addData('Sieges', siege);
   res.json(siege);
@@ -877,15 +1093,23 @@ app.put('/api/sieges/:id', requireAdmin, async (req, res) => {
   res.json({ id: req.params.id, ...req.body });
 });
 
-app.delete('/api/sieges/:id', requireAdmin, async (req, res) => {
+app.delete('/api/sieges/:id', requireAction('siegeDelete'), async (req, res) => {
   await firebase.deleteData('Sieges', req.params.id);
   res.json({ ok: true });
 });
 
 // ── Alliances ────────────────────────────────────
 app.get('/api/alliances', async (req, res) => {
-  const alliances = await firebase.getAllData('Alliances');
-  res.json(alliances);
+  let alliances = await firebase.getAllData('Alliances');
+  const { type, active, search } = req.query;
+  if (type) alliances = alliances.filter(a => a.type === type);
+  if (active === 'true') alliances = alliances.filter(a => !a.endDate && a.isActive !== false);
+  else if (active === 'false') alliances = alliances.filter(a => !!a.endDate || a.isActive === false);
+  if (search) {
+    const q = String(search).toLowerCase();
+    alliances = alliances.filter(a => [a.guildName, a.name, a.leaderName].filter(Boolean).some(v => String(v).toLowerCase().includes(q)));
+  }
+  httpx.listResponse(res, alliances, req.query);
 });
 
 app.post('/api/alliances', requireAdmin, async (req, res) => {
@@ -951,7 +1175,7 @@ app.post('/api/chroma/search', requireAuth, async (req, res) => {
       if (!name) return res.status(400).json({ error: '缺少角色名' });
       const db = firebase.getDb ? firebase.getDb() : null;
       if (!db) return res.status(503).json({ error: 'DB unavailable' });
-      const ref = db.collection(col).doc(id);
+      const ref = db.collection(firebase.resolveCollection(col)).doc(id);
       const snap = await ref.get();
       if (!snap.exists) return res.status(404).json({ error: '找不到記錄' });
       const data = snap.data();
@@ -978,12 +1202,11 @@ app.post('/api/chroma/search', requireAuth, async (req, res) => {
       if (!name) return res.status(400).json({ error: '缺少角色名' });
       const db = firebase.getDb ? firebase.getDb() : null;
       if (!db) return res.status(503).json({ error: 'DB unavailable' });
-      const ref = db.collection(col).doc(id);
+      const ref = db.collection(firebase.resolveCollection(col)).doc(id);
       const snap = await ref.get();
       if (!snap.exists) return res.status(404).json({ error: '找不到記錄' });
       let preReg = [];
       try { preReg = JSON.parse(snap.data().preRegistered || '[]'); } catch {}
-      preReg = preReg.filter(p => p.name !== name);
       preReg = preReg.filter(p => p.name !== name);
       await ref.update({ preRegistered: JSON.stringify(preReg) });
       res.json({ ok: true, preRegistered: JSON.stringify(preReg) });
@@ -993,14 +1216,14 @@ app.post('/api/chroma/search', requireAuth, async (req, res) => {
   });
 
   // POST attendance (幹部勾稽)
-  app.post(`/api/${col}/:id/attendance`, express.json(), async (req, res) => {
+  app.post(`/api/${col}/:id/attendance`, requireRole(3), express.json(), async (req, res) => {
     try {
       const { id } = req.params;
       const { attendance, drops, loot, note } = req.body;
       if (!Array.isArray(attendance)) return res.status(400).json({ error: '缺少出席名單' });
       const db = firebase.getDb ? firebase.getDb() : null;
       if (!db) return res.status(503).json({ error: 'DB unavailable' });
-      const ref = db.collection(col).doc(id);
+      const ref = db.collection(firebase.resolveCollection(col)).doc(id);
       await ref.update({
         attendance: JSON.stringify(attendance),
         drops: drops || 0,
@@ -1056,6 +1279,97 @@ try {
 } catch (e) {
   console.warn('⚠️  LINE Bot 模組未能載入（可能缺少環境變數）:', e.message);
 }
+
+// ── Sprint B/C/D write endpoints ──────────────────────────────────────────
+// POST /api/members/:id/level-update — level change + levelHistory sub-collection
+app.post('/api/members/:id/level-update', requireAuth, async (req, res) => {
+  const newLevel = parseInt(req.body.level, 10);
+  if (!Number.isFinite(newLevel) || newLevel < 1 || newLevel > 99)
+    return res.status(400).json({ ok: false, code: 'BAD_REQUEST', error: '等級必須介於 1 至 99' });
+  const member = await firebase.getDocument('Members', req.params.id);
+  if (!member) return res.status(404).json({ ok: false, code: 'NOT_FOUND', error: '找不到該成員' });
+  const oldLevel = member.level || null;
+  await firebase.updateData('Members', req.params.id, { level: newLevel, updatedAt: new Date().toISOString() });
+  try {
+    const db = firebase.getDb();
+    if (db) await db.collection(firebase.resolveCollection('members')).doc(String(req.params.id))
+      .collection('levelHistory').add({ level: newLevel, prevLevel: oldLevel, changedBy: req.userEmail || 'open_mode', changedAt: new Date().toISOString(), note: req.body.note || '' });
+  } catch (e) { console.error('levelHistory write failed:', e.message); }
+  logActivity(firebase, { action: 'level-update', module: 'members', actor: req.userEmail || 'open_mode', target: member.name || member.Name || req.params.id, detail: `${oldLevel != null ? oldLevel : '?'} → Lv${newLevel}` });
+  res.json({ ok: true, id: req.params.id, level: newLevel, prevLevel: oldLevel });
+});
+
+// POST /api/alliances/:id/end — end a diplomatic relationship
+app.post('/api/alliances/:id/end', requireAdmin, async (req, res) => {
+  const a = await firebase.getDocument('Alliances', req.params.id);
+  if (!a) return res.status(404).json({ ok: false, code: 'NOT_FOUND', error: '找不到該外交關係' });
+  const endDate = req.body.endDate || new Date().toISOString();
+  await firebase.updateData('Alliances', req.params.id, { endDate, isActive: false, endReason: req.body.reason || '', updatedAt: new Date().toISOString() });
+  logActivity(firebase, { action: 'end', module: 'alliances', actor: req.adminEmail || 'admin', target: a.guildName || a.name || req.params.id, detail: req.body.reason || '結束外交' });
+  res.json({ ok: true, id: req.params.id, endDate });
+});
+
+// PUT /api/settings — upsert guild / roles / modules settings docs
+app.put('/api/settings', requireAdmin, async (req, res) => {
+  const db = firebase.getDb();
+  if (!db) return res.status(503).json({ ok: false, code: 'DB_UNAVAILABLE', error: 'DB unavailable' });
+  const updated = [];
+  for (const key of ['guild', 'roles', 'modules', 'permissions']) {
+    if (req.body[key] && typeof req.body[key] === 'object') {
+      await db.collection('settings').doc(key).set({ ...req.body[key], updatedAt: new Date().toISOString() }, { merge: true });
+      updated.push(key);
+    }
+  }
+  if (updated.includes('permissions')) invalidatePermConfig();
+  logActivity(firebase, { action: 'update', module: 'settings', actor: req.adminEmail || 'admin', target: updated.join(','), detail: '更新設定' });
+  res.json({ ok: true, updated });
+});
+
+// DELETE /api/battles/:id/attendance/:memberId — remove one attendee
+app.delete('/api/battles/:id/attendance/:memberId', requireRole(3), async (req, res) => {
+  const battle = await firebase.getDocument('Battles', req.params.id);
+  if (!battle) return res.status(404).json({ ok: false, code: 'NOT_FOUND', error: '找不到該戰役' });
+  let attendance = [];
+  try { attendance = typeof battle.attendance === 'string' ? JSON.parse(battle.attendance) : (battle.attendance || []); } catch (e) {}
+  const before = attendance.length;
+  attendance = attendance.filter(id => id !== req.params.memberId);
+  await firebase.updateData('Battles', req.params.id, { attendance: JSON.stringify(attendance) });
+  res.json({ ok: true, removed: before - attendance.length, attendance });
+});
+
+// PUT /api/battles/:id/drops/:dropId — edit a drop item
+app.put('/api/battles/:id/drops/:dropId', requireRole(3), async (req, res) => {
+  const battle = await firebase.getDocument('Battles', req.params.id);
+  if (!battle) return res.status(404).json({ ok: false, code: 'NOT_FOUND', error: '找不到該戰役' });
+  let drops = [];
+  try { drops = typeof battle.drops === 'string' ? JSON.parse(battle.drops) : (battle.drops || []); } catch (e) {}
+  const idx = drops.findIndex(d => d.id === req.params.dropId);
+  if (idx === -1) return res.status(404).json({ ok: false, code: 'NOT_FOUND', error: '找不到該掉落物' });
+  const { itemName, price, highestBid, bidderId } = req.body;
+  if (itemName !== undefined) drops[idx].itemName = itemName;
+  if (price !== undefined) drops[idx].price = Number(price) || 0;
+  if (highestBid !== undefined) drops[idx].highestBid = Number(highestBid) || 0;
+  if (bidderId !== undefined) drops[idx].bidderId = bidderId;
+  await firebase.updateData('Battles', req.params.id, { drops: JSON.stringify(drops) });
+  res.json({ ok: true, drop: drops[idx] });
+});
+
+// DELETE /api/battles/:id/drops/:dropId — remove a drop item
+app.delete('/api/battles/:id/drops/:dropId', requireRole(3), async (req, res) => {
+  const battle = await firebase.getDocument('Battles', req.params.id);
+  if (!battle) return res.status(404).json({ ok: false, code: 'NOT_FOUND', error: '找不到該戰役' });
+  let drops = [];
+  try { drops = typeof battle.drops === 'string' ? JSON.parse(battle.drops) : (battle.drops || []); } catch (e) {}
+  const before = drops.length;
+  drops = drops.filter(d => d.id !== req.params.dropId);
+  await firebase.updateData('Battles', req.params.id, { drops: JSON.stringify(drops) });
+  res.json({ ok: true, removed: before - drops.length });
+});
+
+// ── Extra read-only endpoints (overview / stats / activity-feed / details) ──
+require('./lib/routes-extra')(app, firebase, agg, httpx);
+require('./lib/routes-sprint-bcd')(app, firebase, agg, httpx);
+require('./lib/routes-auth')(app, firebase, agg);
 
 // ── Serve frontend ───────────────────────────────
 app.get('*', (req, res) => {

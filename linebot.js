@@ -770,6 +770,89 @@ async function handlePostback(event) {
  * Route a single LINE event to the correct handler.
  * @param {Object} event
  */
+async function handleTreasury(event) {
+  const { replyToken } = event;
+  try {
+    const snap = await db().collection('Transactions').get();
+    let income = 0, expense = 0, mIncome = 0, mExpense = 0;
+    const now = new Date();
+    const ymNow = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+    snap.forEach(doc => {
+      const t = doc.data();
+      const amt = Math.floor(Number(t.amount) || 0);
+      if (t.type === 'income') income += amt; else if (t.type === 'expense') expense += amt;
+      const d = new Date(t.createdAt || t.date || 0);
+      const ym = isNaN(d.getTime()) ? '' : (d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'));
+      if (ym === ymNow) { if (t.type === 'income') mIncome += amt; else if (t.type === 'expense') mExpense += amt; }
+    });
+    const balance = income - expense;
+    const net = mIncome - mExpense;
+    return replyText(replyToken,
+      `\u{1F4B0} 血盟金庫\n目前公積金：${balance.toLocaleString()} 天幣\n\n本月收入：+${mIncome.toLocaleString()}\n本月支出：-${mExpense.toLocaleString()}\n本月淨額：${net >= 0 ? '+' : ''}${net.toLocaleString()}`);
+  } catch (err) {
+    console.error('[linebot] treasury error:', err.message);
+    return replyText(replyToken, '⚠️ 系統錯誤，請稍後再試');
+  }
+}
+
+async function handleAttendanceRanking(event) {
+  const { replyToken } = event;
+  try {
+    const [battles, sieges, members] = await Promise.all([
+      db().collection('Battles').get(),
+      db().collection('Sieges').get(),
+      db().collection('Members').get(),
+    ]);
+    const tally = {};
+    const tallyUp = (snap) => snap.forEach(doc => {
+      const r = doc.data();
+      let att = [];
+      try { att = typeof r.attendance === 'string' ? JSON.parse(r.attendance) : (r.attendance || []); } catch (_) {}
+      att.forEach(id => { tally[id] = (tally[id] || 0) + 1; });
+    });
+    tallyUp(battles); tallyUp(sieges);
+    const nameById = {};
+    members.forEach(doc => { const m = doc.data(); nameById[doc.id] = (m.name || m.Name || doc.id); });
+    const ranked = Object.entries(tally)
+      .map(([id, c]) => ({ name: nameById[id] || id, count: c }))
+      .sort((a, b) => b.count - a.count).slice(0, 10);
+    if (!ranked.length) return replyText(replyToken, '目前尚無出席記錄。');
+    const medal = ['\u{1F947}', '\u{1F948}', '\u{1F949}'];
+    return replyText(replyToken, '\u{1F3C6} 出席排行榜 TOP 10\n\n' +
+      ranked.map((r, i) => `${medal[i] || (i + 1) + '.'} ${r.name} — ${r.count} 場`).join('\n'));
+  } catch (err) {
+    console.error('[linebot] ranking error:', err.message);
+    return replyText(replyToken, '⚠️ 系統錯誤，請稍後再試');
+  }
+}
+
+async function handleMyRecords(event) {
+  const { replyToken, source: { userId } } = event;
+  try {
+    const member = await findMemberByLineId(userId);
+    if (!member) return replyText(replyToken, '❌ 您尚未綁定帳號，請先傳送「綁定」。');
+    const [battles, sieges] = await Promise.all([
+      db().collection('Battles').get(),
+      db().collection('Sieges').get(),
+    ]);
+    const mid = member.id;
+    const inAtt = (r) => { let a = []; try { a = typeof r.attendance === 'string' ? JSON.parse(r.attendance) : (r.attendance || []); } catch (_) {} return a.includes(mid); };
+    const myB = [], myS = [];
+    battles.forEach(doc => { const b = doc.data(); if (inAtt(b)) myB.push(b); });
+    sieges.forEach(doc => { const sg = doc.data(); if (inAtt(sg)) myS.push(sg); });
+    const fmt = (d) => { const x = new Date(d || 0); return isNaN(x.getTime()) ? '' : x.toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }); };
+    myB.sort((a, b) => new Date(b.time || b.createdAt || 0) - new Date(a.time || a.createdAt || 0));
+    myS.sort((a, b) => new Date(b.date || b.createdAt || 0) - new Date(a.date || a.createdAt || 0));
+    let txt = `\u{1F4CB} ${member.name || member.Name || ''} 的近期記錄\n`;
+    txt += `\n⚔️ 首領戰（近 5 場）\n` + (myB.length ? myB.slice(0, 5).map(b => `・${b.bossName || '?'} ${fmt(b.time)}`).join('\n') : '・無');
+    txt += `\n\n\u{1F3F0} 攻城戰（近 5 場）\n` + (myS.length ? myS.slice(0, 5).map(sg => `・${sg.castle || '?'} ${fmt(sg.date)}`).join('\n') : '・無');
+    return replyText(replyToken, txt);
+  } catch (err) {
+    console.error('[linebot] myRecords error:', err.message);
+    return replyText(replyToken, '⚠️ 系統錯誤，請稍後再試');
+  }
+}
+
 async function handleEvent(event) {
   try {
     if (event.type === 'follow') return handleFollow(event);
@@ -815,11 +898,16 @@ async function handleEvent(event) {
     // ── Officer: set attendees ──────────────────────────
     if (/^出席\s+\S+\s+.+$/.test(text)) return handleSetAttendees(event, text);
 
+    if (text === '金庫') return handleTreasury(event);
+    if (text === '出席排行') return handleAttendanceRanking(event);
+    if (text === '我的記錄') return handleMyRecords(event);
+    if (text === '攻城報名') return handleListEvents(event, 'siege', 'attack');
+
     // ── Unknown command ─────────────────────────────────
     return replyText(event.replyToken,
       '指令無法辨識。\n\n可用指令：\n' +
       '・綁定\n・更新等級 {角色名} {等級}\n・報名首領 / 報名攻城 / 報名守城\n' +
-      '・我的資料\n・公告\n\n【幹部】\n・生成綁定碼\n・出席 {battleId} {角色1},{角色2}'
+      '・我的資料 / 我的記錄\n・金庫 / 出席排行\n・公告\n\n【幹部】\n・生成綁定碼\n・出席 {battleId} {角色1},{角色2}'
     );
   } catch (err) {
     console.error('[linebot] handleEvent error:', err.message);
