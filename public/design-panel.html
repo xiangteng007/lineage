@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>⚙️ 設計控制面板 — Lineage AI</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --panel-bg: #111008;
+    --panel-border: #2a2010;
+    --accent: #EF9F27;
+    --accent2: #BA7517;
+    --text: #FFF8F0;
+    --text2: rgba(255,248,240,0.65);
+    --text3: rgba(255,248,240,0.35);
+    --input-bg: #1a1408;
+    --section-bg: #0e0c07;
+    --green: #4ade80;
+    --red: #f87171;
+  }
+
+  body {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    background: #0A0704;
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  /* ── LEFT PANEL ── */
+  #controls {
+    width: 320px;
+    min-width: 320px;
+    display: flex;
+    flex-direction: column;
+    background: var(--panel-bg);
+    border-right: 1px solid var(--panel-border);
+    overflow: hidden;
+  }
+
+  #panel-header {
+    padding: 14px 16px 12px;
+    border-bottom: 2px solid var(--accent2);
+    background: #0e0c07;
+    flex-shrink: 0;
+  }
+  #panel-header h1 {
+    font-size: 13px;
+    font-weight: 900;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  #panel-header p {
+    font-size: 10px;
+    color: var(--text2);
+    margin-top: 2px;
+    letter-spacing: 0.06em;
+  }
+
+  #panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+  }
+  #panel-body::-webkit-scrollbar { width: 4px; }
+  #panel-body::-webkit-scrollbar-track { background: var(--panel-bg); }
+  #panel-body::-webkit-scrollbar-thumb { background: var(--accent2); }
+
+  .section {
+    border-bottom: 1px solid var(--panel-border);
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    cursor: pointer;
+    background: var(--section-bg);
+    user-select: none;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+  }
+  .section-header:hover { background: #131008; }
+  .section-header .arrow {
+    margin-left: auto;
+    transition: transform 0.2s;
+    color: var(--text3);
+    font-size: 12px;
+  }
+  .section-header.collapsed .arrow { transform: rotate(-90deg); }
+  .section-body {
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .section-body.hidden { display: none; }
+
+  /* ── CONTROLS ── */
+  .field-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .field-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    min-width: 80px;
+    flex-shrink: 0;
+  }
+  .field-value {
+    font-size: 11px;
+    font-family: monospace;
+    color: var(--accent);
+    min-width: 80px;
+  }
+
+  /* Color picker row */
+  .color-row {
+    display: grid;
+    grid-template-columns: 80px 1fr 70px;
+    align-items: center;
+    gap: 8px;
+  }
+  .color-row input[type="color"] {
+    width: 100%;
+    height: 30px;
+    border: 1px solid var(--panel-border);
+    background: var(--input-bg);
+    cursor: pointer;
+    border-radius: 0;
+    padding: 2px;
+  }
+  .color-hex {
+    font-family: monospace;
+    font-size: 11px;
+    color: var(--text);
+    background: var(--input-bg);
+    border: 1px solid var(--panel-border);
+    padding: 5px 8px;
+    width: 100%;
+    outline: none;
+    letter-spacing: 0.06em;
+  }
+  .color-hex:focus { border-color: var(--accent2); }
+
+  /* Slider row */
+  .slider-row {
+    display: grid;
+    grid-template-columns: 80px 1fr 40px;
+    align-items: center;
+    gap: 8px;
+  }
+  input[type="range"] {
+    width: 100%;
+    height: 4px;
+    accent-color: var(--accent);
+    cursor: pointer;
+    background: var(--panel-border);
+    border-radius: 0;
+    outline: none;
+  }
+  .slider-val {
+    font-family: monospace;
+    font-size: 11px;
+    color: var(--accent);
+    text-align: right;
+  }
+
+  /* Text input */
+  .text-input {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--panel-border);
+    color: var(--text);
+    font-size: 12px;
+    padding: 7px 10px;
+    outline: none;
+    font-family: system-ui, sans-serif;
+  }
+  .text-input:focus { border-color: var(--accent2); }
+  .input-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+  }
+
+  /* ── FOOTER BUTTONS ── */
+  #panel-footer {
+    padding: 12px 16px;
+    border-top: 1px solid var(--panel-border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-shrink: 0;
+    background: #0e0c07;
+  }
+  .btn-row { display: flex; gap: 8px; }
+  .btn {
+    flex: 1;
+    padding: 8px 12px;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    border: 2px solid;
+    outline: none;
+    transition: all 0.15s;
+  }
+  .btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #0A0704;
+  }
+  .btn-primary:hover { background: var(--accent2); border-color: var(--accent2); }
+  .btn-secondary {
+    background: transparent;
+    border-color: var(--accent2);
+    color: var(--accent);
+  }
+  .btn-secondary:hover { background: rgba(239,159,39,0.1); }
+  .btn-danger {
+    background: transparent;
+    border-color: #7f2d2d;
+    color: var(--red);
+  }
+  .btn-danger:hover { background: rgba(248,113,113,0.1); }
+
+  #status-msg {
+    font-size: 10px;
+    padding: 6px 10px;
+    text-align: center;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    border-radius: 0;
+    display: none;
+  }
+  #status-msg.success { background: rgba(74,222,128,0.15); color: var(--green); border: 1px solid rgba(74,222,128,0.3); }
+  #status-msg.error   { background: rgba(248,113,113,0.15); color: var(--red);   border: 1px solid rgba(248,113,113,0.3); }
+
+  /* ── RIGHT PREVIEW ── */
+  #preview-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  #preview-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    background: #0e0c07;
+    border-bottom: 1px solid var(--panel-border);
+    flex-shrink: 0;
+  }
+  #preview-bar span {
+    font-size: 10px;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+  }
+  #preview-url {
+    font-family: monospace;
+    font-size: 11px;
+    color: var(--accent);
+    flex: 1;
+  }
+  #refresh-btn {
+    background: transparent;
+    border: 1px solid var(--panel-border);
+    color: var(--text2);
+    cursor: pointer;
+    padding: 4px 10px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  #refresh-btn:hover { border-color: var(--accent2); color: var(--accent); }
+
+  #preview {
+    flex: 1;
+    border: none;
+    background: #0A0704;
+  }
+
+  /* Opacity slider helper */
+  .opacity-preview {
+    width: 16px;
+    height: 16px;
+    border: 1px solid var(--panel-border);
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- ── LEFT CONTROLS PANEL ── -->
+<div id="controls">
+  <div id="panel-header">
+    <h1>⚙ 設計控制面板</h1>
+    <p>即時調整前端樣式 · 儲存至 index.html</p>
+  </div>
+
+  <div id="panel-body">
+
+    <!-- SECTION: 主題色彩 -->
+    <div class="section">
+      <div class="section-header" onclick="toggleSection(this)">
+        <span>🎨 主題色彩</span>
+        <span class="arrow">▼</span>
+      </div>
+      <div class="section-body">
+        <!-- --bg -->
+        <div>
+          <div class="input-label">--bg 背景色</div>
+          <div class="color-row">
+            <input type="color" id="c-bg" value="#0A0704" oninput="onColorChange('--bg',this.value,'hex-bg')">
+            <input class="color-hex" id="hex-bg" value="#0A0704" oninput="onHexChange('--bg',this.value,'c-bg')" maxlength="7">
+          </div>
+        </div>
+        <!-- --or -->
+        <div>
+          <div class="input-label">--or 主強調色（橙金）</div>
+          <div class="color-row">
+            <input type="color" id="c-or" value="#EF9F27" oninput="onColorChange('--or',this.value,'hex-or')">
+            <input class="color-hex" id="hex-or" value="#EF9F27" oninput="onHexChange('--or',this.value,'c-or')" maxlength="7">
+          </div>
+        </div>
+        <!-- --or2 -->
+        <div>
+          <div class="input-label">--or2 次強調色（深橙）</div>
+          <div class="color-row">
+            <input type="color" id="c-or2" value="#BA7517" oninput="onColorChange('--or2',this.value,'hex-or2')">
+            <input class="color-hex" id="hex-or2" value="#BA7517" oninput="onHexChange('--or2',this.value,'c-or2')" maxlength="7">
+          </div>
+        </div>
+        <!-- --tx -->
+        <div>
+          <div class="input-label">--tx 主文字色</div>
+          <div class="color-row">
+            <input type="color" id="c-tx" value="#FFF8F0" oninput="onColorChange('--tx',this.value,'hex-tx')">
+            <input class="color-hex" id="hex-tx" value="#FFF8F0" oninput="onHexChange('--tx',this.value,'c-tx')" maxlength="7">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION: 文字透明度 -->
+    <div class="section">
+      <div class="section-header" onclick="toggleSection(this)">
+        <span>💧 文字透明度</span>
+        <span class="arrow">▼</span>
+      </div>
+      <div class="section-body">
+        <div>
+          <div class="input-label">--tx2 次要文字透明度</div>
+          <div class="slider-row">
+            <span class="field-label" style="min-width:auto;color:var(--text3);font-size:9px;">0 → 1.0</span>
+            <input type="range" id="s-tx2" min="0" max="100" value="78" oninput="onOpacityChange('--tx2',this.value,'v-tx2')">
+            <span class="slider-val" id="v-tx2">0.78</span>
+          </div>
+        </div>
+        <div>
+          <div class="input-label">--tx3 三級文字透明度</div>
+          <div class="slider-row">
+            <span class="field-label" style="min-width:auto;color:var(--text3);font-size:9px;">0 → 1.0</span>
+            <input type="range" id="s-tx3" min="0" max="100" value="52" oninput="onOpacityChange('--tx3',this.value,'v-tx3')">
+            <span class="slider-val" id="v-tx3">0.52</span>
+          </div>
+        </div>
+        <div>
+          <div class="input-label">--tx4 四級文字透明度</div>
+          <div class="slider-row">
+            <span class="field-label" style="min-width:auto;color:var(--text3);font-size:9px;">0 → 1.0</span>
+            <input type="range" id="s-tx4" min="0" max="100" value="25" oninput="onOpacityChange('--tx4',this.value,'v-tx4')">
+            <span class="slider-val" id="v-tx4">0.25</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION: 字體大小 -->
+    <div class="section">
+      <div class="section-header" onclick="toggleSection(this)">
+        <span>🔡 字體大小</span>
+        <span class="arrow">▼</span>
+      </div>
+      <div class="section-body">
+        <div>
+          <div class="input-label">Body 基礎字體</div>
+          <div class="slider-row">
+            <span class="field-label" style="min-width:auto;color:var(--text3);font-size:9px;">12 → 20px</span>
+            <input type="range" id="fs-body" min="12" max="20" value="15" oninput="onFontSizeChange('body',this.value,'fv-body')">
+            <span class="slider-val" id="fv-body">15px</span>
+          </div>
+        </div>
+        <div>
+          <div class="input-label">KPI 數值字體</div>
+          <div class="slider-row">
+            <span class="field-label" style="min-width:auto;color:var(--text3);font-size:9px;">20 → 48px</span>
+            <input type="range" id="fs-kpi" min="20" max="48" value="32" oninput="onFontSizeChange('kpi',this.value,'fv-kpi')">
+            <span class="slider-val" id="fv-kpi">32px</span>
+          </div>
+        </div>
+        <div>
+          <div class="input-label">表格儲存格字體</div>
+          <div class="slider-row">
+            <span class="field-label" style="min-width:auto;color:var(--text3);font-size:9px;">10 → 18px</span>
+            <input type="range" id="fs-td" min="10" max="18" value="14" oninput="onFontSizeChange('td',this.value,'fv-td')">
+            <span class="slider-val" id="fv-td">14px</span>
+          </div>
+        </div>
+        <div>
+          <div class="input-label">導覽列標籤字體</div>
+          <div class="slider-row">
+            <span class="field-label" style="min-width:auto;color:var(--text3);font-size:9px;">8 → 14px</span>
+            <input type="range" id="fs-nav" min="8" max="14" value="11" oninput="onFontSizeChange('nav',this.value,'fv-nav')">
+            <span class="slider-val" id="fv-nav">11px</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION: 品牌資訊 -->
+    <div class="section">
+      <div class="section-header" onclick="toggleSection(this)">
+        <span>🏰 品牌資訊</span>
+        <span class="arrow">▼</span>
+      </div>
+      <div class="section-body">
+        <div>
+          <div class="input-label">血盟名稱（左上角）</div>
+          <input type="text" class="text-input" id="brand-name" value="Bloodstone Legion" oninput="onBrandChange()">
+        </div>
+        <div>
+          <div class="input-label">副標題（品牌下方）</div>
+          <input type="text" class="text-input" id="brand-subtitle" value="Royal Command Center" oninput="onBrandChange()">
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION: 邊框/面板 -->
+    <div class="section">
+      <div class="section-header collapsed" onclick="toggleSection(this)">
+        <span>▦ 面板設定</span>
+        <span class="arrow">▼</span>
+      </div>
+      <div class="section-body hidden">
+        <div>
+          <div class="input-label">--bdr 邊框顏色</div>
+          <div class="color-row">
+            <input type="color" id="c-bdr" value="#2a1e08" oninput="onColorChange('--bdr',this.value,'hex-bdr')">
+            <input class="color-hex" id="hex-bdr" value="#2a1e08" oninput="onHexChange('--bdr',this.value,'c-bdr')" maxlength="7">
+          </div>
+        </div>
+        <div>
+          <div class="input-label">s1-panel 背景透明度</div>
+          <div class="slider-row">
+            <span class="field-label" style="min-width:auto;color:var(--text3);font-size:9px;">0 → 0.5</span>
+            <input type="range" id="s-panel-bg" min="0" max="50" value="8" oninput="onPanelBgChange(this.value,'v-panel-bg')">
+            <span class="slider-val" id="v-panel-bg">0.08</span>
+          </div>
+        </div>
+        <div>
+          <div class="input-label">圓角（0=銳角）</div>
+          <div class="slider-row">
+            <span class="field-label" style="min-width:auto;color:var(--text3);font-size:9px;">0 → 12px</span>
+            <input type="range" id="s-radius" min="0" max="12" value="0" oninput="onRadiusChange(this.value,'v-radius')">
+            <span class="slider-val" id="v-radius">0px</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION: 快速主題預設 -->
+    <div class="section">
+      <div class="section-header collapsed" onclick="toggleSection(this)">
+        <span>⚡ 快速主題預設</span>
+        <span class="arrow">▼</span>
+      </div>
+      <div class="section-body hidden">
+        <div class="btn-row" style="flex-wrap:wrap;gap:6px;">
+          <button class="btn btn-secondary" style="flex:none;font-size:9px;" onclick="applyPreset('forge')">🔥 Industrial Forge</button>
+          <button class="btn btn-secondary" style="flex:none;font-size:9px;" onclick="applyPreset('ice')">❄️ Arctic Ice</button>
+          <button class="btn btn-secondary" style="flex:none;font-size:9px;" onclick="applyPreset('crimson')">🩸 Crimson Dark</button>
+          <button class="btn btn-secondary" style="flex:none;font-size:9px;" onclick="applyPreset('emerald')">💚 Emerald Night</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /panel-body -->
+
+  <div id="panel-footer">
+    <div id="status-msg"></div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="applyAll()">▶ 即時套用</button>
+      <button class="btn btn-secondary" onclick="saveDesign()">💾 儲存至檔案</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="refreshPreview()">↺ 重新整理預覽</button>
+      <button class="btn btn-danger" onclick="resetAll()">✕ 重設預設值</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── RIGHT PREVIEW ── -->
+<div id="preview-wrap">
+  <div id="preview-bar">
+    <span>預覽</span>
+    <span id="preview-url">http://localhost:3001</span>
+    <button id="refresh-btn" onclick="refreshPreview()">↺ 重整</button>
+  </div>
+  <iframe id="preview" src="http://localhost:3001" title="前端預覽"></iframe>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────
+const DEFAULTS = {
+  '--bg': '#0A0704',
+  '--or': '#EF9F27',
+  '--or2': '#BA7517',
+  '--tx': '#FFF8F0',
+  '--bdr': '#2a1e08',
+};
+const current = { ...DEFAULTS };
+let tx2Opacity = 0.78, tx3Opacity = 0.52, tx4Opacity = 0.25;
+let fontBody = 15, fontKpi = 32, fontTd = 14, fontNav = 11;
+let panelBgOpacity = 0.08, radiusPx = 0;
+
+// ── Section Toggle ─────────────────────────────────
+function toggleSection(header) {
+  header.classList.toggle('collapsed');
+  header.nextElementSibling.classList.toggle('hidden');
+}
+
+// ── Color Controls ─────────────────────────────────
+function onColorChange(varName, hexVal, hexInputId) {
+  current[varName] = hexVal;
+  document.getElementById(hexInputId).value = hexVal;
+  applyVar(varName, hexVal);
+}
+function onHexChange(varName, hexVal, colorInputId) {
+  if (/^#[0-9a-fA-F]{6}$/.test(hexVal)) {
+    current[varName] = hexVal;
+    document.getElementById(colorInputId).value = hexVal;
+    applyVar(varName, hexVal);
+  }
+}
+
+// ── Opacity Controls ───────────────────────────────
+function onOpacityChange(varName, intVal, displayId) {
+  const op = (parseInt(intVal) / 100).toFixed(2);
+  document.getElementById(displayId).textContent = op;
+  const rgba = `rgba(255,248,240,${op})`;
+  if (varName === '--tx2') tx2Opacity = parseFloat(op);
+  if (varName === '--tx3') tx3Opacity = parseFloat(op);
+  if (varName === '--tx4') tx4Opacity = parseFloat(op);
+  applyVar(varName, rgba);
+}
+
+// ── Font Size Controls ─────────────────────────────
+function onFontSizeChange(which, val, displayId) {
+  document.getElementById(displayId).textContent = val + 'px';
+  const iframe = document.getElementById('preview');
+  try {
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    if (which === 'body') {
+      doc.body.style.fontSize = val + 'px';
+      fontBody = parseInt(val);
+    } else if (which === 'kpi') {
+      doc.querySelectorAll('.kpi-value').forEach(el => el.style.fontSize = val + 'px');
+      fontKpi = parseInt(val);
+    } else if (which === 'td') {
+      doc.querySelectorAll('td').forEach(el => el.style.fontSize = val + 'px');
+      fontTd = parseInt(val);
+    } else if (which === 'nav') {
+      doc.querySelectorAll('.nav-label').forEach(el => el.style.fontSize = val + 'px');
+      fontNav = parseInt(val);
+    }
+  } catch(e) { showStatus('無法存取 iframe（跨域限制）', 'error'); }
+}
+
+// ── Brand Controls ─────────────────────────────────
+function onBrandChange() {
+  const name = document.getElementById('brand-name').value;
+  const sub = document.getElementById('brand-subtitle').value;
+  try {
+    const doc = getIframeDoc();
+    // Find brand name element (18px bold orange div)
+    const brandEls = doc.querySelectorAll('[style*="font-size:18px"]');
+    brandEls.forEach(el => { if (el.style.fontWeight === '900' || el.style.fontWeight >= 700) el.textContent = name; });
+    // Find subtitle element
+    const subEls = doc.querySelectorAll('[style*="font-size:11px"]');
+    subEls.forEach(el => { if (el.textContent.includes('Royal') || el.textContent.includes('Command') || el.textContent.includes('Centre') || el.dataset.brandSub) el.textContent = sub; });
+  } catch(e) {}
+}
+
+// ── Panel Background ───────────────────────────────
+function onPanelBgChange(val, displayId) {
+  const op = (parseInt(val) / 100).toFixed(2);
+  document.getElementById(displayId).textContent = op;
+  panelBgOpacity = parseFloat(op);
+  try {
+    const doc = getIframeDoc();
+    const bgVal = `rgba(239,159,39,${op})`;
+    doc.querySelectorAll('.s1-panel').forEach(el => el.style.backgroundColor = bgVal);
+  } catch(e) {}
+}
+
+// ── Border Radius ──────────────────────────────────
+function onRadiusChange(val, displayId) {
+  document.getElementById(displayId).textContent = val + 'px';
+  radiusPx = parseInt(val);
+  try {
+    const doc = getIframeDoc();
+    doc.querySelectorAll('.s1-panel, .btn, .atelier-input, .kpi-card').forEach(el => {
+      el.style.borderRadius = val + 'px';
+    });
+  } catch(e) {}
+}
+
+// ── Apply a single CSS var to iframe ──────────────
+function applyVar(varName, value) {
+  try {
+    const doc = getIframeDoc();
+    doc.documentElement.style.setProperty(varName, value);
+  } catch(e) {
+    showStatus('⚠ 無法存取 iframe，請確認同源設定', 'error');
+  }
+}
+
+// ── Apply All ──────────────────────────────────────
+function applyAll() {
+  try {
+    const doc = getIframeDoc();
+    const root = doc.documentElement;
+    // Colors
+    for (const [k, v] of Object.entries(current)) root.style.setProperty(k, v);
+    // Opacity vars
+    root.style.setProperty('--tx2', `rgba(255,248,240,${tx2Opacity})`);
+    root.style.setProperty('--tx3', `rgba(255,248,240,${tx3Opacity})`);
+    root.style.setProperty('--tx4', `rgba(255,248,240,${tx4Opacity})`);
+    // Font sizes
+    doc.body.style.fontSize = fontBody + 'px';
+    doc.querySelectorAll('.kpi-value').forEach(el => el.style.fontSize = fontKpi + 'px');
+    doc.querySelectorAll('td').forEach(el => el.style.fontSize = fontTd + 'px');
+    doc.querySelectorAll('.nav-label').forEach(el => el.style.fontSize = fontNav + 'px');
+    showStatus('✓ 已即時套用至預覽', 'success');
+  } catch(e) {
+    showStatus('⚠ 套用失敗：' + e.message, 'error');
+  }
+}
+
+// ── Save to files ──────────────────────────────────
+async function saveDesign() {
+  const cssVars = { ...current };
+  cssVars['--tx2'] = `rgba(255,248,240,${tx2Opacity})`;
+  cssVars['--tx3'] = `rgba(255,248,240,${tx3Opacity})`;
+  cssVars['--tx4'] = `rgba(255,248,240,${tx4Opacity})`;
+
+  try {
+    const res = await fetch('/api/save-design', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        cssVars,
+        brandName: document.getElementById('brand-name').value,
+        brandSubtitle: document.getElementById('brand-subtitle').value,
+      })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      showStatus('💾 ' + data.message, 'success');
+    } else {
+      showStatus('✕ 儲存失敗：' + data.error, 'error');
+    }
+  } catch(e) {
+    showStatus('✕ 網路錯誤：' + e.message, 'error');
+  }
+}
+
+// ── Reset ──────────────────────────────────────────
+function resetAll() {
+  // Reset color pickers
+  setColorField('bg', '#0A0704');
+  setColorField('or', '#EF9F27');
+  setColorField('or2', '#BA7517');
+  setColorField('tx', '#FFF8F0');
+  setColorField('bdr', '#2a1e08');
+  // Reset opacities
+  document.getElementById('s-tx2').value = 78; onOpacityChange('--tx2', 78, 'v-tx2');
+  document.getElementById('s-tx3').value = 52; onOpacityChange('--tx3', 52, 'v-tx3');
+  document.getElementById('s-tx4').value = 25; onOpacityChange('--tx4', 25, 'v-tx4');
+  // Reset fonts
+  document.getElementById('fs-body').value = 15; onFontSizeChange('body', 15, 'fv-body');
+  document.getElementById('fs-kpi').value = 32; onFontSizeChange('kpi', 32, 'fv-kpi');
+  document.getElementById('fs-td').value = 14; onFontSizeChange('td', 14, 'fv-td');
+  document.getElementById('fs-nav').value = 11; onFontSizeChange('nav', 11, 'fv-nav');
+  applyAll();
+  showStatus('↺ 已重設為預設值', 'success');
+}
+
+function setColorField(id, hex) {
+  document.getElementById('c-' + id).value = hex;
+  document.getElementById('hex-' + id).value = hex;
+  current['--' + id] = hex;
+  applyVar('--' + id, hex);
+}
+
+// ── Quick Presets ──────────────────────────────────
+const PRESETS = {
+  forge: { '--bg':'#0A0704','--or':'#EF9F27','--or2':'#BA7517','--tx':'#FFF8F0' },
+  ice:   { '--bg':'#050A14','--or':'#60C8F5','--or2':'#2E8CB0','--tx':'#EAF6FF' },
+  crimson:{ '--bg':'#0D0305','--or':'#E5334A','--or2':'#9B1E2E','--tx':'#FFE8EA' },
+  emerald:{ '--bg':'#030D06','--or':'#3ECF6A','--or2':'#1E7A3A','--tx':'#E8FFF0' },
+};
+function applyPreset(name) {
+  const p = PRESETS[name];
+  if (!p) return;
+  for (const [k, v] of Object.entries(p)) {
+    const id = k.replace('--','');
+    if (document.getElementById('c-' + id)) setColorField(id, v);
+  }
+  applyAll();
+  showStatus('⚡ 已套用主題：' + name, 'success');
+}
+
+// ── Refresh Preview ────────────────────────────────
+function refreshPreview() {
+  document.getElementById('preview').src = 'http://localhost:3001?' + Date.now();
+}
+
+// ── Iframe Access ──────────────────────────────────
+function getIframeDoc() {
+  const iframe = document.getElementById('preview');
+  return iframe.contentDocument || iframe.contentWindow.document;
+}
+
+// ── Status Message ─────────────────────────────────
+let statusTimer;
+function showStatus(msg, type) {
+  const el = document.getElementById('status-msg');
+  el.textContent = msg;
+  el.className = type;
+  el.style.display = 'block';
+  clearTimeout(statusTimer);
+  statusTimer = setTimeout(() => { el.style.display = 'none'; }, 3000);
+}
+
+// ── On iframe load: read actual values ────────────
+document.getElementById('preview').addEventListener('load', () => {
+  try {
+    const doc = getIframeDoc();
+    const root = doc.documentElement;
+    const style = getComputedStyle(root);
+    // Read current CSS vars from loaded page
+    const bg = style.getPropertyValue('--bg').trim();
+    const or = style.getPropertyValue('--or').trim();
+    const or2 = style.getPropertyValue('--or2').trim();
+    const tx = style.getPropertyValue('--tx').trim();
+    if (bg) { current['--bg'] = bg; document.getElementById('c-bg').value = bg; document.getElementById('hex-bg').value = bg; }
+    if (or) { current['--or'] = or; document.getElementById('c-or').value = or; document.getElementById('hex-or').value = or; }
+    if (or2) { current['--or2'] = or2; document.getElementById('c-or2').value = or2; document.getElementById('hex-or2').value = or2; }
+    if (tx) { current['--tx'] = tx; document.getElementById('c-tx').value = tx; document.getElementById('hex-tx').value = tx; }
+
+    // Read brand name
+    const brandEl = doc.querySelector('[style*="font-size:18px"]');
+    if (brandEl) document.getElementById('brand-name').value = brandEl.textContent.trim();
+  } catch(e) { /* cross-origin if refreshed */ }
+});
+</script>
+</body>
+</html>

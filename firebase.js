@@ -6,10 +6,15 @@ const fs = require('fs');
 let db = null;
 
 function initializeFirebase() {
-    if (admin.apps.length > 0) return;
+    if (admin.apps.length > 0) { db = admin.firestore(); return; }
     try {
         const keyPath = path.join(__dirname, 'serviceAccountKey.json');
-        if (fs.existsSync(keyPath)) {
+        if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+            const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+            admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+            console.log('Firebase initialized using FIREBASE_SERVICE_ACCOUNT_JSON');
+            db = admin.firestore();
+        } else if (fs.existsSync(keyPath)) {
             const serviceAccount = require(keyPath);
             admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
             console.log('Firebase initialized using local serviceAccountKey.json');
@@ -25,7 +30,7 @@ function initializeFirebase() {
             console.log('Firebase initialized using environment variables');
             db = admin.firestore();
         } else {
-            console.error('❌ No Firebase credentials found. Running in degraded mode. Please set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY.');
+            console.error('No Firebase credentials found. Running in degraded mode.');
         }
     } catch (error) {
         console.error('Error initializing Firebase:', error.message);
@@ -34,6 +39,47 @@ function initializeFirebase() {
 
 initializeFirebase();
 
+// ── Collection name resolution (config-driven; legacy by default) ───────
+// COLLECTION_MODE=legacy (default) keeps the current PascalCase names so
+// nothing breaks. After running scripts/migrate-collections.js, switch to
+// COLLECTION_MODE=canonical to point the whole app at new lowercase
+// collections — zero code changes required.
+const COLLECTION_MAP = {
+    members:      { legacy: 'Members',      canonical: 'members' },
+    bossBattles:  { legacy: 'Battles',      canonical: 'bossBattles' },
+    sieges:       { legacy: 'Sieges',       canonical: 'sieges' },
+    alliances:    { legacy: 'Alliances',    canonical: 'alliances' },
+    treasury:     { legacy: 'Treasury',     canonical: 'treasury' },
+    transactions: { legacy: 'Transactions', canonical: 'transactions' },
+    activityLog:  { legacy: 'activityLog',  canonical: 'activityLog' },
+};
+
+// Normalise any historical spelling to a logical key.
+const ALIASES = {
+    Members: 'members', members: 'members',
+    Battles: 'bossBattles', battles: 'bossBattles', bossBattles: 'bossBattles', bossbattles: 'bossBattles',
+    Sieges: 'sieges', sieges: 'sieges',
+    Alliances: 'alliances', alliances: 'alliances',
+    Treasury: 'treasury', treasury: 'treasury',
+    Transactions: 'transactions', transactions: 'transactions',
+    activityLog: 'activityLog', activitylog: 'activityLog',
+};
+
+const MODE = String(process.env.COLLECTION_MODE || 'legacy').toLowerCase() === 'canonical'
+    ? 'canonical' : 'legacy';
+
+/** Resolve any logical/legacy collection name to its physical name for the active mode. */
+function resolveCollection(name) {
+    const logical = ALIASES[name] || name;
+    const entry = COLLECTION_MAP[logical];
+    return entry ? entry[MODE] : name; // unknown names pass through unchanged
+}
+
+/** Convenience map of resolved physical names, e.g. COL.members -> 'Members'. */
+const COL = Object.keys(COLLECTION_MAP).reduce((acc, k) => {
+    acc[k] = COLLECTION_MAP[k][MODE]; return acc;
+}, {});
+
 // ── Public API ─────────────────────────────────────────────────────────
 
 /** Returns whether the system is using Firestore or local JSON */
@@ -41,11 +87,16 @@ function getStorageMode() {
     return 'firebase';
 }
 
+/** Return the raw Firestore instance (or null in degraded mode). */
+function getDb() {
+    return db;
+}
+
 /** Get all documents from a collection */
 async function getAllData(collectionName) {
     try {
         if (!db) return [];
-        const snapshot = await db.collection(collectionName).get();
+        const snapshot = await db.collection(resolveCollection(collectionName)).get();
         if (snapshot.empty) return [];
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     } catch (error) {
@@ -54,11 +105,61 @@ async function getAllData(collectionName) {
     }
 }
 
+/**
+ * Query a collection with Firestore-side filtering, ordering and pagination.
+ * opts: { where:[[field,op,val]], orderBy:[[field,'asc'|'desc']], limit, offset, startAfter }
+ */
+async function queryCollection(collectionName, opts = {}) {
+    try {
+        if (!db) return [];
+        let ref = db.collection(resolveCollection(collectionName));
+        for (const w of (opts.where || [])) {
+            if (Array.isArray(w) && w.length === 3 && w[2] !== undefined && w[2] !== null && w[2] !== '') {
+                ref = ref.where(w[0], w[1], w[2]);
+            }
+        }
+        for (const o of (opts.orderBy || [])) {
+            ref = ref.orderBy(o[0], o[1] || 'asc');
+        }
+        if (opts.offset) ref = ref.offset(opts.offset);
+        if (opts.startAfter !== undefined && opts.startAfter !== null) ref = ref.startAfter(opts.startAfter);
+        if (opts.limit) ref = ref.limit(opts.limit);
+        const snapshot = await ref.get();
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+        console.error(`Firestore query error (${collectionName}):`, error.message);
+        return [];
+    }
+}
+
+/** Count documents matching optional where filters (uses count() aggregation). */
+async function countCollection(collectionName, opts = {}) {
+    try {
+        if (!db) return 0;
+        let ref = db.collection(resolveCollection(collectionName));
+        for (const w of (opts.where || [])) {
+            if (Array.isArray(w) && w.length === 3 && w[2] !== undefined && w[2] !== null && w[2] !== '') {
+                ref = ref.where(w[0], w[1], w[2]);
+            }
+        }
+        try {
+            const agg = await ref.count().get();
+            return agg.data().count;
+        } catch (e) {
+            const snap = await ref.get();
+            return snap.size;
+        }
+    } catch (error) {
+        console.error(`Firestore count error (${collectionName}):`, error.message);
+        return 0;
+    }
+}
+
 /** Get a specific document by ID */
 async function getDocument(collectionName, docId) {
     try {
         if (!db) return null;
-        const doc = await db.collection(collectionName).doc(String(docId)).get();
+        const doc = await db.collection(resolveCollection(collectionName)).doc(String(docId)).get();
         if (!doc.exists) return null;
         return { id: doc.id, ...doc.data() };
     } catch (error) {
@@ -71,12 +172,13 @@ async function getDocument(collectionName, docId) {
 async function addData(collectionName, data) {
     try {
         if (!db) return null;
+        const physical = resolveCollection(collectionName);
         let docRef;
         if (data.ID) {
-            docRef = db.collection(collectionName).doc(String(data.ID));
+            docRef = db.collection(physical).doc(String(data.ID));
             await docRef.set(data);
         } else {
-            docRef = await db.collection(collectionName).add(data);
+            docRef = await db.collection(physical).add(data);
             data.ID = docRef.id;
             await docRef.update({ ID: docRef.id });
         }
@@ -91,7 +193,7 @@ async function addData(collectionName, data) {
 async function updateData(collectionName, docId, data) {
     try {
         if (!db) return false;
-        await db.collection(collectionName).doc(String(docId)).update(data);
+        await db.collection(resolveCollection(collectionName)).doc(String(docId)).update(data);
         return true;
     } catch (error) {
         console.error(`Firestore updateData error:`, error.message);
@@ -103,7 +205,7 @@ async function updateData(collectionName, docId, data) {
 async function deleteData(collectionName, docId) {
     try {
         if (!db) return false;
-        await db.collection(collectionName).doc(String(docId)).delete();
+        await db.collection(resolveCollection(collectionName)).doc(String(docId)).delete();
         return true;
     } catch (error) {
         console.error(`Firestore deleteData error:`, error.message);
@@ -111,4 +213,18 @@ async function deleteData(collectionName, docId) {
     }
 }
 
-module.exports = { db, getAllData, getDocument, addData, updateData, deleteData, getStorageMode };
+module.exports = {
+    db,
+    getDb,
+    getAllData,
+    queryCollection,
+    countCollection,
+    getDocument,
+    addData,
+    updateData,
+    deleteData,
+    getStorageMode,
+    resolveCollection,
+    COL,
+    COLLECTION_MODE: MODE,
+};
