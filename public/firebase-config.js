@@ -14,14 +14,14 @@ const firebaseConfig = {
 
 // ── Initialize (compat mode for CDN usage) ───────
 firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
+const fbAuth = firebase.auth();
 const db   = firebase.firestore();
 
 // ── Firestore settings ────────────────────────────
 db.settings({ ignoreUndefinedProperties: true });
 
 // ── Export for use in other scripts ──────────────
-window._firebaseAuth = auth;
+window._firebaseAuth = fbAuth;
 window._firebaseDb   = db;
 
 console.log('[Firebase] ✅ Initialized — project:', firebaseConfig.projectId);
