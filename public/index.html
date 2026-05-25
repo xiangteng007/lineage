@@ -706,6 +706,80 @@
       .card-row, tbody tr, .feed-item { animation: none !important; }
       .nav-item.active .nav-icon { animation: none !important; }
     }
+
+    /* ════════════════════════════════════════════
+       Phase 5 — ROUND 4
+       Stronger contrast on table headers / panel
+       labels / placeholder cells + a one-shot amber
+       "running-light" sweep on every panel header.
+    ════════════════════════════════════════════ */
+
+    /* ── Panel section labels: bigger + primary amber ── */
+    .s1-panel-title {
+      font-size: 12px !important;
+      color: var(--or) !important;
+      letter-spacing: 0.14em !important;
+      font-family: 'Orbitron', 'Chakra Petch', 'Noto Sans TC', sans-serif !important;
+    }
+    .s1-panel-header {
+      padding: 10px 16px !important;
+      border-bottom: 1px solid rgba(186,117,23,0.45) !important;
+    }
+
+    /* ── Table headers: heavier + amber primary + glow ── */
+    thead th {
+      font-size: 13px !important;
+      letter-spacing: 0.10em !important;
+      color: var(--or) !important;
+      font-weight: 900 !important;
+      text-shadow: 0 0 8px rgba(239,159,39,0.35);
+      padding: 12px 12px !important;
+    }
+    tbody td {
+      font-size: 16px !important;
+      padding: 11px 12px !important;
+    }
+    /* "查無 X 紀錄" / "尚無 Y 紀錄" placeholder cells span all columns */
+    tbody tr td[colspan] {
+      font-family: 'Orbitron', 'Chakra Petch', 'Noto Sans TC', sans-serif !important;
+      font-size: 15px !important;
+      letter-spacing: 0.12em !important;
+      color: var(--tx2) !important;
+      opacity: 0.85;
+      text-align: center !important;
+      padding: 36px 16px !important;
+    }
+
+    /* ── Secondary text contrast bump (subtle, global) ── */
+    :root { --tx3: rgba(255,248,240,0.74); }
+
+    /* ── 流水燈 — running amber light on every panel header bottom edge ── */
+    .s1-panel-header { position: relative; overflow: hidden; }
+    .s1-panel-header::after {
+      content: '';
+      position: absolute;
+      left: -32%; bottom: 0;
+      width: 32%; height: 1px;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(239,159,39,0.85) 40%,
+        rgba(255,210,110,1) 50%,
+        rgba(239,159,39,0.85) 60%,
+        transparent 100%
+      );
+      filter: drop-shadow(0 0 6px rgba(239,159,39,0.95));
+      animation: linHeaderFlow 3.2s linear infinite;
+      pointer-events: none;
+      z-index: 1;
+    }
+    @keyframes linHeaderFlow {
+      0%   { left: -32%; }
+      100% { left: 100%; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .s1-panel-header::after { animation: none !important; opacity: 0; }
+    }
   </style>
 </head>
 <body>
