@@ -506,6 +506,92 @@
       .kpi-card { transition: none !important; }
       .top-nav-link.active-nav { animation: none !important; }
     }
+
+    /* ── Modals: backdrop blur + HUD corner brackets on panel ── */
+    [id$="Modal"] {
+      backdrop-filter: blur(3px);
+      -webkit-backdrop-filter: blur(3px);
+      animation: linModalFadeIn 0.2s ease;
+    }
+    [id$="Modal"] > div {
+      position: relative;
+      box-shadow: 0 20px 48px -8px rgba(0,0,0,0.75),
+                  0 0 0 1px rgba(239,159,39,0.18),
+                  0 0 32px -8px rgba(239,159,39,0.35);
+      animation: linModalScale 0.22s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    [id$="Modal"] > div::before {
+      content: ''; position: absolute; inset: -2px; pointer-events: none;
+      background:
+        linear-gradient(to right,  var(--or) 14px, transparent 14px) top    left  / 14px 1px no-repeat,
+        linear-gradient(to bottom, var(--or) 14px, transparent 14px) top    left  / 1px 14px no-repeat,
+        linear-gradient(to left,   var(--or) 14px, transparent 14px) top    right / 14px 1px no-repeat,
+        linear-gradient(to bottom, var(--or) 14px, transparent 14px) top    right / 1px 14px no-repeat,
+        linear-gradient(to right,  var(--or) 14px, transparent 14px) bottom left  / 14px 1px no-repeat,
+        linear-gradient(to top,    var(--or) 14px, transparent 14px) bottom left  / 1px 14px no-repeat,
+        linear-gradient(to left,   var(--or) 14px, transparent 14px) bottom right / 14px 1px no-repeat,
+        linear-gradient(to top,    var(--or) 14px, transparent 14px) bottom right / 1px 14px no-repeat;
+      filter: drop-shadow(0 0 4px rgba(239,159,39,0.55));
+    }
+    @keyframes linModalFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes linModalScale {
+      from { opacity: 0; transform: translateY(8px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0)   scale(1);    }
+    }
+
+    /* ── Empty state: HUD frame + Orbitron label ── */
+    .empty-state {
+      position: relative; padding: 36px 24px !important;
+      border: 1px dashed var(--bd);
+      background:
+        linear-gradient(to right,  var(--or2) 12px, transparent 12px) top    left  / 12px 1px no-repeat,
+        linear-gradient(to bottom, var(--or2) 12px, transparent 12px) top    left  / 1px 12px no-repeat,
+        linear-gradient(to left,   var(--or2) 12px, transparent 12px) top    right / 12px 1px no-repeat,
+        linear-gradient(to bottom, var(--or2) 12px, transparent 12px) top    right / 1px 12px no-repeat,
+        linear-gradient(to right,  var(--or2) 12px, transparent 12px) bottom left  / 12px 1px no-repeat,
+        linear-gradient(to top,    var(--or2) 12px, transparent 12px) bottom left  / 1px 12px no-repeat,
+        linear-gradient(to left,   var(--or2) 12px, transparent 12px) bottom right / 12px 1px no-repeat,
+        linear-gradient(to top,    var(--or2) 12px, transparent 12px) bottom right / 1px 12px no-repeat;
+      font-family: 'Orbitron', 'Chakra Petch', sans-serif;
+      letter-spacing: 0.12em;
+    }
+
+    /* ── Table head: sticky + amber underline ── */
+    thead th {
+      position: sticky; top: 0; z-index: 5;
+      background: var(--p2);
+      border-bottom: 1px solid var(--or2);
+      box-shadow: 0 1px 0 rgba(239,159,39,0.25);
+    }
+
+    /* ── LINE health indicator ── */
+    .lin-line-status {
+      display: flex; align-items: center; gap: 6px;
+      padding-left: 12px; margin-left: 4px;
+      border-left: 1px solid var(--bd);
+      font-family: 'Orbitron', 'Chakra Petch', sans-serif;
+    }
+    .lin-line-status .lin-line-label {
+      font-size: 10px; font-weight: 700; color: var(--tx2);
+      letter-spacing: 0.12em; text-transform: uppercase;
+    }
+    .lin-line-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: rgba(148,163,184,0.4);
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.04);
+      transition: background-color 0.25s, box-shadow 0.25s;
+    }
+    .lin-line-dot[data-state="ok"]      { background: #4ade80; box-shadow: 0 0 8px rgba(74,222,128,0.6),  0 0 0 2px rgba(74,222,128,0.12);  animation: linPulseOk   2.4s ease-in-out infinite; }
+    .lin-line-dot[data-state="warn"]    { background: #fbbf24; box-shadow: 0 0 8px rgba(251,191,36,0.6),  0 0 0 2px rgba(251,191,36,0.12); }
+    .lin-line-dot[data-state="down"]    { background: #f87171; box-shadow: 0 0 8px rgba(248,113,113,0.6), 0 0 0 2px rgba(248,113,113,0.12); }
+    .lin-line-dot[data-state="unknown"] { background: rgba(148,163,184,0.4); }
+    @keyframes linPulseOk {
+      0%, 100% { box-shadow: 0 0 6px  rgba(74,222,128,0.45), 0 0 0 2px rgba(74,222,128,0.10); }
+      50%      { box-shadow: 0 0 14px rgba(74,222,128,0.75), 0 0 0 3px rgba(74,222,128,0.18); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .lin-line-dot[data-state="ok"] { animation: none !important; }
+    }
   </style>
 </head>
 <body>
@@ -523,6 +609,11 @@
     <div>
       <div style="font-size:18px;font-weight:900;color:var(--or);text-transform:uppercase;letter-spacing:0.05em;">Overnight Shuttle</div>
       <div style="font-size:11px;color:var(--tx2);text-transform:uppercase;letter-spacing:0.12em;"></div>
+    </div>
+    <!-- Phase 5: LINE channel health indicator -->
+    <div id="linLineStatus" class="lin-line-status hidden-mobile" title="LINE 狀態：偵測中..." aria-label="LINE channel status">
+      <span class="lin-line-dot" data-state="unknown"></span>
+      <span class="lin-line-label">LINE</span>
     </div>
   </div>
   <!-- Top Nav — flex:1 so it fills remaining space and distributes evenly -->
@@ -1912,6 +2003,48 @@ async function saveAttendance() {
     }
   } catch { showToast('❌ 網路錯誤', 'error'); }
 }
+</script>
+
+<!-- ═══ Phase 5 — LINE channel health indicator (IIFE, no globals) ═══ -->
+<script>
+(function () {
+  'use strict';
+  var REFRESH_MS = 5 * 60 * 1000; // 5 minutes
+  function update(state, tip) {
+    var root = document.getElementById('linLineStatus');
+    if (!root) return;
+    var dot = root.querySelector('.lin-line-dot');
+    if (dot) dot.setAttribute('data-state', state);
+    root.title = 'LINE 狀態：' + tip;
+  }
+  async function refresh() {
+    try {
+      var r = await fetch('/api/line/status', { cache: 'no-store' });
+      if (!r.ok) { update('down', 'API 回應錯誤 (' + r.status + ')'); return; }
+      var s = await r.json();
+      var on = 0; var total = 3;
+      if (s.channelSecretConfigured)      on++;
+      if (s.channelAccessTokenConfigured) on++;
+      if (s.liffConfigured)               on++;
+      var tip =
+        '\nSecret: '   + (s.channelSecretConfigured      ? '✓' : '✗') +
+        '\nToken: '    + (s.channelAccessTokenConfigured ? '✓' : '✗') +
+        '\nLIFF: '     + (s.liffConfigured               ? '✓' : '✗') +
+        '\nWebhook: '  + (s.webhookPath || '/webhook/line');
+      if (on === total)      update('ok',   '全部設定完成' + tip);
+      else if (on === 0)     update('down', '未設定任何 LINE 憑證' + tip);
+      else                   update('warn', on + ' / ' + total + ' 已設定' + tip);
+    } catch (e) {
+      update('down', '無法連線 (' + (e && e.message || 'unknown') + ')');
+    }
+  }
+  function start() { refresh(); setInterval(refresh, REFRESH_MS); }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start);
+  } else {
+    start();
+  }
+})();
 </script>
 
 <!-- ═══ Phase 5 — KPI count-up animator (IIFE, no globals) ═══ -->
