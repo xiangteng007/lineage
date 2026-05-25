@@ -1370,6 +1370,7 @@ app.delete('/api/battles/:id/drops/:dropId', requireRole(3), async (req, res) =>
 require('./lib/routes-extra')(app, firebase, agg, httpx);
 require('./lib/routes-sprint-bcd')(app, firebase, agg, httpx);
 require('./lib/routes-auth')(app, firebase, agg);
+require('./lib/routes-liff')(app, firebase);
 
 // ── Serve frontend ───────────────────────────────
 app.get('*', (req, res) => {
