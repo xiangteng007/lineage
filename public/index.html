@@ -1428,6 +1428,156 @@
       [id$="Modal"] button[onclick*="Modal"]:hover { transform: none !important; }
       .profile-char-card { transition: none !important; }
     }
+
+    /* ════════════════════════════════════════════
+       Phase 5 — ROUND 9
+       Settle wizard stepper drama, EXECUTE button
+       pulse, admin-roles 5-tier colour stripes,
+       .lin-signal-lost overlay utility, mobile-nav
+       LED indicator. Chart.js defaults via IIFE at
+       end of body.
+    ════════════════════════════════════════════ */
+
+    /* ── A. Settle wizard stepper ── */
+    #settleStepper {
+      position: relative;
+      padding: 0 8px;
+    }
+    #settleStepper::before {
+      content: '';
+      position: absolute;
+      left: 12%; right: 12%;
+      bottom: 0; height: 1px;
+      background: var(--bd);
+      pointer-events: none;
+    }
+    #settleStepper > div {
+      position: relative;
+      font-family: 'Orbitron', 'Chakra Petch', sans-serif !important;
+      padding: 8px 4px !important;
+      font-size: 11px !important;
+      letter-spacing: 0.10em !important;
+      transition: color 0.18s, transform 0.18s, text-shadow 0.18s;
+    }
+    /* Inactive pill (border-bottom uses var(--bd)) */
+    #settleStepper > div[style*="border-bottom:2px solid var(--bd)"] {
+      opacity: 0.55;
+    }
+    /* Active pill (border-bottom uses var(--or)) */
+    #settleStepper > div[style*="border-bottom:2px solid var(--or)"] {
+      transform: translateY(-1px);
+      text-shadow: 0 0 10px rgba(239,159,39,0.55);
+    }
+    #settleStepper > div[style*="border-bottom:2px solid var(--or)"]::after {
+      content: '';
+      position: absolute;
+      left: 18%; right: 18%; bottom: -2px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--or), transparent);
+      filter: drop-shadow(0 0 6px var(--or));
+      animation: linStepActive 2.4s ease-in-out infinite;
+    }
+    @keyframes linStepActive {
+      0%, 100% { transform: scaleX(0.85); opacity: 0.7; }
+      50%      { transform: scaleX(1.10); opacity: 1; }
+    }
+
+    /* ── B. EXECUTE button drama ── */
+    #settleExecBtn {
+      letter-spacing: 0.18em !important;
+      font-weight: 900 !important;
+      animation: linExecPulse 1.6s ease-in-out infinite;
+    }
+    @keyframes linExecPulse {
+      0%, 100% { box-shadow: 0 0 0 0   rgba(239,159,39,0); }
+      50%      { box-shadow: 0 0 0 4px rgba(239,159,39,0.22), 0 0 28px rgba(239,159,39,0.42); }
+    }
+
+    /* ── C. Admin-roles 5-tier colour stripes (inset side rail per level) ── */
+    [id^="roleName_5"], [id^="roleNameEn_5"]   { box-shadow: inset 3px 0 0 #FFD700, 0 0 12px rgba(255,215,0,0.22)  !important; }
+    [id^="roleName_4"], [id^="roleNameEn_4"]   { box-shadow: inset 3px 0 0 #EF9F27, 0 0 12px rgba(239,159,39,0.22) !important; }
+    [id^="roleName_3"], [id^="roleNameEn_3"]   { box-shadow: inset 3px 0 0 #C68B2F, 0 0 10px rgba(198,139,47,0.20) !important; }
+    [id^="roleName_2"], [id^="roleNameEn_2"]   { box-shadow: inset 3px 0 0 #8B7355, 0 0 10px rgba(139,115,85,0.18) !important; }
+    [id^="roleName_1"], [id^="roleNameEn_1"]   { box-shadow: inset 3px 0 0 #6B6B6B, 0 0  8px rgba(107,107,107,0.15) !important; }
+    /* Module permission select rows */
+    [id^="perm_treasury"], [id^="perm_settings"] { border-left: 2px solid rgba(239,159,39,0.5) !important; }
+
+    /* ── D. .lin-signal-lost overlay utility (opt-in via JS class) ── */
+    .lin-signal-lost {
+      position: fixed;
+      inset: 0;
+      z-index: 9000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      background:
+        repeating-linear-gradient(0deg,
+          rgba(0,0,0,0.88) 0,
+          rgba(0,0,0,0.88) 2px,
+          rgba(239,159,39,0.04) 3px,
+          rgba(0,0,0,0.88) 5px);
+      pointer-events: all;
+      animation: linSignalFlicker 0.4s steps(2) infinite;
+    }
+    .lin-signal-lost::before {
+      content: '◇ SIGNAL LOST ◇';
+      font-family: 'Orbitron', sans-serif;
+      font-size: 36px;
+      font-weight: 900;
+      letter-spacing: 0.22em;
+      color: #f87171;
+      text-shadow:
+        0 0 16px rgba(248,113,113,0.75),
+        2px 0 0 rgba(255,255,255,0.32),
+        -2px 0 0 rgba(248,113,113,0.55);
+      animation: linSignalGlitch 0.5s steps(8) infinite;
+    }
+    .lin-signal-lost::after {
+      content: 'AUTH_HANDSHAKE_TIMEOUT · RETRYING';
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      color: rgba(248,113,113,0.78);
+    }
+    @keyframes linSignalFlicker {
+      0%, 100% { opacity: 1; }
+      50%      { opacity: 0.93; }
+    }
+    @keyframes linSignalGlitch {
+      0%, 100% { transform: translate(0,0); }
+      20%      { transform: translate(-2px, 1px); }
+      40%      { transform: translate(2px, -1px); }
+      60%      { transform: translate(-1px, 0); }
+      80%      { transform: translate(1px, 1px); }
+    }
+
+    /* ── E. Mobile bottom nav: LED indicator over active button ── */
+    .mobile-bottom-nav .mnav-btn { position: relative; }
+    .mobile-bottom-nav .mnav-btn.active::before {
+      content: '';
+      position: absolute;
+      top: -4px; left: 50%;
+      transform: translateX(-50%);
+      width: 28px; height: 2px;
+      background: var(--or);
+      box-shadow: 0 0 8px var(--or);
+      animation: linMnavLED 2s ease-in-out infinite;
+    }
+    @keyframes linMnavLED {
+      0%, 100% { opacity: 0.85; width: 24px; }
+      50%      { opacity: 1;    width: 32px; }
+    }
+
+    /* ── F. Reduced motion ── */
+    @media (prefers-reduced-motion: reduce) {
+      #settleStepper > div[style*="border-bottom:2px solid var(--or)"]::after { animation: none !important; }
+      #settleExecBtn { animation: none !important; }
+      .lin-signal-lost { animation: none !important; }
+      .lin-signal-lost::before { animation: none !important; }
+      .mobile-bottom-nav .mnav-btn.active::before { animation: none !important; }
+    }
   </style>
 </head>
 <body>
@@ -2956,6 +3106,61 @@ async function saveAttendance() {
   }
   // Re-scan in case sections render KPI-class nodes later.
   setInterval(scanAndWatch, 3000);
+})();
+</script>
+
+<!-- ═══ Phase 5 — Chart.js global defaults (IIFE, no globals) ═══ -->
+<script>
+(function () {
+  'use strict';
+  if (typeof Chart === 'undefined') return;
+  // ── Typography & base colour ─────────────────────────────────
+  Chart.defaults.color = 'rgba(255, 248, 240, 0.74)';
+  Chart.defaults.font = Chart.defaults.font || {};
+  Chart.defaults.font.family = "'Chakra Petch', 'JetBrains Mono', 'Noto Sans TC', sans-serif";
+  Chart.defaults.font.size = 12;
+  Chart.defaults.borderColor = 'rgba(186, 117, 23, 0.30)';
+  // ── Plugins: legend & tooltip (HUD style) ────────────────────
+  Chart.defaults.plugins = Chart.defaults.plugins || {};
+  Chart.defaults.plugins.legend = Object.assign({}, Chart.defaults.plugins.legend || {}, {
+    labels: Object.assign({}, ((Chart.defaults.plugins.legend || {}).labels) || {}, {
+      color: 'rgba(255, 248, 240, 0.74)',
+      font: { family: "'Orbitron', sans-serif", size: 11, weight: '700' },
+      boxWidth: 12,
+      padding: 12,
+    }),
+  });
+  Chart.defaults.plugins.tooltip = Object.assign({}, Chart.defaults.plugins.tooltip || {}, {
+    backgroundColor: 'rgba(13, 10, 4, 0.96)',
+    borderColor: 'rgba(239, 159, 39, 0.50)',
+    borderWidth: 1,
+    cornerRadius: 0,
+    padding: 10,
+    titleColor: '#EF9F27',
+    titleFont: { family: "'Orbitron', sans-serif", size: 11, weight: '700' },
+    titleSpacing: 4,
+    bodyColor: '#FFF8F0',
+    bodyFont: { family: "'JetBrains Mono', monospace", size: 12 },
+    bodySpacing: 4,
+    boxPadding: 4,
+    caretSize: 5,
+  });
+  // ── Scale (axes) — Chart.js v4 keeps defaults under scales.<type> ─
+  if (Chart.defaults.scales) {
+    ['linear', 'category', 'time', 'logarithmic', 'radialLinear'].forEach(function (type) {
+      var scaleDef = Chart.defaults.scales[type];
+      if (!scaleDef) return;
+      scaleDef.grid = Object.assign({}, scaleDef.grid || {}, {
+        color: 'rgba(239, 159, 39, 0.08)',
+        borderColor: 'rgba(186, 117, 23, 0.35)',
+        tickColor: 'rgba(186, 117, 23, 0.35)',
+      });
+      scaleDef.ticks = Object.assign({}, scaleDef.ticks || {}, {
+        color: 'rgba(255, 248, 240, 0.60)',
+        font: { family: "'JetBrains Mono', monospace", size: 11 },
+      });
+    });
+  }
 })();
 </script>
 </body>
