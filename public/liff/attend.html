@@ -297,7 +297,7 @@
         const res = await fetch('/api/liff/attend', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ lineUserId, recordId, type: recordType })
+          body: JSON.stringify({ accessToken: liff.getAccessToken(), recordId, type: recordType })
 });
         const data = await res.json();
 

@@ -22,6 +22,9 @@
   </style>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Noto+Serif+TC:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+  <!-- Phase 5: Industrial HUD font stack -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Chakra+Petch:wght@400;600;700&family=JetBrains+Mono:wght@400;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet"/>
   <style>
     /* ══════════════════════════════════════════════
        S1 INDUSTRIAL FORGE — Plan E × V2 × S1
@@ -402,6 +405,193 @@
       transform: scale(1.1);
       transition: transform 0.15s, color 0.15s, text-shadow 0.15s;
     }
+
+    /* ════════════════════════════════════════════
+       Phase 5 — HUD ENHANCEMENT
+       Industrial Forge polish: typography stack,
+       L-corner brackets, hover glow, scanline pulse,
+       section reveal. Additive only — does not
+       override existing rules.
+    ════════════════════════════════════════════ */
+
+    /* ── Typography stack ── */
+    body {
+      font-family: 'Chakra Petch', 'Rajdhani', 'Noto Sans TC', 'Noto Serif TC', system-ui, sans-serif;
+    }
+    .sec-title, .sidebar-brand-text, .nav-item .nav-label,
+    .kpi-label, .kpi-sub, .s1-panel-title,
+    .top-nav-link, .sec-sub {
+      font-family: 'Orbitron', 'Chakra Petch', 'Noto Sans TC', sans-serif;
+    }
+    .kpi-value, #sysClockDisplay, .att-pill, .tier-badge {
+      font-family: 'JetBrains Mono', 'Share Tech Mono', monospace;
+      font-feature-settings: 'tnum' 1, 'lnum' 1;
+    }
+    .sec-title { letter-spacing: 0.04em; text-shadow: 0 0 14px rgba(239,159,39,0.35); }
+
+    /* ── Scanline pulse — animate the existing overlay ── */
+    body::before { animation: scanPulse 4.5s ease-in-out infinite; }
+
+    /* ── HUD L-corner brackets on KPI cards ── */
+    .kpi-card { position: relative; overflow: visible; transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s; }
+    .kpi-card::before {
+      content: ''; position: absolute; inset: -2px; pointer-events: none;
+      background:
+        linear-gradient(to right,  var(--or) 9px, transparent 9px) top    left  / 9px 1px no-repeat,
+        linear-gradient(to bottom, var(--or) 9px, transparent 9px) top    left  / 1px 9px no-repeat,
+        linear-gradient(to left,   var(--or) 9px, transparent 9px) top    right / 9px 1px no-repeat,
+        linear-gradient(to bottom, var(--or) 9px, transparent 9px) top    right / 1px 9px no-repeat,
+        linear-gradient(to right,  var(--or) 9px, transparent 9px) bottom left  / 9px 1px no-repeat,
+        linear-gradient(to top,    var(--or) 9px, transparent 9px) bottom left  / 1px 9px no-repeat,
+        linear-gradient(to left,   var(--or) 9px, transparent 9px) bottom right / 9px 1px no-repeat,
+        linear-gradient(to top,    var(--or) 9px, transparent 9px) bottom right / 1px 9px no-repeat;
+      opacity: 0.55;
+      transition: opacity 0.22s ease, filter 0.22s ease;
+    }
+    .kpi-card:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 0 0 1px rgba(239,159,39,0.22),
+                  0 0 24px -4px rgba(239,159,39,0.45),
+                  inset 0 0 12px rgba(239,159,39,0.04);
+      border-color: var(--bd2);
+    }
+    .kpi-card:hover::before { opacity: 1; filter: drop-shadow(0 0 5px rgba(239,159,39,0.65)); }
+
+    /* ── Panels: gentle hover glow ── */
+    .s1-panel { transition: box-shadow 0.22s ease, border-color 0.22s ease; }
+    .s1-panel:hover {
+      box-shadow: 0 0 0 1px rgba(239,159,39,0.18),
+                  0 8px 32px -12px rgba(239,159,39,0.35);
+    }
+
+    /* ── Card rows: subtle glow on hover ── */
+    .card-row:hover {
+      box-shadow: inset 2px 0 0 var(--or), 0 0 16px -6px rgba(239,159,39,0.35);
+    }
+
+    /* ── Buttons: hover glow (keeps existing border-color/background) ── */
+    .btn:hover, .btn-primary:hover, .btn-outline:hover {
+      box-shadow: 0 0 12px rgba(239,159,39,0.25), inset 0 0 6px rgba(239,159,39,0.05);
+    }
+    .btn-danger:hover { box-shadow: 0 0 12px rgba(248,113,113,0.25); }
+    .btn-success:hover { box-shadow: 0 0 12px rgba(74,222,128,0.25); }
+
+    /* ── Nav items: active marker pulse ── */
+    .nav-item.active { box-shadow: inset 0 0 18px -4px rgba(239,159,39,0.25); }
+
+    /* ── Section reveal: slight slide + fade ── */
+    .section.active { animation: fadeIn 0.45s cubic-bezier(0.16, 1, 0.3, 1); }
+
+    /* ── Tier-badge & feed-item hover — soft glow ── */
+    .feed-item:hover { box-shadow: inset 2px 0 0 var(--or); }
+
+    /* ── Top header: ambient bottom underline glow ── */
+    header::after {
+      content: ''; position: absolute; left: 0; right: 0; bottom: -2px; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(239,159,39,0.55), transparent);
+      pointer-events: none; opacity: 0.8;
+    }
+
+    /* ── KPI value: subtle blink cursor after the number (purely decorative) ── */
+    @keyframes hudCaret { 0%, 60% { opacity: 1; } 70%, 100% { opacity: 0; } }
+
+    /* ── Class-Distribution & similar pills hover ── */
+    .tier-badge { transition: filter 0.18s ease; }
+    .tier-badge:hover { filter: brightness(1.25); }
+
+    /* Reduced-motion: respect user preferences */
+    @media (prefers-reduced-motion: reduce) {
+      body::before { animation: none !important; }
+      .section.active { animation: none !important; }
+      .kpi-card { transition: none !important; }
+      .top-nav-link.active-nav { animation: none !important; }
+    }
+
+    /* ── Modals: backdrop blur + HUD corner brackets on panel ── */
+    [id$="Modal"] {
+      backdrop-filter: blur(3px);
+      -webkit-backdrop-filter: blur(3px);
+      animation: linModalFadeIn 0.2s ease;
+    }
+    [id$="Modal"] > div {
+      position: relative;
+      box-shadow: 0 20px 48px -8px rgba(0,0,0,0.75),
+                  0 0 0 1px rgba(239,159,39,0.18),
+                  0 0 32px -8px rgba(239,159,39,0.35);
+      animation: linModalScale 0.22s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    [id$="Modal"] > div::before {
+      content: ''; position: absolute; inset: -2px; pointer-events: none;
+      background:
+        linear-gradient(to right,  var(--or) 14px, transparent 14px) top    left  / 14px 1px no-repeat,
+        linear-gradient(to bottom, var(--or) 14px, transparent 14px) top    left  / 1px 14px no-repeat,
+        linear-gradient(to left,   var(--or) 14px, transparent 14px) top    right / 14px 1px no-repeat,
+        linear-gradient(to bottom, var(--or) 14px, transparent 14px) top    right / 1px 14px no-repeat,
+        linear-gradient(to right,  var(--or) 14px, transparent 14px) bottom left  / 14px 1px no-repeat,
+        linear-gradient(to top,    var(--or) 14px, transparent 14px) bottom left  / 1px 14px no-repeat,
+        linear-gradient(to left,   var(--or) 14px, transparent 14px) bottom right / 14px 1px no-repeat,
+        linear-gradient(to top,    var(--or) 14px, transparent 14px) bottom right / 1px 14px no-repeat;
+      filter: drop-shadow(0 0 4px rgba(239,159,39,0.55));
+    }
+    @keyframes linModalFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes linModalScale {
+      from { opacity: 0; transform: translateY(8px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0)   scale(1);    }
+    }
+
+    /* ── Empty state: HUD frame + Orbitron label ── */
+    .empty-state {
+      position: relative; padding: 36px 24px !important;
+      border: 1px dashed var(--bd);
+      background:
+        linear-gradient(to right,  var(--or2) 12px, transparent 12px) top    left  / 12px 1px no-repeat,
+        linear-gradient(to bottom, var(--or2) 12px, transparent 12px) top    left  / 1px 12px no-repeat,
+        linear-gradient(to left,   var(--or2) 12px, transparent 12px) top    right / 12px 1px no-repeat,
+        linear-gradient(to bottom, var(--or2) 12px, transparent 12px) top    right / 1px 12px no-repeat,
+        linear-gradient(to right,  var(--or2) 12px, transparent 12px) bottom left  / 12px 1px no-repeat,
+        linear-gradient(to top,    var(--or2) 12px, transparent 12px) bottom left  / 1px 12px no-repeat,
+        linear-gradient(to left,   var(--or2) 12px, transparent 12px) bottom right / 12px 1px no-repeat,
+        linear-gradient(to top,    var(--or2) 12px, transparent 12px) bottom right / 1px 12px no-repeat;
+      font-family: 'Orbitron', 'Chakra Petch', sans-serif;
+      letter-spacing: 0.12em;
+    }
+
+    /* ── Table head: sticky + amber underline ── */
+    thead th {
+      position: sticky; top: 0; z-index: 5;
+      background: var(--p2);
+      border-bottom: 1px solid var(--or2);
+      box-shadow: 0 1px 0 rgba(239,159,39,0.25);
+    }
+
+    /* ── LINE health indicator ── */
+    .lin-line-status {
+      display: flex; align-items: center; gap: 6px;
+      padding-left: 12px; margin-left: 4px;
+      border-left: 1px solid var(--bd);
+      font-family: 'Orbitron', 'Chakra Petch', sans-serif;
+    }
+    .lin-line-status .lin-line-label {
+      font-size: 10px; font-weight: 700; color: var(--tx2);
+      letter-spacing: 0.12em; text-transform: uppercase;
+    }
+    .lin-line-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: rgba(148,163,184,0.4);
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.04);
+      transition: background-color 0.25s, box-shadow 0.25s;
+    }
+    .lin-line-dot[data-state="ok"]      { background: #4ade80; box-shadow: 0 0 8px rgba(74,222,128,0.6),  0 0 0 2px rgba(74,222,128,0.12);  animation: linPulseOk   2.4s ease-in-out infinite; }
+    .lin-line-dot[data-state="warn"]    { background: #fbbf24; box-shadow: 0 0 8px rgba(251,191,36,0.6),  0 0 0 2px rgba(251,191,36,0.12); }
+    .lin-line-dot[data-state="down"]    { background: #f87171; box-shadow: 0 0 8px rgba(248,113,113,0.6), 0 0 0 2px rgba(248,113,113,0.12); }
+    .lin-line-dot[data-state="unknown"] { background: rgba(148,163,184,0.4); }
+    @keyframes linPulseOk {
+      0%, 100% { box-shadow: 0 0 6px  rgba(74,222,128,0.45), 0 0 0 2px rgba(74,222,128,0.10); }
+      50%      { box-shadow: 0 0 14px rgba(74,222,128,0.75), 0 0 0 3px rgba(74,222,128,0.18); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .lin-line-dot[data-state="ok"] { animation: none !important; }
+    }
   </style>
 </head>
 <body>
@@ -419,6 +609,11 @@
     <div>
       <div style="font-size:18px;font-weight:900;color:var(--or);text-transform:uppercase;letter-spacing:0.05em;">Overnight Shuttle</div>
       <div style="font-size:11px;color:var(--tx2);text-transform:uppercase;letter-spacing:0.12em;"></div>
+    </div>
+    <!-- Phase 5: LINE channel health indicator -->
+    <div id="linLineStatus" class="lin-line-status hidden-mobile" title="LINE 狀態：偵測中..." aria-label="LINE channel status">
+      <span class="lin-line-dot" data-state="unknown"></span>
+      <span class="lin-line-label">LINE</span>
     </div>
   </div>
   <!-- Top Nav — flex:1 so it fills remaining space and distributes evenly -->
@@ -1808,6 +2003,124 @@ async function saveAttendance() {
     }
   } catch { showToast('❌ 網路錯誤', 'error'); }
 }
+</script>
+
+<!-- ═══ Phase 5 — LINE channel health indicator (IIFE, no globals) ═══ -->
+<script>
+(function () {
+  'use strict';
+  var REFRESH_MS = 5 * 60 * 1000; // 5 minutes
+  function update(state, tip) {
+    var root = document.getElementById('linLineStatus');
+    if (!root) return;
+    var dot = root.querySelector('.lin-line-dot');
+    if (dot) dot.setAttribute('data-state', state);
+    root.title = 'LINE 狀態：' + tip;
+  }
+  async function refresh() {
+    try {
+      var r = await fetch('/api/line/status', { cache: 'no-store' });
+      if (!r.ok) { update('down', 'API 回應錯誤 (' + r.status + ')'); return; }
+      var s = await r.json();
+      var on = 0; var total = 3;
+      if (s.channelSecretConfigured)      on++;
+      if (s.channelAccessTokenConfigured) on++;
+      if (s.liffConfigured)               on++;
+      var tip =
+        '\nSecret: '   + (s.channelSecretConfigured      ? '✓' : '✗') +
+        '\nToken: '    + (s.channelAccessTokenConfigured ? '✓' : '✗') +
+        '\nLIFF: '     + (s.liffConfigured               ? '✓' : '✗') +
+        '\nWebhook: '  + (s.webhookPath || '/webhook/line');
+      if (on === total)      update('ok',   '全部設定完成' + tip);
+      else if (on === 0)     update('down', '未設定任何 LINE 憑證' + tip);
+      else                   update('warn', on + ' / ' + total + ' 已設定' + tip);
+    } catch (e) {
+      update('down', '無法連線 (' + (e && e.message || 'unknown') + ')');
+    }
+  }
+  function start() { refresh(); setInterval(refresh, REFRESH_MS); }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start);
+  } else {
+    start();
+  }
+})();
+</script>
+
+<!-- ═══ Phase 5 — KPI count-up animator (IIFE, no globals) ═══ -->
+<script>
+(function () {
+  'use strict';
+  var SELECTOR = '.kpi-value';
+  var DURATION = 720;            // ms
+  var STAGE_KEY = '__linCUWatched';
+  function parseNum(text) {
+    if (text == null) return null;
+    var s = String(text).trim();
+    if (!s || s === '—' || s === '-') return null;
+    var clean = s.replace(/[,\s]/g, '').replace(/%$/, '');
+    if (!/^-?\d+(\.\d+)?$/.test(clean)) return null;
+    return parseFloat(clean);
+  }
+  function formatLike(value, template) {
+    var hasComma = template.indexOf(',') !== -1;
+    var hasPercent = /%$/.test(template);
+    var decimals = 0;
+    var stripped = template.replace(/%$/, '');
+    var dotIdx = stripped.indexOf('.');
+    if (dotIdx !== -1) decimals = (stripped.length - dotIdx - 1);
+    var fixed = value.toFixed(decimals);
+    if (hasComma) {
+      fixed = Number(fixed).toLocaleString(undefined, {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+      });
+    }
+    return fixed + (hasPercent ? '%' : '');
+  }
+  function watch(el) {
+    if (el[STAGE_KEY]) return;
+    el[STAGE_KEY] = true;
+    var last = el.textContent;
+    var obs = new MutationObserver(function () {
+      var next = el.textContent;
+      if (next === last) return;
+      var fromNum = parseNum(last);
+      var toNum = parseNum(next);
+      var finalText = next;
+      last = next;
+      if (fromNum === null || toNum === null || fromNum === toNum) return;
+      obs.disconnect();
+      var start = performance.now();
+      function step(now) {
+        var p = Math.min(1, (now - start) / DURATION);
+        var eased = 1 - Math.pow(1 - p, 3); // easeOutCubic
+        var v = fromNum + (toNum - fromNum) * eased;
+        if (p < 1) {
+          el.textContent = formatLike(v, finalText);
+          requestAnimationFrame(step);
+        } else {
+          el.textContent = finalText;
+          last = finalText;
+          obs.observe(el, { childList: true, characterData: true, subtree: true });
+        }
+      }
+      requestAnimationFrame(step);
+    });
+    obs.observe(el, { childList: true, characterData: true, subtree: true });
+  }
+  function scanAndWatch() {
+    var nodes = document.querySelectorAll(SELECTOR);
+    for (var i = 0; i < nodes.length; i++) watch(nodes[i]);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', scanAndWatch);
+  } else {
+    scanAndWatch();
+  }
+  // Re-scan in case sections render KPI-class nodes later.
+  setInterval(scanAndWatch, 3000);
+})();
 </script>
 </body>
 </html>
