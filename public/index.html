@@ -1698,6 +1698,245 @@
       .lin-error-screen,
       .lin-error-title { animation: none !important; }
     }
+
+    /* ════════════════════════════════════════════
+       Phase 5 — ROUND 13
+       Typography re-architecture. Stronger
+       contrast on secondary text, consistent
+       sizes per role, bumped weights, baked-in
+       line-heights. Comes LAST so it overrides
+       any size set in rounds 1-12.
+    ════════════════════════════════════════════ */
+
+    /* ── Global text contrast tokens ── */
+    :root {
+      --tx2: rgba(255, 248, 240, 0.85);   /* was 0.60 — major contrast bump for "secondary" text */
+      --tx3: rgba(255, 248, 240, 0.74);   /* round 7 baseline */
+      --tx4: rgba(255, 248, 240, 0.50);   /* dimmer for truly tertiary (timestamps, hints) */
+    }
+
+    /* ── Body baseline ── */
+    body {
+      font-family: 'Chakra Petch', 'Noto Sans TC', 'Noto Serif TC', system-ui, sans-serif !important;
+      font-size: 17px !important;
+      line-height: 1.55;
+    }
+
+    /* ── DISPLAY ramp ── */
+    /* D1 — Section titles (MEMBERS / BATTLES / SIEGES …) */
+    .sec-title {
+      font-family: 'Orbitron', 'Chakra Petch', 'Noto Sans TC', sans-serif !important;
+      font-size: 36px !important;
+      font-weight: 900 !important;
+      letter-spacing: 0.06em !important;
+      line-height: 1.1 !important;
+      text-shadow: 0 0 4px rgba(239,159,39,0.75), 0 0 22px rgba(239,159,39,0.45) !important;
+    }
+    /* D1-sub — sub-headline beneath section titles */
+    .sec-sub {
+      font-family: 'Orbitron', 'Chakra Petch', 'Noto Sans TC', sans-serif !important;
+      font-size: 15px !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.14em !important;
+      color: var(--tx2) !important;
+      line-height: 1.5 !important;
+    }
+    .sec-header { padding-bottom: 14px !important; margin-bottom: 18px !important; }
+
+    /* D2 — Big-number readouts */
+    .kpi-value {
+      font-family: 'JetBrains Mono', 'Share Tech Mono', monospace !important;
+      font-size: 46px !important;
+      font-weight: 700 !important;
+      font-feature-settings: 'tnum' 1, 'lnum' 1;
+      line-height: 1 !important;
+    }
+    #memberCountBadge {
+      font-size: 58px !important;
+      line-height: 1 !important;
+    }
+    #overviewClanBank, #overviewTotalOps {
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 28px !important;
+      font-weight: 700 !important;
+      line-height: 1.1 !important;
+    }
+
+    /* ── HEADING ramp ── */
+    /* H2 — Panel titles (// PERSONNEL STATUS) */
+    .s1-panel-title {
+      font-family: 'Orbitron', 'Chakra Petch', sans-serif !important;
+      font-size: 13px !important;
+      font-weight: 900 !important;
+      letter-spacing: 0.14em !important;
+      color: var(--or) !important;
+    }
+
+    /* H3 — Table headers */
+    thead th {
+      font-family: 'Orbitron', 'Chakra Petch', sans-serif !important;
+      font-size: 14px !important;
+      font-weight: 900 !important;
+      letter-spacing: 0.12em !important;
+      color: var(--or) !important;
+      text-shadow: 0 0 10px rgba(239,159,39,0.4);
+      padding: 14px 14px !important;
+    }
+
+    /* H4 — KPI labels & subs */
+    .kpi-label {
+      font-family: 'Orbitron', 'Chakra Petch', sans-serif !important;
+      font-size: 13px !important;
+      font-weight: 900 !important;
+      letter-spacing: 0.16em !important;
+      color: var(--or) !important;
+      margin-bottom: 8px !important;
+    }
+    .kpi-sub {
+      font-family: 'Orbitron', 'Chakra Petch', sans-serif !important;
+      font-size: 13px !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.12em !important;
+      color: var(--tx2) !important;
+    }
+
+    /* H5 — nav (sidebar & topbar) */
+    .nav-item .nav-label {
+      font-family: 'Orbitron', 'Chakra Petch', 'Noto Sans TC', sans-serif !important;
+      font-size: 14px !important;
+      font-weight: 900 !important;
+      letter-spacing: 0.10em !important;
+    }
+    .top-nav-link {
+      font-family: 'Orbitron', 'Chakra Petch', 'Noto Sans TC', sans-serif !important;
+      font-size: 14px !important;
+      font-weight: 800 !important;
+      letter-spacing: 0.10em !important;
+    }
+    .mobile-bottom-nav .mnav-btn .mnav-label {
+      font-family: 'Orbitron', 'Chakra Petch', sans-serif !important;
+      font-size: 12px !important;
+      font-weight: 900 !important;
+      letter-spacing: 0.06em !important;
+    }
+    .sidebar-brand-text {
+      font-family: 'Orbitron', 'Chakra Petch', sans-serif !important;
+      font-size: 11px !important;
+      font-weight: 900 !important;
+      letter-spacing: 0.14em !important;
+    }
+
+    /* ── BODY ramp ── */
+    /* B1 — table cell data */
+    tbody td {
+      font-family: 'Chakra Petch', 'Noto Sans TC', sans-serif !important;
+      font-size: 17px !important;
+      font-weight: 500 !important;
+      line-height: 1.5;
+      padding: 13px 14px !important;
+      color: var(--tx) !important;
+    }
+    tbody tr td[colspan] {
+      font-family: 'Orbitron', 'Chakra Petch', sans-serif !important;
+      font-size: 16px !important;
+      letter-spacing: 0.14em !important;
+    }
+
+    /* B2 — feed items, card-row content */
+    .feed-item {
+      font-family: 'Chakra Petch', 'Noto Sans TC', sans-serif !important;
+      font-size: 14px !important;
+      line-height: 1.5;
+    }
+    .card-row {
+      font-size: 15px !important;
+      line-height: 1.5;
+    }
+
+    /* ── FORM ramp ── */
+    label {
+      font-family: 'Orbitron', 'Chakra Petch', 'Noto Sans TC', sans-serif !important;
+      font-size: 13px !important;
+      font-weight: 900 !important;
+      letter-spacing: 0.10em !important;
+      color: var(--or) !important;
+      margin-bottom: 6px !important;
+      line-height: 1.4;
+    }
+    .atelier-input {
+      font-family: 'Chakra Petch', 'Noto Sans TC', sans-serif !important;
+      font-size: 16px !important;
+      line-height: 1.4;
+      font-weight: 500;
+    }
+
+    /* ── BUTTONS ramp ── */
+    .btn, .btn-primary, .btn-outline {
+      font-family: 'Orbitron', 'Chakra Petch', 'Noto Sans TC', sans-serif !important;
+      font-size: 12px !important;
+      font-weight: 900 !important;
+      letter-spacing: 0.12em !important;
+    }
+    .btn-sm { font-size: 12px !important; padding: 7px 16px !important; letter-spacing: 0.12em !important; }
+    .btn-xs { font-size: 11px !important; padding: 5px 12px !important; letter-spacing: 0.10em !important; }
+
+    /* ── MONO / numeric / badges ── */
+    .tier-badge {
+      font-family: 'JetBrains Mono', 'Share Tech Mono', monospace !important;
+      font-size: 11px !important;
+      font-weight: 900 !important;
+      letter-spacing: 0.10em !important;
+    }
+    .att-pill {
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 10px !important;
+      font-weight: 900 !important;
+      letter-spacing: 0.08em !important;
+    }
+    .result-success, .result-failed, .siege-attack, .siege-defend {
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 11px !important;
+      font-weight: 900 !important;
+      letter-spacing: 0.10em !important;
+    }
+
+    /* ── HEADER region ── */
+    #sysClockDisplay {
+      font-family: 'JetBrains Mono', 'Share Tech Mono', monospace !important;
+      font-size: 18px !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.10em !important;
+      line-height: 1.1;
+    }
+
+    /* ── TOAST ── */
+    .toast-msg {
+      font-family: 'Chakra Petch', 'Noto Sans TC', sans-serif !important;
+      font-size: 13px !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.04em !important;
+      line-height: 1.4;
+    }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      font-family: 'Orbitron', 'Chakra Petch', 'Noto Sans TC', sans-serif !important;
+      font-size: 14px !important;
+      letter-spacing: 0.14em !important;
+    }
+
+    /* ── Modal title bar text strength ── */
+    [id$="Modal"] > div > div:first-child {
+      font-family: 'Orbitron', 'Chakra Petch', sans-serif !important;
+      letter-spacing: 0.10em !important;
+    }
+
+    /* ── Hint / muted text helpers (tx3 and below get cleaner contrast) ── */
+    [style*="color:var(--tx3)"], [style*="color: var(--tx3)"] { color: var(--tx3) !important; }
+
+    /* ── Chinese letter-spacing safety: 在 CJK 上限制過度展開 ── */
+    :lang(zh) .sec-title { letter-spacing: 0.04em !important; }
+    :lang(zh) tbody td   { letter-spacing: 0.02em !important; }
   </style>
 </head>
 <body>
