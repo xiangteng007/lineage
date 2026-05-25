@@ -1240,6 +1240,194 @@
       .tier-badge { transition: none !important; }
       .att-pill.has-att { animation: none !important; }
     }
+
+    /* ════════════════════════════════════════════
+       Phase 5 — ROUND 8
+       Toast HUD, loading skeleton amber + scanline,
+       login-modal biometric red theme, EXPORT
+       icon bounce, modal close-button rotate,
+       modal scrollbar, profile char-card hover.
+    ════════════════════════════════════════════ */
+
+    /* ── A. Toast: HUD L-corners + amber backdrop blur ── */
+    .toast-card {
+      position: relative;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+    .toast-card::before {
+      content: '';
+      position: absolute; inset: -1px;
+      pointer-events: none;
+      background:
+        linear-gradient(to right,  var(--or) 8px, transparent 8px) top    left  / 8px 1px no-repeat,
+        linear-gradient(to bottom, var(--or) 8px, transparent 8px) top    left  / 1px 8px no-repeat,
+        linear-gradient(to left,   var(--or) 8px, transparent 8px) top    right / 8px 1px no-repeat,
+        linear-gradient(to bottom, var(--or) 8px, transparent 8px) top    right / 1px 8px no-repeat,
+        linear-gradient(to right,  var(--or) 8px, transparent 8px) bottom left  / 8px 1px no-repeat,
+        linear-gradient(to top,    var(--or) 8px, transparent 8px) bottom left  / 1px 8px no-repeat,
+        linear-gradient(to left,   var(--or) 8px, transparent 8px) bottom right / 8px 1px no-repeat,
+        linear-gradient(to top,    var(--or) 8px, transparent 8px) bottom right / 1px 8px no-repeat;
+      opacity: 0.75;
+    }
+    .toast-error::before {
+      background:
+        linear-gradient(to right,  #f87171 8px, transparent 8px) top    left  / 8px 1px no-repeat,
+        linear-gradient(to bottom, #f87171 8px, transparent 8px) top    left  / 1px 8px no-repeat,
+        linear-gradient(to left,   #f87171 8px, transparent 8px) top    right / 8px 1px no-repeat,
+        linear-gradient(to bottom, #f87171 8px, transparent 8px) top    right / 1px 8px no-repeat,
+        linear-gradient(to right,  #f87171 8px, transparent 8px) bottom left  / 8px 1px no-repeat,
+        linear-gradient(to top,    #f87171 8px, transparent 8px) bottom left  / 1px 8px no-repeat,
+        linear-gradient(to left,   #f87171 8px, transparent 8px) bottom right / 8px 1px no-repeat,
+        linear-gradient(to top,    #f87171 8px, transparent 8px) bottom right / 1px 8px no-repeat;
+    }
+    .toast-dot {
+      width: 8px !important; height: 8px !important;
+      box-shadow: 0 0 6px currentColor;
+    }
+    .toast-success .toast-dot { background: var(--or) !important; color: var(--or); }
+    .toast-error   .toast-dot { background: #f87171 !important; color: #f87171; }
+    .toast-info    .toast-dot { background: #60a5fa !important; color: #60a5fa; }
+    .toast-msg {
+      font-family: 'Chakra Petch', 'Noto Sans TC', sans-serif !important;
+      font-size: 12px !important;
+      letter-spacing: 0.04em;
+    }
+    .toast-progress {
+      height: 2px !important;
+      box-shadow: 0 0 6px currentColor;
+    }
+    .toast-success .toast-progress { color: var(--or);   }
+    .toast-error   .toast-progress { color: #f87171; }
+    .toast-info    .toast-progress { color: #60a5fa; }
+
+    /* ── B. Skeleton: amber shimmer + page scanline overlay ── */
+    body.lin-loading .kpi-value,
+    body.lin-loading #activityFeed,
+    body.lin-loading #topContributorsList,
+    body.lin-loading #overviewClassLegend {
+      background: linear-gradient(90deg,
+        rgba(239,159,39,0.05) 25%,
+        rgba(239,159,39,0.25) 50%,
+        rgba(239,159,39,0.05) 75%) !important;
+      background-size: 200% 100% !important;
+    }
+    body.lin-loading #mainContent::after {
+      content: '';
+      position: fixed;
+      left: var(--sb); right: 0;
+      top: var(--hh); bottom: 0;
+      pointer-events: none;
+      z-index: 5;
+      background:
+        repeating-linear-gradient(0deg,
+          transparent 0,
+          rgba(239,159,39,0.04) 1px,
+          transparent 3px);
+      animation: linLoadScan 6s linear infinite;
+      -webkit-mask-image: linear-gradient(180deg, transparent 0, black 15%, black 85%, transparent 100%);
+              mask-image: linear-gradient(180deg, transparent 0, black 15%, black 85%, transparent 100%);
+    }
+    @keyframes linLoadScan {
+      from { background-position: 0 0; }
+      to   { background-position: 0 240px; }
+    }
+
+    /* ── C. Login modal: red biometric pulse ── */
+    #loginModal > div {
+      animation: linLoginPulse 1.8s ease-in-out infinite, linModalFlicker 0.34s cubic-bezier(0.16,1,0.3,1) !important;
+    }
+    @keyframes linLoginPulse {
+      0%, 100% { box-shadow: 0 0 0 1px rgba(248,113,113,0.30), 0 0 24px rgba(248,113,113,0.20); }
+      50%      { box-shadow: 0 0 0 2px rgba(248,113,113,0.60), 0 0 40px rgba(248,113,113,0.42); }
+    }
+    /* Override the generic amber L-corners with red for login */
+    #loginModal > div::before {
+      background:
+        linear-gradient(to right,  #f87171 14px, transparent 14px) top    left  / 14px 1px no-repeat,
+        linear-gradient(to bottom, #f87171 14px, transparent 14px) top    left  / 1px 14px no-repeat,
+        linear-gradient(to left,   #f87171 14px, transparent 14px) top    right / 14px 1px no-repeat,
+        linear-gradient(to bottom, #f87171 14px, transparent 14px) top    right / 1px 14px no-repeat,
+        linear-gradient(to right,  #f87171 14px, transparent 14px) bottom left  / 14px 1px no-repeat,
+        linear-gradient(to top,    #f87171 14px, transparent 14px) bottom left  / 1px 14px no-repeat,
+        linear-gradient(to left,   #f87171 14px, transparent 14px) bottom right / 14px 1px no-repeat,
+        linear-gradient(to top,    #f87171 14px, transparent 14px) bottom right / 1px 14px no-repeat !important;
+      filter: drop-shadow(0 0 6px rgba(248,113,113,0.75)) !important;
+    }
+    #loginModal > div > div:first-child {
+      background: linear-gradient(90deg, rgba(248,113,113,0.12), transparent 70%) !important;
+    }
+    #loginModal > div > div:first-child::after {
+      background: linear-gradient(90deg, transparent, #f87171, transparent) !important;
+      filter: drop-shadow(0 0 5px #f87171) !important;
+    }
+
+    /* ── D. EXPORT button: ↓ icon bounce on hover ── */
+    button[onclick^="exportToCSV"] .material-symbols-outlined {
+      transition: filter 0.25s ease;
+      display: inline-block;
+    }
+    button[onclick^="exportToCSV"]:hover .material-symbols-outlined {
+      animation: linExportBounce 0.8s ease-in-out;
+      filter: drop-shadow(0 0 6px rgba(239,159,39,0.85));
+    }
+    @keyframes linExportBounce {
+      0%, 100% { transform: translateY(0); }
+      20%      { transform: translateY(-3px); }
+      40%      { transform: translateY(2px); }
+      60%      { transform: translateY(-1px); }
+      80%      { transform: translateY(1px); }
+    }
+
+    /* ── E. Modal close-button (✕): rotate + amber on hover ── */
+    [id$="Modal"] button[onclick*="close"],
+    [id$="Modal"] button[onclick*="Modal"] {
+      width: 28px; height: 28px;
+      display: inline-flex !important;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.18s, background 0.18s, transform 0.25s, box-shadow 0.18s !important;
+    }
+    [id$="Modal"] button[onclick*="close"]:hover,
+    [id$="Modal"] button[onclick*="Modal"]:hover {
+      color: var(--or) !important;
+      background: var(--or3) !important;
+      transform: rotate(90deg);
+      box-shadow: 0 0 12px rgba(239,159,39,0.4);
+    }
+
+    /* ── F. Modal inner scrollbar: amber thin ── */
+    [id$="Modal"] > div {
+      scrollbar-width: thin;
+      scrollbar-color: var(--or2) transparent;
+    }
+    [id$="Modal"] > div::-webkit-scrollbar { width: 4px; height: 4px; }
+    [id$="Modal"] > div::-webkit-scrollbar-track { background: transparent; }
+    [id$="Modal"] > div::-webkit-scrollbar-thumb {
+      background: var(--or2);
+      box-shadow: 0 0 4px var(--or2);
+    }
+
+    /* ── G. Profile-modal char card hover ── */
+    .profile-char-card {
+      transition: border-color 0.18s, box-shadow 0.18s, transform 0.18s;
+    }
+    .profile-char-card:hover {
+      transform: translateX(2px);
+      box-shadow: inset 3px 0 0 var(--or), 0 0 18px -4px rgba(239,159,39,0.35);
+    }
+
+    /* ── H. Reduced motion fallbacks ── */
+    @media (prefers-reduced-motion: reduce) {
+      #loginModal > div {
+        animation: none !important;
+      }
+      body.lin-loading #mainContent::after { animation: none !important; }
+      button[onclick^="exportToCSV"]:hover .material-symbols-outlined { animation: none !important; }
+      [id$="Modal"] button[onclick*="close"]:hover,
+      [id$="Modal"] button[onclick*="Modal"]:hover { transform: none !important; }
+      .profile-char-card { transition: none !important; }
+    }
   </style>
 </head>
 <body>
