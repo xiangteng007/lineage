@@ -1578,6 +1578,31 @@
       .lin-signal-lost::before { animation: none !important; }
       .mobile-bottom-nav .mnav-btn.active::before { animation: none !important; }
     }
+
+    /* ════════════════════════════════════════════
+       Phase 5 — ROUND 10
+       Interactive: click ripple keyframe (paired
+       with body-end IIFE) + .lin-ripple support
+       on every clickable surface.
+    ════════════════════════════════════════════ */
+    @keyframes linRippleExpand {
+      from { transform: scale(0);   opacity: 0.7; }
+      to   { transform: scale(1);   opacity: 0;   }
+    }
+    .lin-ripple {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      background: radial-gradient(circle, rgba(239,159,39,0.45) 0%, transparent 70%);
+      transform: scale(0);
+      animation: linRippleExpand 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 0;
+    }
+    .lin-ripple-danger  { background: radial-gradient(circle, rgba(248,113,113,0.50) 0%, transparent 70%); }
+    .lin-ripple-success { background: radial-gradient(circle, rgba(74,222,128,0.50)  0%, transparent 70%); }
+    @media (prefers-reduced-motion: reduce) {
+      .lin-ripple { animation: none !important; opacity: 0 !important; }
+    }
   </style>
 </head>
 <body>
@@ -3161,6 +3186,61 @@ async function saveAttendance() {
       });
     });
   }
+})();
+</script>
+
+<!-- ═══ Phase 5 round 10 — click ripple (delegated, IIFE, no globals) ═══ -->
+<script>
+(function () {
+  'use strict';
+  var SELECTOR = '.btn, .btn-primary, .btn-outline, .nav-item, .mnav-btn, .tier-chip, .kpi-card, .top-nav-link';
+  var TTL_MS = 600;
+  function rippleClass(el) {
+    if (el.classList.contains('btn-danger'))  return 'lin-ripple lin-ripple-danger';
+    if (el.classList.contains('btn-success')) return 'lin-ripple lin-ripple-success';
+    return 'lin-ripple';
+  }
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest(SELECTOR);
+    if (!el) return;
+    var rect = el.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+    var size = Math.max(rect.width, rect.height) * 1.6;
+    var cs = getComputedStyle(el);
+    if (cs.position === 'static') el.style.position = 'relative';
+    if (cs.overflow === 'visible') el.style.overflow = 'hidden';
+    var span = document.createElement('span');
+    span.className = rippleClass(el);
+    span.style.cssText =
+      'left:' + (e.clientX - rect.left - size / 2) + 'px;' +
+      'top:' + (e.clientY - rect.top - size / 2) + 'px;' +
+      'width:' + size + 'px;' +
+      'height:' + size + 'px;';
+    el.appendChild(span);
+    setTimeout(function () { if (span && span.parentNode) span.parentNode.removeChild(span); }, TTL_MS);
+  }, true);
+})();
+</script>
+
+<!-- ═══ Phase 5 round 10 — auto SIGNAL LOST on offline (IIFE, no globals) ═══ -->
+<script>
+(function () {
+  'use strict';
+  var OVERLAY_ID = 'linSignalLostAuto';
+  function show() {
+    if (document.getElementById(OVERLAY_ID)) return;
+    var d = document.createElement('div');
+    d.id = OVERLAY_ID;
+    d.className = 'lin-signal-lost';
+    document.body.appendChild(d);
+  }
+  function hide() {
+    var d = document.getElementById(OVERLAY_ID);
+    if (d && d.parentNode) d.parentNode.removeChild(d);
+  }
+  window.addEventListener('offline', show);
+  window.addEventListener('online', hide);
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) show();
 })();
 </script>
 </body>
