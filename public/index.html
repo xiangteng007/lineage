@@ -1603,6 +1603,28 @@
     @media (prefers-reduced-motion: reduce) {
       .lin-ripple { animation: none !important; opacity: 0 !important; }
     }
+
+    /* ════════════════════════════════════════════
+       Phase 5 — ROUND 11
+       Live retry countdown caption for the offline
+       SIGNAL LOST overlay (paired with body-end
+       IIFE). Row-flash uses the round-3 helpers.
+    ════════════════════════════════════════════ */
+    .lin-signal-retry {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      letter-spacing: 0.22em;
+      color: #fbbf24;
+      text-shadow: 0 0 8px rgba(251,191,36,0.55);
+      animation: linRetryPulse 1s ease-in-out infinite;
+    }
+    @keyframes linRetryPulse {
+      0%, 100% { opacity: 0.85; }
+      50%      { opacity: 1;    }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .lin-signal-retry { animation: none !important; }
+    }
   </style>
 </head>
 <body>
@@ -3241,6 +3263,103 @@ async function saveAttendance() {
   window.addEventListener('offline', show);
   window.addEventListener('online', hide);
   if (typeof navigator !== 'undefined' && navigator.onLine === false) show();
+})();
+</script>
+
+<!-- ═══ Phase 5 round 11 — click→toast row flash (IIFE, no globals) ═══ -->
+<script>
+(function () {
+  'use strict';
+  var lastTarget = null;
+  var lastAt = 0;
+  var WINDOW_MS = 2500;
+  var FLASH_MS = 880;
+  document.addEventListener('click', function (e) {
+    var row = e.target.closest('.card-row, tbody tr, .kpi-card, .feed-item');
+    if (row) { lastTarget = row; lastAt = Date.now(); }
+  }, true);
+  function flashTarget(cls) {
+    if (!lastTarget) return;
+    if (Date.now() - lastAt > WINDOW_MS) return;
+    if (!document.body.contains(lastTarget)) return;
+    var tgt = lastTarget;
+    tgt.classList.remove(cls);
+    void tgt.offsetWidth; // reflow → restart animation
+    tgt.classList.add(cls);
+    setTimeout(function () { tgt.classList.remove(cls); }, FLASH_MS);
+  }
+  function watch() {
+    var wrap = document.querySelector('.toast-wrap');
+    if (!wrap) { setTimeout(watch, 800); return; }
+    new MutationObserver(function (muts) {
+      for (var i = 0; i < muts.length; i++) {
+        var added = muts[i].addedNodes;
+        for (var j = 0; j < added.length; j++) {
+          var n = added[j];
+          if (n.nodeType !== 1 || !n.classList) continue;
+          if (!n.classList.contains('toast-card')) continue;
+          if (n.classList.contains('toast-success')) flashTarget('lin-flash-ok');
+          else if (n.classList.contains('toast-error')) flashTarget('lin-flash-err');
+        }
+      }
+    }).observe(wrap, { childList: true });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watch);
+  else watch();
+})();
+</script>
+
+<!-- ═══ Phase 5 round 11 — auto-retry countdown on SIGNAL LOST overlay (IIFE) ═══ -->
+<script>
+(function () {
+  'use strict';
+  var OVERLAY_ID = 'linSignalLostAuto';
+  var COUNT_FROM = 5;
+  function pingServer() {
+    return fetch('/api/status', { cache: 'no-store' })
+      .then(function (r) { return r.ok; })
+      .catch(function () { return false; });
+  }
+  function recover() {
+    var d = document.getElementById(OVERLAY_ID);
+    if (d && d.parentNode) d.parentNode.removeChild(d);
+  }
+  function attachRetry(overlay) {
+    if (!overlay || overlay.querySelector('.lin-signal-retry')) return;
+    var cap = document.createElement('div');
+    cap.className = 'lin-signal-retry';
+    cap.textContent = '> RETRY IN ' + COUNT_FROM + 's';
+    overlay.appendChild(cap);
+    var sec = COUNT_FROM;
+    function tick() {
+      if (!document.body.contains(overlay)) return;
+      if (sec <= 0) {
+        cap.textContent = '> RETRYING NOW';
+        pingServer().then(function (ok) {
+          if (ok && navigator.onLine) recover();
+        });
+        sec = COUNT_FROM;
+      } else {
+        cap.textContent = '> RETRY IN ' + sec + 's';
+        sec--;
+      }
+      setTimeout(tick, 1000);
+    }
+    setTimeout(tick, 1000);
+  }
+  // Watch document.body for the overlay being added by the round-10 IIFE
+  new MutationObserver(function (muts) {
+    for (var i = 0; i < muts.length; i++) {
+      var added = muts[i].addedNodes;
+      for (var j = 0; j < added.length; j++) {
+        var n = added[j];
+        if (n.nodeType === 1 && n.id === OVERLAY_ID) attachRetry(n);
+      }
+    }
+  }).observe(document.body, { childList: true });
+  // Pick up if overlay is already in DOM at load
+  var existing = document.getElementById(OVERLAY_ID);
+  if (existing) attachRetry(existing);
 })();
 </script>
 </body>
