@@ -608,7 +608,9 @@ app.delete('/api/alliances/:id/line-bind', requireAdmin, async (req, res) => {
 });
 
 // ── Members ──────────────────────────────────────
-app.get('/api/members', async (req, res) => {
+// Read-gated: roster is sensitive — recruit (level 1) and unbound guests cannot list.
+// Defaults align with lib/permissions.js DEFAULT_MODULE_PERMS.members.minRead = 2.
+app.get('/api/members', requireRole(2), async (req, res) => {
   let members = await firebase.getAllData('Members');
   const { search, role, active } = req.query;
   const cls = req.query.class;

@@ -630,8 +630,11 @@ async function fetchData() {
   setLoading(true);
   try {
     // Error Boundary: each request fails independently and falls back.
+    // safeJson sends auth headers by default so role-gated endpoints
+    // (e.g. /api/members → requireRole(2)) work after login; on any non-2xx
+    // (incl. 401/403 for unauthorised guests) it logs and returns the fallback.
     state._errors = {};
-    const safeJson = (url, fallback) => fetch(url)
+    const safeJson = (url, fallback) => fetch(url, { headers: authHeader() })
       .then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))
       .catch(err => { console.warn('fetch failed:', url, err.message); state._errors[url] = true; return fallback; });
     const asList = (v) => Array.isArray(v) ? v : ((v && Array.isArray(v.data)) ? v.data : []);
