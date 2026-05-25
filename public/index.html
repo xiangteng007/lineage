@@ -956,6 +956,150 @@
       tbody tr td:first-child::before, .card-row::before { transition: none !important; }
       .kpi-card::after { animation: none !important; opacity: 0.4; }
     }
+
+    /* ════════════════════════════════════════════
+       Phase 5 — ROUND 6
+       Sidebar interior decor, KPI glitch reveal,
+       modal open flicker, clock pulse glow,
+       AUTH halo, header horizontal scan beam.
+    ════════════════════════════════════════════ */
+
+    /* ── A. Sidebar interior decor ── */
+    aside#mainSidebar { overflow: hidden; }
+    aside#mainSidebar::before {
+      content: '';
+      position: absolute; inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(239,159,39,0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(239,159,39,0.045) 1px, transparent 1px);
+      background-size: 22px 22px;
+      -webkit-mask-image: linear-gradient(180deg, transparent 0, black 6%, black 94%, transparent 100%);
+              mask-image: linear-gradient(180deg, transparent 0, black 6%, black 94%, transparent 100%);
+      z-index: 0;
+    }
+    aside#mainSidebar > * { position: relative; z-index: 1; }
+
+    /* LINEAGE brand: ambient pulse */
+    .sidebar-brand-text {
+      text-shadow: 0 0 10px rgba(239,159,39,0.5), 0 0 22px rgba(239,159,39,0.2);
+      animation: linBrandPulse 4s ease-in-out infinite;
+    }
+    @keyframes linBrandPulse {
+      0%, 100% { opacity: 1;    text-shadow: 0 0 10px rgba(239,159,39,0.5),  0 0 22px rgba(239,159,39,0.2);  }
+      50%      { opacity: 0.92; text-shadow: 0 0 16px rgba(239,159,39,0.75), 0 0 32px rgba(239,159,39,0.35); }
+    }
+
+    /* nav-item index counter [01]..[NN] in upper-left corner */
+    aside#mainSidebar nav { counter-reset: linNav; }
+    .nav-item { counter-increment: linNav; }
+    .nav-item[style*="display:none"] { counter-increment: none; }
+    .nav-item::before {
+      content: '[' counter(linNav, decimal-leading-zero) ']';
+      position: absolute;
+      top: 6px; left: 7px;
+      font-size: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.04em;
+      color: rgba(186,117,23,0.55);
+      pointer-events: none;
+      transition: color 0.18s, text-shadow 0.18s;
+    }
+    .nav-item.active::before {
+      color: var(--or);
+      text-shadow: 0 0 6px rgba(239,159,39,0.7);
+    }
+
+    /* v3.0 version label: green link-up dot */
+    aside#mainSidebar > div:last-child > div::before {
+      content: '● ';
+      display: inline-block;
+      color: #4ade80;
+      font-size: 8px;
+      margin-right: 4px;
+      animation: linVersionBlink 1.8s ease-in-out infinite;
+    }
+    @keyframes linVersionBlink {
+      0%, 100% { opacity: 0.45; text-shadow: none; }
+      50%      { opacity: 1;    text-shadow: 0 0 6px #4ade80; }
+    }
+
+    /* ── B. KPI value: glitch reveal layered onto kpiReveal ── */
+    @keyframes linKpiGlitch {
+      0%   { transform: translate(0,0);     text-shadow: 0 0 12px rgba(239,159,39,0.5); }
+      10%  { transform: translate(-2px,1px);text-shadow: 2px 0 0 rgba(239,159,39,0.85), -2px 0 0 rgba(96,165,250,0.5); }
+      22%  { transform: translate(2px,-1px);text-shadow: -2px 0 0 rgba(248,113,113,0.5), 2px 0 0 rgba(239,159,39,0.85); }
+      34%  { transform: translate(-1px,0);  text-shadow: 0 0 14px rgba(255,210,110,0.8); }
+      46%  { transform: translate(1px,1px); text-shadow: 1px 0 0 rgba(239,159,39,0.6),  -1px 0 0 rgba(255,255,255,0.4); }
+      60%  { transform: translate(0,-1px);  text-shadow: 0 0 16px rgba(239,159,39,0.7); }
+      100% { transform: translate(0,0);     text-shadow: 0 0 12px rgba(239,159,39,0.5); }
+    }
+    .kpi-animate {
+      animation:
+        kpiReveal 0.4s cubic-bezier(0.34,1.56,0.64,1) both,
+        linKpiGlitch 0.55s linear !important;
+    }
+
+    /* ── C. Modal open flicker (overrides round 2 linModalScale) ── */
+    @keyframes linModalFlicker {
+      0%   { opacity: 0;    transform: translateY(10px) scale(0.96); filter: blur(2px); }
+      18%  { opacity: 0.65; transform: translateY(0)    scale(1.01); filter: blur(0); }
+      22%  { opacity: 0.2;  }
+      30%  { opacity: 0.9;  }
+      36%  { opacity: 0.4;  }
+      44%  { opacity: 1;    transform: translateY(0)    scale(1); }
+      100% { opacity: 1;    transform: translateY(0)    scale(1); filter: blur(0); }
+    }
+    [id$="Modal"] > div {
+      animation: linModalFlicker 0.34s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+
+    /* ── D. SYS.CLOCK: ambient glow pulse ── */
+    #sysClockDisplay {
+      animation: linClockGlow 2.4s ease-in-out infinite;
+    }
+    @keyframes linClockGlow {
+      0%, 100% { text-shadow: 0 0 4px rgba(239,159,39,0.30); }
+      50%      { text-shadow: 0 0 10px rgba(239,159,39,0.75), 0 0 18px rgba(239,159,39,0.30); }
+    }
+
+    /* ── E. AUTH_REQUIRED login button: amber halo pulse ── */
+    #loginBtn {
+      animation: linAuthPulse 2.6s ease-in-out infinite;
+    }
+    @keyframes linAuthPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(239,159,39,0); }
+      50%      { box-shadow: 0 0 0 3px rgba(239,159,39,0.20), 0 0 20px rgba(239,159,39,0.30); }
+    }
+
+    /* ── F. Header horizontal scan beam — slow 9 s sweep ── */
+    header { overflow: hidden; }
+    header::before {
+      content: '';
+      position: absolute;
+      left: -22%; bottom: 0;
+      width: 22%; height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(239,159,39,0.85), transparent);
+      filter: drop-shadow(0 0 5px rgba(239,159,39,0.95));
+      animation: linHeaderScan 9s linear infinite;
+      pointer-events: none;
+      z-index: 2;
+    }
+    @keyframes linHeaderScan {
+      0%   { left: -22%; }
+      100% { left: 100%; }
+    }
+
+    /* ── G. Reduced motion fallbacks for all round-6 effects ── */
+    @media (prefers-reduced-motion: reduce) {
+      .sidebar-brand-text,
+      #sysClockDisplay,
+      #loginBtn,
+      aside#mainSidebar > div:last-child > div::before { animation: none !important; }
+      .kpi-animate { animation: kpiReveal 0.4s cubic-bezier(0.34,1.56,0.64,1) both !important; }
+      [id$="Modal"] > div { animation: none !important; opacity: 1 !important; }
+      header::before { animation: none !important; opacity: 0; }
+    }
   </style>
 </head>
 <body>
