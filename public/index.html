@@ -592,8 +592,120 @@
     @media (prefers-reduced-motion: reduce) {
       .lin-line-dot[data-state="ok"] { animation: none !important; }
     }
-  </style>
-</head>
+
+    /* ════════════════════════════════════════════
+       Phase 5 — ROUND 3
+       Sidebar breathing room, typography weight,
+       CRUD button identity, list-row stagger.
+    ════════════════════════════════════════════ */
+
+    /* ── Sidebar: more breathing room + active emphasis ── */
+    aside #mainSidebar, aside { /* (selector kept for specificity) */ }
+    aside nav { gap: 4px; display: flex; flex-direction: column; padding: 10px 0 !important; }
+    .nav-item {
+      padding: 14px 0 !important;
+      gap: 6px !important;
+      border-left-width: 3px !important;
+      transition: all 0.18s ease;
+    }
+    .nav-item .nav-icon { font-size: 24px !important; transition: transform 0.18s ease, filter 0.18s ease; }
+    .nav-item .nav-label {
+      font-size: 13px !important; font-weight: 900 !important;
+      letter-spacing: 0.10em !important;
+      font-family: 'Orbitron', 'Chakra Petch', 'Noto Sans TC', sans-serif !important;
+    }
+    .nav-item:hover .nav-icon { transform: translateY(-1px); filter: drop-shadow(0 0 6px rgba(239,159,39,0.45)); }
+    .nav-item.active {
+      background: linear-gradient(90deg, rgba(239,159,39,0.18), transparent 80%) !important;
+      box-shadow: inset 0 0 24px -4px rgba(239,159,39,0.35) !important;
+    }
+    .nav-item.active .nav-icon {
+      filter: drop-shadow(0 0 8px rgba(239,159,39,0.75));
+      animation: linNavIconPulse 2.4s ease-in-out infinite;
+    }
+    .nav-item.active .nav-label {
+      text-shadow: 0 0 10px rgba(239,159,39,0.55);
+    }
+    @keyframes linNavIconPulse {
+      0%, 100% { filter: drop-shadow(0 0 6px rgba(239,159,39,0.6)); }
+      50%      { filter: drop-shadow(0 0 14px rgba(239,159,39,0.95)); }
+    }
+
+    /* ── Section titles: heftier + glow ── */
+    .sec-title {
+      font-size: 34px !important;
+      font-weight: 900 !important;
+      letter-spacing: 0.06em !important;
+      text-shadow: 0 0 4px rgba(239,159,39,0.7), 0 0 20px rgba(239,159,39,0.45) !important;
+    }
+    .sec-sub {
+      font-size: 14px !important;
+      letter-spacing: 0.10em !important;
+      color: var(--tx2) !important;
+    }
+    .sec-header { border-bottom-width: 2px !important; padding-bottom: 12px !important; }
+
+    /* ── KPI labels: a hair larger + heavier ── */
+    .kpi-label { font-size: 13px !important; letter-spacing: 0.14em !important; }
+    .kpi-sub   { font-size: 12px !important; letter-spacing: 0.12em !important; }
+
+    /* ── Buttons: stronger CRUD identity ── */
+    .btn, .btn-primary, .btn-outline {
+      font-weight: 900 !important;
+      letter-spacing: 0.10em !important;
+    }
+    .btn-sm { padding: 6px 14px !important; font-size: 11px !important; }
+    .btn-xs {
+      padding: 5px 12px !important;
+      font-size: 11px !important;
+      font-weight: 900 !important;
+      outline: 1px solid rgba(186,117,23,0.3) !important;
+      outline-offset: 2px !important;
+      letter-spacing: 0.08em !important;
+    }
+    .btn-icon { padding: 8px !important; min-width: 32px; justify-content: center; }
+    /* Tinted variants pop more in CRUD action columns */
+    .btn-success.btn-xs { background: rgba(74,222,128,0.08) !important; }
+    .btn-danger.btn-xs  { background: rgba(248,113,113,0.08) !important; }
+
+    /* Press feedback */
+    .btn:active, .btn-primary:active, .btn-outline:active { transform: scale(0.96); }
+
+    /* ── List-row stagger entrance ── */
+    @keyframes linRowEnter {
+      from { opacity: 0; transform: translateY(-4px); }
+      to   { opacity: 1; transform: translateY(0);   }
+    }
+    .card-row, tbody tr, .feed-item {
+      animation: linRowEnter 0.32s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+    }
+    .card-row:nth-child(1), tbody tr:nth-child(1), .feed-item:nth-child(1) { animation-delay: 0.00s; }
+    .card-row:nth-child(2), tbody tr:nth-child(2), .feed-item:nth-child(2) { animation-delay: 0.03s; }
+    .card-row:nth-child(3), tbody tr:nth-child(3), .feed-item:nth-child(3) { animation-delay: 0.06s; }
+    .card-row:nth-child(4), tbody tr:nth-child(4), .feed-item:nth-child(4) { animation-delay: 0.09s; }
+    .card-row:nth-child(5), tbody tr:nth-child(5), .feed-item:nth-child(5) { animation-delay: 0.12s; }
+    .card-row:nth-child(6), tbody tr:nth-child(6), .feed-item:nth-child(6) { animation-delay: 0.15s; }
+    .card-row:nth-child(7), tbody tr:nth-child(7), .feed-item:nth-child(7) { animation-delay: 0.18s; }
+    .card-row:nth-child(8), tbody tr:nth-child(8), .feed-item:nth-child(8) { animation-delay: 0.21s; }
+    .card-row:nth-child(n+9), tbody tr:nth-child(n+9), .feed-item:nth-child(n+9) { animation-delay: 0.24s; }
+
+    /* ── Flash helpers — toggle these classes from app.js after CRUD ops ── */
+    @keyframes linFlashOk {
+      0%, 100% { box-shadow: none; }
+      50%      { box-shadow: 0 0 0 2px rgba(74,222,128,0.7), 0 0 28px rgba(74,222,128,0.45); }
+    }
+    @keyframes linFlashErr {
+      0%, 100% { box-shadow: none; }
+      50%      { box-shadow: 0 0 0 2px rgba(248,113,113,0.7), 0 0 28px rgba(248,113,113,0.45); }
+    }
+    .lin-flash-ok  { animation: linFlashOk  0.85s ease-out; }
+    .lin-flash-err { animation: linFlashErr 0.85s ease-out; }
+
+    /* ── Reduced-motion: switch off the new animations too ── */
+    @media (prefers-reduced-motion: reduce) {
+      .card-row, tbody tr, .feed-item { animation: none !important; }
+      .nav-item.active .nav-icon { animation: none !important; }
+    }
 <body>
 
 <!-- ═══ TOP HEADER ═══ -->
