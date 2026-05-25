@@ -780,6 +780,182 @@
     @media (prefers-reduced-motion: reduce) {
       .s1-panel-header::after { animation: none !important; opacity: 0; }
     }
+
+    /* ════════════════════════════════════════════
+       Phase 5 — ROUND 5
+       CRUD framework future-tech polish:
+       grid background · modal HUD upgrade ·
+       form inputs · button scan sweep ·
+       table row amber rail · KPI scan underline.
+       All effects are low-opacity ambient — they
+       layer with Rounds 1-4 without overpowering.
+    ════════════════════════════════════════════ */
+
+    /* ── Tech grid background overlay on main content ── */
+    #mainContent { position: relative; }
+    #mainContent::before {
+      content: '';
+      position: fixed;
+      left: var(--sb);
+      right: 0;
+      top: var(--hh);
+      bottom: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(239,159,39,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(239,159,39,0.035) 1px, transparent 1px);
+      background-size: 40px 40px;
+      background-position: -1px -1px;
+      mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+      -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+      z-index: 0;
+    }
+    #mainContent > * { position: relative; z-index: 1; }
+    @media (max-width: 767px) {
+      #mainContent::before { left: 0; }
+    }
+
+    /* ── Modal: header band with running light + footer separator ── */
+    [id$="Modal"] > div > div:first-child {
+      position: relative;
+      background: linear-gradient(90deg, rgba(239,159,39,0.10), transparent 70%) !important;
+      overflow: hidden;
+    }
+    [id$="Modal"] > div > div:first-child::after {
+      content: '';
+      position: absolute;
+      left: -32%; bottom: 0;
+      width: 32%; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--or), transparent);
+      filter: drop-shadow(0 0 5px var(--or));
+      animation: linHeaderFlow 3.2s linear infinite;
+      pointer-events: none;
+    }
+
+    /* ── Form inputs: HUD frame + focus amber ring ── */
+    .atelier-input {
+      background: linear-gradient(180deg, rgba(239,159,39,0.05), transparent 60%), var(--p2) !important;
+      border: 1px solid rgba(186,117,23,0.32) !important;
+      font-size: 15px !important;
+      padding: 10px 14px !important;
+      transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+      font-family: 'Chakra Petch', 'Noto Sans TC', sans-serif !important;
+    }
+    .atelier-input:hover { border-color: rgba(186,117,23,0.55) !important; }
+    .atelier-input:focus {
+      border-color: var(--or) !important;
+      background: rgba(239,159,39,0.05) !important;
+      box-shadow:
+        0 0 0 1px rgba(239,159,39,0.4),
+        0 0 16px rgba(239,159,39,0.25),
+        inset 0 0 8px rgba(239,159,39,0.06) !important;
+      outline: none !important;
+    }
+    .atelier-input::placeholder {
+      color: rgba(255,248,240,0.35) !important;
+      letter-spacing: 0.06em;
+    }
+
+    /* HUD-style "▸" prefix on labels inside modals (avoids sidebar/header labels) */
+    [id$="Modal"] label {
+      display: flex !important;
+      align-items: center !important;
+      gap: 6px;
+    }
+    [id$="Modal"] label::before {
+      content: '▸';
+      display: inline-block;
+      font-size: 9px;
+      color: var(--or2);
+      transform: translateY(-1px);
+    }
+
+    /* ── Buttons: hover scan-line sweep ── */
+    .btn, .btn-primary, .btn-outline {
+      position: relative;
+      overflow: hidden;
+    }
+    .btn::before, .btn-primary::before, .btn-outline::before {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 100%; height: 100%;
+      background: linear-gradient(90deg,
+        transparent,
+        rgba(239,159,39,0.20),
+        rgba(255,210,110,0.30),
+        rgba(239,159,39,0.20),
+        transparent);
+      transition: left 0.55s ease;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .btn:hover::before, .btn-primary:hover::before, .btn-outline:hover::before {
+      left: 100%;
+    }
+    .btn > *, .btn-primary > *, .btn-outline > * { position: relative; z-index: 1; }
+    .btn-danger::before  { background: linear-gradient(90deg, transparent, rgba(248,113,113,0.25), transparent) !important; }
+    .btn-success::before { background: linear-gradient(90deg, transparent, rgba(74,222,128,0.25),  transparent) !important; }
+
+    /* ── Table row hover: amber side rail slides in ── */
+    tbody tr { position: relative; }
+    tbody tr td:first-child { position: relative; }
+    tbody tr td:first-child::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 0;
+      background: var(--or);
+      box-shadow: 0 0 10px var(--or);
+      transition: width 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+    }
+    tbody tr:hover td:first-child::before { width: 3px; }
+
+    /* ── KPI cards: scanning underline at the bottom edge ── */
+    .kpi-card > .kpi-sub:last-of-type { position: relative; }
+    .kpi-card { overflow: hidden; }
+    .kpi-card::after {
+      content: '';
+      position: absolute;
+      left: 14px; right: 14px; bottom: 6px;
+      height: 1px;
+      background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(239,159,39,0.65) 40%,
+        rgba(255,210,110,0.95) 50%,
+        rgba(239,159,39,0.65) 60%,
+        transparent 100%);
+      background-size: 200% 100%;
+      animation: linKpiScan 5.5s ease-in-out infinite;
+      pointer-events: none;
+      opacity: 0.55;
+    }
+    @keyframes linKpiScan {
+      0%, 100% { background-position: -100% 0; opacity: 0.25; }
+      50%      { background-position:  100% 0; opacity: 0.7;  }
+    }
+
+    /* ── Section card-row: extra hover identity ── */
+    .card-row { position: relative; overflow: hidden; }
+    .card-row::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0; width: 0;
+      background: var(--or);
+      box-shadow: 0 0 10px var(--or);
+      transition: width 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+    }
+    .card-row:hover::before { width: 3px; }
+
+    /* ── Reduced motion: kill the new continuous effects ── */
+    @media (prefers-reduced-motion: reduce) {
+      [id$="Modal"] > div > div:first-child::after { animation: none !important; opacity: 0; }
+      .btn::before, .btn-primary::before, .btn-outline::before { transition: none !important; }
+      tbody tr td:first-child::before, .card-row::before { transition: none !important; }
+      .kpi-card::after { animation: none !important; opacity: 0.4; }
+    }
   </style>
 </head>
 <body>
