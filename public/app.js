@@ -2393,6 +2393,53 @@ window.closeAdminBindModal = closeAdminBindModal;
 window.generateAdminBindCode = generateAdminBindCode;
 window.unbindAdminLine = unbindAdminLine;
 
+// ── Manual LINE login trigger (from #loginModal LINE button) ──────────
+// Reuses the existing tryLineLogin() pipeline but actively kicks LIFF
+// login on desktop too (tryLineLogin only auto-runs on init and only
+// fires liff.login() inside the LINE in-app browser).
+async function triggerLineLogin() {
+  const liffId = window._liffId;
+  const btn = document.getElementById('lineSignInBtn');
+  const hint = document.getElementById('lineLoginHint');
+  if (!liffId) {
+    if (hint) hint.textContent = 'LIFF_ID NOT CONFIGURED';
+    if (hint) hint.style.color = '#f87171';
+    return;
+  }
+  if (typeof liff === 'undefined') {
+    if (hint) hint.textContent = 'LIFF SDK NOT LOADED — RELOAD PAGE';
+    if (hint) hint.style.color = '#f87171';
+    return;
+  }
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.7'; }
+  try {
+    await liff.init({ liffId });
+    if (liff.isLoggedIn()) {
+      // Already authenticated — re-run the existing pipeline to finish
+      // Firebase custom-token sign-in and load member data.
+      await tryLineLogin();
+      closeLoginModal();
+      renderAuthUI && renderAuthUI();
+      await fetchData();
+      applyPermissions && applyPermissions();
+      showToast('LINE 登入成功', 'success');
+    } else {
+      // Redirect to LINE OAuth — comes back to the same URL, then init()
+      // will call tryLineLogin() automatically on the next page load.
+      liff.login({ redirectUri: window.location.href });
+    }
+  } catch (e) {
+    console.error('[line-login] manual trigger failed:', e);
+    if (hint) {
+      hint.textContent = 'LINE LOGIN ERROR: ' + (e && e.message ? String(e.message).slice(0, 60) : 'unknown');
+      hint.style.color = '#f87171';
+    }
+    if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+  }
+}
+
+window.triggerLineLogin = triggerLineLogin;
+
 // ── LINE Broadcast Modal ────────────────────────────
 let _broadcastTarget = null;
 

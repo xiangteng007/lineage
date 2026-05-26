@@ -2876,6 +2876,39 @@
     <div style="font-size:14px;font-weight:900;color:#f87171;text-transform:uppercase;letter-spacing:0.15em;margin-bottom:16px;border-bottom:1px solid rgba(248,113,113,0.2);padding-bottom:12px;">// System Auth</div>
     <div style="font-size:11px;color:rgba(248,113,113,0.7);text-transform:uppercase;letter-spacing:0.12em;font-weight:700;margin-bottom:20px;">Authentication required.<br>All login attempts are logged.</div>
     <div id="googleSignInDiv" style="display:flex;justify-content:center;min-height:44px;"></div>
+
+    <!-- OR divider -->
+    <div style="display:flex;align-items:center;gap:10px;margin:18px 0;">
+      <div style="flex:1;height:1px;background:rgba(186,117,23,0.30);"></div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--tx3);letter-spacing:0.22em;">OR</div>
+      <div style="flex:1;height:1px;background:rgba(186,117,23,0.30);"></div>
+    </div>
+
+    <!-- LINE login button -->
+    <button id="lineSignInBtn" type="button" onclick="triggerLineLogin()" style="
+      width:100%; padding:11px 14px;
+      background:#06c755; color:#fff;
+      border:2px solid #05b14b;
+      outline:1px solid rgba(6,199,85,0.30); outline-offset:2px;
+      font-family:'Chakra Petch','Noto Sans TC',sans-serif;
+      font-size:14px; font-weight:700; letter-spacing:0.06em;
+      cursor:pointer;
+      display:flex; align-items:center; justify-content:center; gap:8px;
+      transition:background 0.18s, box-shadow 0.18s, transform 0.12s;
+    "
+      onmouseover="this.style.background='#05b14b';this.style.boxShadow='0 0 18px rgba(6,199,85,0.55)';"
+      onmouseout="this.style.background='#06c755';this.style.boxShadow='';"
+      onmousedown="this.style.transform='scale(0.97)';"
+      onmouseup="this.style.transform='';">
+      <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+        <path fill="#fff" d="M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314M9.768 13.466H7.382c-.345 0-.627-.282-.627-.629V8.108c0-.346.282-.628.627-.628.348 0 .629.282.629.628v4.141h1.757c.345 0 .627.282.627.629 0 .345-.282.588-.627.588m1.473 0c-.345 0-.629-.282-.629-.629V8.108c0-.346.284-.628.629-.628.348 0 .628.282.628.628v4.729c0 .347-.28.629-.628.629m6.198 0c-.137 0-.272-.05-.376-.143l-2.443-3.317v2.831c0 .347-.279.629-.629.629-.345 0-.626-.282-.626-.629V8.108c0-.273.171-.512.426-.596.062-.025.135-.033.196-.033.198 0 .376.104.494.255l2.464 3.331V8.108c0-.346.281-.628.629-.628.348 0 .631.282.631.628v4.729c0 .347-.283.629-.631.629m1.943 0c-.345 0-.626-.282-.626-.629V8.108c0-.346.281-.628.626-.628h2.385c.349 0 .627.282.627.628 0 .349-.278.629-.627.629H19.41v1.123h1.756c.349 0 .627.281.627.629 0 .345-.278.629-.627.629H19.41v1.124h1.756c.349 0 .627.282.627.629 0 .345-.278.628-.627.628z"/>
+      </svg>
+      使用 LINE 帳號登入
+    </button>
+    <div id="lineLoginHint" style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;font-weight:700;margin-top:8px;font-family:'JetBrains Mono',monospace;opacity:0.7;">
+      MEMBER ACCESS · LIFF AUTH
+    </div>
+
     <div id="loginError" style="display:none;margin-top:14px;padding:10px;border:1px solid rgba(248,113,113,0.4);background:rgba(248,113,113,0.06);color:#f87171;font-size:11px;font-weight:700;text-transform:uppercase;"></div>
   </div>
 </div>
