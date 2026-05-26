@@ -2291,6 +2291,108 @@ function exportToCSV(moduleName) {
 // ── Expose Google login handler globally ────────────
 window.handleGoogleLogin = handleGoogleLogin;
 
+// ── Admin LINE Binding Modal ─────────────────────────
+async function openAdminBindModal() {
+  const modal = document.getElementById('adminBindModal');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  // Hide any leftover code from a previous session before refreshing
+  const box = document.getElementById('adminBindCodeBox');
+  if (box) box.style.display = 'none';
+  await refreshAdminBindStatus();
+}
+
+function closeAdminBindModal(e) {
+  if (e && e.target && e.target.id !== 'adminBindModal') return;
+  const modal = document.getElementById('adminBindModal');
+  if (modal) modal.style.display = 'none';
+}
+
+async function refreshAdminBindStatus() {
+  const statusEl = document.getElementById('adminBindStatus');
+  const unbindBtn = document.getElementById('adminUnbindBtn');
+  if (!statusEl) return;
+  statusEl.textContent = '載入中…';
+  if (unbindBtn) unbindBtn.style.display = 'none';
+  try {
+    const res = await fetch(`${API_BASE}/admin/line-bind`, { headers: authHeader() });
+    const data = await res.json();
+    if (!res.ok || !data.ok) {
+      statusEl.innerHTML = `<span style="color:#f87171;">⚠ 無法載入綁定狀態</span><br><span style="font-size:11px;opacity:0.7;">${(data && data.error) || ('HTTP ' + res.status)}</span>`;
+      return;
+    }
+    if (data.bound) {
+      const dn = data.displayName ? `<b style="color:#60a5fa;">${_escAdminBind(data.displayName)}</b>` : '<i style="color:var(--tx3);">(無暱稱)</i>';
+      statusEl.innerHTML = `<div style="color:#4ade80;font-weight:900;letter-spacing:0.08em;margin-bottom:4px;">✓ LINE 已綁定</div>${dn}<br><span style="font-size:11px;color:var(--tx3);font-family:'JetBrains Mono',monospace;">${_escAdminBind(data.email)}</span>`;
+      if (unbindBtn) unbindBtn.style.display = 'inline-flex';
+    } else {
+      statusEl.innerHTML = `<div style="color:var(--tx2);">尚未綁定 LINE 帳號</div><div style="font-size:11px;color:var(--tx3);margin-top:6px;">點下方「產生綁定碼」開始</div>`;
+    }
+  } catch (e) {
+    statusEl.innerHTML = `<span style="color:#f87171;">⚠ 網路錯誤</span><br><span style="font-size:11px;opacity:0.7;">${_escAdminBind(String(e.message || e))}</span>`;
+  }
+}
+
+async function generateAdminBindCode() {
+  const btn = document.getElementById('adminBindGenBtn');
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
+  try {
+    const res = await fetch(`${API_BASE}/admin/line-bind/code`, {
+      method: 'POST',
+      headers: authHeader(),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) {
+      showToast((data && data.error) || '產生綁定碼失敗', 'error');
+      return;
+    }
+    const codeEl = document.getElementById('adminBindCodeValue');
+    const boxEl = document.getElementById('adminBindCodeBox');
+    if (codeEl) codeEl.textContent = data.code;
+    if (boxEl) boxEl.style.display = 'block';
+    showToast('綁定碼已產生（24 小時有效）', 'success');
+  } catch (e) {
+    showToast('網路錯誤，請稍後再試', 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+  }
+}
+
+async function unbindAdminLine() {
+  if (!confirm('確定要解除目前的 LINE 綁定嗎？解綁後將不再收到血盟廣播通知。')) return;
+  try {
+    const res = await fetch(`${API_BASE}/admin/line-bind`, {
+      method: 'DELETE',
+      headers: authHeader(),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) {
+      showToast((data && data.error) || '解綁失敗', 'error');
+      return;
+    }
+    showToast('已解除 LINE 綁定', 'success');
+    const boxEl = document.getElementById('adminBindCodeBox');
+    if (boxEl) boxEl.style.display = 'none';
+    await refreshAdminBindStatus();
+  } catch (e) {
+    showToast('網路錯誤，請稍後再試', 'error');
+  }
+}
+
+// Local HTML-escape helper (named to avoid collision with auth.js _esc)
+function _escAdminBind(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+window.openAdminBindModal = openAdminBindModal;
+window.closeAdminBindModal = closeAdminBindModal;
+window.generateAdminBindCode = generateAdminBindCode;
+window.unbindAdminLine = unbindAdminLine;
+
 // ── LINE Broadcast Modal ────────────────────────────
 let _broadcastTarget = null;
 

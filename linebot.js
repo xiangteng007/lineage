@@ -388,10 +388,41 @@ async function handleBindFlow(event, session, text) {
       if (codeData.used) {
         return replyText(replyToken, '❌ 此綁定碼已被使用。請請幹部重新生成。');
       }
-      if (codeData.expiresAt && codeData.expiresAt.toDate && codeData.expiresAt.toDate() < new Date()) {
+      // expiresAt may be a Firestore Timestamp (member-flow) or ISO string (admin-flow)
+      const expiresAtMs = codeData.expiresAt && (codeData.expiresAt.toDate
+        ? codeData.expiresAt.toDate().getTime()
+        : Date.parse(codeData.expiresAt));
+      if (expiresAtMs && expiresAtMs < Date.now()) {
         return replyText(replyToken, '❌ 綁定碼已過期（有效期 24 小時）。請請幹部重新生成。');
       }
-      // Code valid — move to next step
+
+      // ── Admin-bind branch: skip the new-member onboarding flow ──
+      if (codeData.adminEmail) {
+        const email = String(codeData.adminEmail).toLowerCase();
+        // Best-effort LINE displayName lookup for nicer console + audit
+        let displayName = '';
+        try {
+          const profile = await getClient().getProfile(userId);
+          displayName = (profile && profile.displayName) || '';
+        } catch (_) {}
+        await db().collection('adminLineBinds').doc(email).set({
+          email,
+          lineUserId: userId,
+          displayName,
+          boundAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        await db().collection('bindCodes').doc(text).update({
+          used: true,
+          usedBy: userId,
+          usedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        clearSession(userId);
+        return replyText(replyToken,
+          `✅ 管理員 LINE 綁定成功！\n${email}\n你已加入血盟廣播通知名單。\n\n如需解綁，請至後台「LINE 綁定」面板。`
+        );
+      }
+
+      // ── Member-bind branch (original flow) ──
       setSession(userId, 'bind_await_name', { code: text });
       return replyText(replyToken,
         '✅ 綁定碼驗證成功！歡迎加入 Overnight Shuttle\n你的身份：[成員] 新人\n\n請輸入你的遊戲角色名稱：'
