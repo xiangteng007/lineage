@@ -411,37 +411,48 @@ function renderAuthUI() {
 function openLoginModal() {
   document.getElementById('loginModal').style.display = 'flex';
   document.getElementById('loginError').classList.add('hidden');
+  const div = document.getElementById('googleSignInDiv');
+  if (!div) return;
 
-  // Render Google Sign-In button
-  if (window.google && window.google.accounts) {
-    const clientId = document.querySelector('meta[name="google-client-id"]')?.content || '';
-    // Try to render the button
-    try {
-      google.accounts.id.renderButton(
-        document.getElementById('googleSignInDiv'),
-        {
-          type: 'standard',
-          theme: 'filled_black',
-          size: 'large',
-          text: 'signin_with',
-          shape: 'rectangular',
-          width: 280
-        }
-      );
-    } catch (e) {
-      // If Google client ID not configured, show placeholder
-      document.getElementById('googleSignInDiv').innerHTML = `
-        <div style="background:#fff;border-radius:4px;padding:10px 24px;display:flex;align-items:center;gap:10px;cursor:default;opacity:0.7;">
-          <span style="color:#444;font-size:14px;">請先設定 Google Client ID</span>
-        </div>
-        <p style="color:var(--text-soft);font-size:12px;margin-top:12px;">請在 Vercel 環境變數中加入 GOOGLE_CLIENT_ID</p>
-      `;
-    }
-  } else {
-    document.getElementById('googleSignInDiv').innerHTML = `
-      <div style="color:var(--text-soft);font-size:13px;padding:16px 0;">
-        Google 登入載入中.. 如長時間無反應，請重新整理頁面      </div>
-    `;
+  // Case A: GSI script not loaded yet (async defer can finish after init()).
+  // Show a wait message and retry once the global appears.
+  if (!(window.google && window.google.accounts && window.google.accounts.id)) {
+    div.innerHTML = '<div style="color:var(--tx3);font-size:13px;padding:16px 0;text-align:center;font-family:\'JetBrains Mono\',monospace;letter-spacing:0.12em;">> AWAITING GOOGLE IDENTITY SDK…</div>';
+    setTimeout(function () {
+      var modal = document.getElementById('loginModal');
+      if (modal && modal.style.display === 'flex') openLoginModal();
+    }, 700);
+    return;
+  }
+
+  // Case B: SDK is ready — make sure it's initialised with our client_id
+  // every time the modal opens (idempotent). The earlier initialize() call
+  // in init() can be a no-op if the SDK wasn't loaded yet; this guarantees
+  // renderButton has a valid client_id to bind to.
+  var clientId = window.GOOGLE_CLIENT_ID || '';
+  if (!clientId) {
+    div.innerHTML = '<div style="color:#f87171;font-size:13px;padding:16px 0;text-align:center;font-weight:700;letter-spacing:0.08em;">GOOGLE_CLIENT_ID NOT CONFIGURED<br><span style="font-size:11px;opacity:0.8;">請在 Vercel 環境變數設定 GOOGLE_CLIENT_ID</span></div>';
+    return;
+  }
+
+  try {
+    google.accounts.id.initialize({
+      client_id: clientId,
+      callback: handleGoogleCredential,
+      auto_select: false,
+    });
+    div.innerHTML = ''; // clear any prior placeholder before render
+    google.accounts.id.renderButton(div, {
+      type: 'standard',
+      theme: 'filled_black',
+      size: 'large',
+      text: 'signin_with',
+      shape: 'rectangular',
+      width: 280,
+    });
+  } catch (e) {
+    console.error('[auth] GSI renderButton error:', e);
+    div.innerHTML = '<div style="color:#f87171;font-size:13px;padding:16px 0;text-align:center;">Google 元件初始化失敗<br><span style="font-size:11px;opacity:0.8;">' + (e && e.message ? String(e.message).replace(/[<>&]/g, '') : 'unknown') + '</span></div>';
   }
 }
 
