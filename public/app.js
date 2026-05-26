@@ -184,7 +184,7 @@ async function init() {
       if (window.google && window.google.accounts) {
         google.accounts.id.initialize({
           client_id: cfg.googleClientId,
-          callback: handleGoogleCredential,
+          callback: function (resp) { handleGoogleLogin(resp && resp.credential); },
           auto_select: false,
         });
       }
@@ -438,7 +438,7 @@ function openLoginModal() {
   try {
     google.accounts.id.initialize({
       client_id: clientId,
-      callback: handleGoogleCredential,
+      callback: function (resp) { handleGoogleLogin(resp && resp.credential); },
       auto_select: false,
     });
     div.innerHTML = ''; // clear any prior placeholder before render
