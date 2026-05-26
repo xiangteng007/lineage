@@ -2135,6 +2135,9 @@
               <button onclick="openLineBroadcastModal()" class="admin-only hidden btn btn-xs btn-success" style="width:100%;margin-top:5px;justify-content:center;">
                 <span class="material-symbols-outlined" style="font-size:16px;">send</span> LINE 廣播
               </button>
+              <button onclick="openAdminBindModal()" class="admin-only hidden btn btn-xs" style="width:100%;margin-top:5px;justify-content:center;border-color:rgba(96,165,250,0.5);color:#60a5fa;">
+                <span class="material-symbols-outlined" style="font-size:16px;">link</span> LINE 綁定
+              </button>
             </div>
           </div>
         </div>
@@ -3156,6 +3159,46 @@
     <div style="display:flex;gap:8px;">
       <button onclick="closeAttendanceModal()" class="btn btn-sm" style="flex:1;justify-content:center;">ABORT</button>
       <button onclick="saveAttendance()" class="btn btn-sm" style="flex:1;justify-content:center;background:var(--or);color:var(--bg);border-color:var(--or);">SAVE.ATTENDANCE()</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ADMIN LINE BIND MODAL ═══ -->
+<div id="adminBindModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:1000;align-items:center;justify-content:center;" onclick="closeAdminBindModal(event)">
+  <div style="background:var(--p1);border:2px solid rgba(96,165,250,0.5);outline:1px solid rgba(96,165,250,0.22);outline-offset:3px;width:100%;max-width:440px;padding:22px;" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;border-bottom:1px solid var(--bd);padding-bottom:12px;">
+      <div>
+        <div style="font-size:13px;font-weight:900;color:#60a5fa;text-transform:uppercase;letter-spacing:0.12em;">// Admin LINE Bind</div>
+        <div style="font-size:11px;color:var(--or2);text-transform:uppercase;letter-spacing:0.08em;margin-top:3px;font-weight:700;">管理員 LINE 通知綁定</div>
+      </div>
+      <button onclick="closeAdminBindModal()" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:18px;line-height:1;">✕</button>
+    </div>
+
+    <div id="adminBindStatus" style="padding:14px;background:var(--p2);border:1px solid var(--bd);margin-bottom:14px;font-size:13px;color:var(--tx2);text-align:center;letter-spacing:0.04em;">
+      載入中…
+    </div>
+
+    <div id="adminBindCodeBox" style="display:none;margin-bottom:14px;">
+      <div style="font-size:11px;color:var(--or);text-transform:uppercase;letter-spacing:0.10em;font-weight:900;margin-bottom:8px;">// Step 1 — Code Generated</div>
+      <div id="adminBindCodeValue" style="font-family:'JetBrains Mono',monospace;font-size:48px;font-weight:700;color:var(--or);text-align:center;letter-spacing:0.18em;padding:18px 8px;background:rgba(239,159,39,0.06);border:1px solid rgba(239,159,39,0.4);text-shadow:0 0 14px rgba(239,159,39,0.5);">000000</div>
+      <div style="font-size:11px;color:var(--tx2);margin-top:10px;line-height:1.6;letter-spacing:0.04em;">
+        <div style="font-weight:900;color:var(--or);text-transform:uppercase;letter-spacing:0.10em;margin-bottom:6px;">// Step 2 — 至 LINE 完成綁定</div>
+        1. 開啟血盟 LINE Bot 對話框<br>
+        2. 輸入「<b style="color:var(--or)">綁定</b>」並送出<br>
+        3. Bot 詢問後，傳送上方 6 位數字綁定碼<br>
+        4. 綁定成功後此處可看到 LINE 名稱
+      </div>
+      <div style="font-size:10px;color:var(--tx3);margin-top:8px;text-align:right;font-family:'JetBrains Mono',monospace;">有效期 24 小時</div>
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button id="adminBindGenBtn" onclick="generateAdminBindCode()" class="btn btn-sm" style="flex:1;justify-content:center;min-width:120px;background:rgba(96,165,250,0.10);border-color:rgba(96,165,250,0.5);color:#60a5fa;">
+        <span class="material-symbols-outlined" style="font-size:14px;">key</span> 產生綁定碼
+      </button>
+      <button id="adminUnbindBtn" onclick="unbindAdminLine()" class="btn btn-sm btn-danger" style="flex:1;justify-content:center;display:none;min-width:120px;">
+        <span class="material-symbols-outlined" style="font-size:14px;">link_off</span> 解除綁定
+      </button>
+      <button onclick="closeAdminBindModal()" class="btn btn-sm" style="flex:0 0 auto;justify-content:center;">CLOSE</button>
     </div>
   </div>
 </div>

@@ -536,7 +536,20 @@ app.post('/api/line/broadcast', requireAction('lineBroadcast'), async (req, res)
   };
 
   try {
+    // adminBinds: Google-admins who have linked a LINE account via the
+    // admin-bind flow. Their lineUserIds are added to the broadcast on
+    // every targeted mode (bound + tier) so admins stay in the loop.
+    let adminBinds = [];
+    try {
+      const adb = firebase.getDb();
+      if (adb) {
+        const snap = await adb.collection('adminLineBinds').get();
+        adminBinds = snap.docs.map(d => d.data()).filter(b => b && b.lineUserId);
+      }
+    } catch (e) { console.warn('[broadcast] adminBinds fetch failed:', e.message); }
+
     const [members, alliances] = await Promise.all([firebase.getAllData('Members'), firebase.getAllData('Alliances')]);
+    const adminUserIds = adminBinds.map(b => b.lineUserId);
     const client = getLineClient();
 
     // ── MODE: all — Broadcast to ALL LINE followers (no binding required)
@@ -550,27 +563,29 @@ app.post('/api/line/broadcast', requireAction('lineBroadcast'), async (req, res)
       if (!tiers || tiers.length === 0) {
         return res.status(400).json({ error: '請至少選擇一個分級' });
       }
-      const targetUserIds = members
+      const tierUserIds = members
         .filter(m => m.lineUserId && tiers.includes(m.tier || '一般'))
-        .map(m => m.lineUserId)
+        .map(m => m.lineUserId);
+      const targetUserIds = [...tierUserIds, ...adminUserIds]
         .filter((v, i, a) => a.indexOf(v) === i);
 
       if (targetUserIds.length === 0) {
         return res.status(400).json({ error: `所選分級 [${tiers.join('/')}] 尚無綁定 LINE 的成員` });
       }
       await client.multicast({ to: targetUserIds, messages: [flexMessage] });
-      return res.json({ ok: true, method: 'tier', sent: targetUserIds.length });
+      return res.json({ ok: true, method: 'tier', sent: targetUserIds.length, includedAdmins: adminUserIds.length });
     }
 
-    // ── MODE: bound (default) — Multicast to all LINE-bound members & alliances
+    // ── MODE: bound (default) — Multicast to all LINE-bound members, alliances + admins
     const boundUserIds = [...members, ...alliances]
       .filter(p => p.lineUserId)
       .map(p => p.lineUserId)
+      .concat(adminUserIds)
       .filter((v, i, a) => a.indexOf(v) === i);
 
     if (boundUserIds.length > 0) {
       await client.multicast({ to: boundUserIds, messages: [flexMessage] });
-      return res.json({ ok: true, method: 'bound', sent: boundUserIds.length });
+      return res.json({ ok: true, method: 'bound', sent: boundUserIds.length, includedAdmins: adminUserIds.length });
     } else {
       // Fallback: no bound members → broadcast to all followers
       await client.broadcast({ messages: [flexMessage] });
@@ -1373,6 +1388,7 @@ require('./lib/routes-extra')(app, firebase, agg, httpx);
 require('./lib/routes-sprint-bcd')(app, firebase, agg, httpx);
 require('./lib/routes-auth')(app, firebase, agg);
 require('./lib/routes-liff')(app, firebase);
+require('./lib/routes-admin-bind')(app, firebase, requireAdmin);
 
 // ── Serve frontend ───────────────────────────────
 app.get('*', (req, res) => {
