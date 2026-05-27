@@ -102,11 +102,17 @@ function canViewModule(mod) { if (auth.isAdmin) return true; if (!auth.permissio
 function canEditModule(mod) { if (auth.isAdmin) return true; if (!auth.permissions) return false; return auth.permissions[mod] ? auth.permissions[mod].edit : false; }
 
 function applyPermissions() {
-  // "我的檔案" tab only for logged-in LINE members
+  // "我的檔案" tab — visible for any LINE-member session so an unbound user
+  // (roleLevel 0) still has a profile entry sitting next to the rest of the
+  // sidebar rather than being the lone visible item.
   document.querySelectorAll('[data-section="myprofile"]').forEach(b => { b.style.display = auth.isMember ? '' : 'none'; });
-  // Gate module nav by view permission (owner / open mode = unrestricted)
+  // Gate module nav by view permission. LINE members get a baseline of
+  // overview / battles / sieges visible regardless of roleLevel, so an
+  // unbound member still sees the public guild views alongside 我的檔案.
+  const memberBaseline = new Set(['overview', 'battles', 'sieges']);
   ['overview', 'members', 'battles', 'sieges', 'alliances', 'treasury'].forEach(mod => {
-    const show = canViewModule(mod);
+    let show = canViewModule(mod);
+    if (!show && auth.isMember && memberBaseline.has(mod)) show = true;
     document.querySelectorAll(`.nav-item[data-section="${mod}"], .mnav-btn[data-section="${mod}"]`).forEach(b => { b.style.display = show ? '' : 'none'; });
   });
   const canEditMembers = auth.isAdmin || canEditModule('members');
