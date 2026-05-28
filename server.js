@@ -24,7 +24,17 @@ const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 
-// ── LINE Bot Webhook ────────────────────────────
+// ── LINE Bot (must be mounted BEFORE express.json so line.middleware can
+//    read the raw body to verify the signature) ────────────────────────
+try {
+  const { setupLineBot } = require('./linebot');
+  setupLineBot(app);
+  console.log('✅ LINE Bot 模組已掛載 (/webhook/line, /api/line-auth)');
+} catch (e) {
+  console.warn('⚠️  LINE Bot 模組未能載入（可能缺少環境變數）:', e.message);
+}
+
+// ── LINE Bot Webhook (legacy) ────────────────────
 app.post('/api/webhook', line.middleware(lineConfig), (req, res) => {
   Promise
     .all(req.body.events.map(handleLineEvent))
@@ -1288,14 +1298,9 @@ app.post('/api/save-design', express.json(), (req, res) => {
   }
 });
 
-// ── LINE Bot (新版 webhook + Firebase Auth) ───────
-try {
-  const { setupLineBot } = require('./linebot');
-  setupLineBot(app);
-  console.log('✅ LINE Bot 模組已掛載 (/webhook/line, /api/line-auth)');
-} catch (e) {
-  console.warn('⚠️  LINE Bot 模組未能載入（可能缺少環境變數）:', e.message);
-}
+// ── LINE Bot moved to the top of server.js (right after CORS) so
+//    line.middleware can read the raw request body before express.json
+//    parses it. Keeping this comment as a marker for future readers.
 
 // ── Sprint B/C/D write endpoints ──────────────────────────────────────────
 // POST /api/members/:id/level-update — level change + levelHistory sub-collection
