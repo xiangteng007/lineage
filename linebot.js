@@ -964,16 +964,26 @@ function setupLineBot(app) {
   const cfg = getLineConfig();
 
   // ── POST /webhook/line ──────────────────────────────
+  // LINE platform expects a 200 response immediately. Their Verify button
+  // also sends a body with no `events` field, which used to crash this
+  // handler with TypeError → 500 → Verify failed. We now:
+  //  1. Guard events to be an array (Verify body / pings get an empty list).
+  //  2. Respond 200 first, then process events asynchronously so a slow
+  //     handler can never time out the LINE platform's webhook deadline.
   app.post(
     '/webhook/line',
     line.middleware(cfg),
     (req, res) => {
-      Promise.all(req.body.events.map(handleEvent))
-        .then(results => res.json({ ok: true, processed: results.length }))
-        .catch(err => {
-          console.error('[linebot] webhook error:', err);
-          res.status(500).json({ ok: false, error: err.message });
-        });
+      const events = (req.body && Array.isArray(req.body.events)) ? req.body.events : [];
+      // Acknowledge immediately — LINE's webhook verify and message delivery
+      // both require a 200 response. Errors in handleEvent are logged but
+      // never bubble up to the response.
+      res.status(200).json({ ok: true, processed: events.length });
+      if (events.length === 0) return;
+      Promise.all(events.map(ev =>
+        Promise.resolve().then(() => handleEvent(ev))
+          .catch(err => console.error('[linebot] handleEvent error:', err && err.message, '| event:', ev && ev.type))
+      )).catch(err => console.error('[linebot] webhook fan-out error:', err && err.message));
     }
   );
 
