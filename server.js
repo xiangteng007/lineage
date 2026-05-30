@@ -539,9 +539,9 @@ app.post('/api/line/broadcast', requireAction('lineBroadcast'), async (req, res)
             displayText: '我要出席！'
           },
           style: 'primary', color: '#ff3333', height: 'sm'
-        }],
-        styles: { separator: true }
-      }
+        }]
+      },
+      styles: { footer: { separator: true } }
     }
   };
 
@@ -602,8 +602,10 @@ app.post('/api/line/broadcast', requireAction('lineBroadcast'), async (req, res)
       return res.json({ ok: true, method: 'all', sent: null, note: '無綁定成員，已廣播給所有關注者' });
     }
   } catch (e) {
-    console.error('LINE broadcast error:', e);
-    res.status(500).json({ error: e.message || '推播失敗，請確認 LINE Token 設定' });
+    const lineDetail = (e && e.originalError && e.originalError.response && e.originalError.response.data)
+      || (e && e.response && e.response.data) || null;
+    console.error('LINE broadcast error:', e && e.message, JSON.stringify(lineDetail || {}));
+    res.status(500).json({ error: (e && e.message) || '推播失敗，請確認 LINE Token 設定', detail: lineDetail });
   }
 });
 
