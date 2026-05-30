@@ -1,7 +1,7 @@
 # Lineage AI — Session Handover / 交接文件
 
 > 天堂經典版 公會管理系統 ｜ 給「新視窗 / 新 session」無痛接手用
-> 最後更新：2026-05-29（本次 session 完成 Phase 5 全套 UI 深化 13 輪 + 後端 RBAC / LINE 綁定 / 雙登入 / webhook 修復）
+> 最後更新：2026-05-30（本次 session：seed RBAC 設定 + 修復廣播 Flex 400 + 建立第一筆成員，全程用 Chrome 代操驗收）
 
 ---
 
@@ -10,8 +10,10 @@
 **系統穩定運行**：<https://lineage-nine-sigma.vercel.app/>
 四位管理員已配置 (`ADMIN_EMAILS`)，**xiangteng007@gmail.com 的 LINE 已綁定**（uid `Ua1f...4d0b`，displayName「湘騰」），其他三位待綁。LINE Bot webhook 經三輪修復後完整可用，後台 admin LINE 綁定 modal + LIFF 出席頁 + Google/LINE 雙登入全部上線。
 
-**正式環境 = GitHub `main` @ `6ee818c`**（PR #23 squash 後 HEAD）。
-⚠️ **本機 repo 可能落後**：`git pull origin main` 同步、`HANDOFF.md` 是 untracked。
+**正式環境 = GitHub `main` @ `c0068b1`**（PR #25 廣播 Flex 修復後 HEAD）。
+⚠️ **本機 repo 可能落後**：`git pull origin main` 同步。
+
+**2026-05-30 重點**：`settings/permissions` 等 RBAC 文件原本完全沒 seed（`/api/settings` 回 roles/modules 皆 null），導致 `lineBroadcast` 等 action 一律 403 → 已用 `node scripts/seed-settings.js --commit` 補上。廣播 Flex 訊息的 `styles` 屬性放錯在 footer box（應在 bubble 層級），LINE 回 400 → PR #25 修復。第一筆成員「小箱子」已建立。**首領/攻城 LINE 廣播現已實機驗收成功**（手機收到 Flex）。
 
 ---
 
@@ -175,10 +177,11 @@ git pull origin main
 
 | # | 項目 | 誰做 / 備註 |
 |---|---|---|
-| 30 | **三位 admin 完成 LINE 綁定** | tang851206 / Gary19890130 / emmashiu 各自走同樣流程。Google 登入後台 → 點概覽藍色「LINE 綁定」→ 產綁定碼 → LINE Bot 輸入「綁定」+ 6 位數字。完成後 `adminLineBinds` 會有 4 筆。 |
-| 31 | **建立第一筆成員紀錄** | 後台 `成員` 分頁 → 點「+ 新增」（admin-only 才出現）→ 填角色名稱、職業、等級、tier「核心」（自動 roleLevel 3）→ 在該 row 用「LINE Bind」操作把 lineUserId 填進去 → 之後 attendance 統計、戰利品分紅可用 |
-| 32 | **第一筆 LINE 廣播驗證** | 後台「首領戰」分頁建一筆假首領 → row 上點「LINE 廣播」→ 手機 LINE 應收到黑底琥珀色 Flex Message |
-| 33 | **HANDOFF.md commit 進 main** | 本檔案目前 untracked，建議 `git add HANDOFF.md && git commit -m "docs: HANDOFF for 5/29 milestone"` |
+| 30 | **三位 admin 完成 LINE 綁定**（⏳ 仍待辦）| tang851206 / Gary19890130 / emmashiu 各自走同樣流程。Google 登入後台 → 點概覽藍色「LINE 綁定」→ 產綁定碼 → LINE Bot 輸入「綁定」+ 6 位數字。完成後 `adminLineBinds` 會有 4 筆。**綁定碼綁在登入者 email，必須各 admin 本人操作，無法代做。** |
+| 31 | ✅ **已完成**（2026-05-30）| 第一筆成員「小箱子」（Lv40 / 法師 / 核心Core / 備註「召喚/魅法」）已建立。其 `lineUserId` 尚未綁定（LINE 欄為「—」），如需 attendance/分紅再於該 row 用「LINE Bind」補上。 |
+| 32 | ✅ **已完成**（2026-05-30）| 已登記測試首領、修復廣播 Flex 400 bug（PR #25）、手機實機收到 Flex。⚠️ production 仍留有一筆測試用「測試首領」紀錄，可自行刪除。 |
+| 33 | ✅ **已完成**（PR #24）| HANDOFF.md 已進 main。 |
+| 34 | **RBAC seed**（✅ 2026-05-30 已做）| `settings/permissions|modules|roles|guild` 已 `seed-settings.js --commit` 建立。預設角色：5會主/4元帥/3幹部/2成員/1新人；`lineBroadcast` 門檻 roleLevel 3。 |
 
 ---
 
@@ -207,6 +210,12 @@ git pull origin main
 10. 前端載入順序（index.html 底部）：firebase CDN → LIFF SDK → `firebase-config.js` → `auth.js` → `app.js` → inline IIFE scripts。
 
 11. **LINE OA Manager「自動回應訊息」**：必須關閉，否則訊息被攔截不送 webhook。LINE Developers Console 那邊的「Use webhook」是 ON、Webhook URL 是 `https://lineage-nine-sigma.vercel.app/webhook/line`。
+
+12. **❗action 權限走 `x-google-token` header，不是 `Authorization`**：`requireAction()` → `resolveActor()` 讀 `req.headers['x-google-token']`（Google owner=role 5）或 `x-firebase-token`（LINE 成員）。用 `Authorization: Bearer` 打這些端點會被當 role 0 → 403。前端 `safeJson/authHeader` 已帶對的 header；手動測 API（curl/console）要記得用 `x-google-token`。
+
+13. **❗RBAC 必須先 seed**：`requireAction` 依賴 `settings/permissions`。若沒 seed，多個 action（含 `lineBroadcast`）會 403。go-live 前務必跑 `node scripts/seed-settings.js --commit`。
+
+14. **❗LINE Flex `styles` 是 bubble 層級屬性**：放進 box（header/body/footer）會讓 LINE 回 400 Bad Request，被包成 500。正確位置 `bubble.styles.footer.separator`。PR #25 的教訓。廣播 catch 區塊已會回傳 `detail`（LINE 原始錯誤）方便除錯。
 
 ---
 
