@@ -1349,6 +1349,24 @@ app.put('/api/settings', requireAdmin, async (req, res) => {
   res.json({ ok: true, updated });
 });
 
+// PUT /api/guild — officer-editable guild info (name / server / announcement / castles)
+// Gated at roleLevel >= 3 (幹部) so officers — not just the owner — can maintain it.
+app.put('/api/guild', requireRole(3), async (req, res) => {
+  const db = firebase.getDb();
+  if (!db) return res.status(503).json({ ok: false, code: 'DB_UNAVAILABLE', error: 'DB unavailable' });
+  const b = req.body || {};
+  const patch = {};
+  if (b.guildName != null) patch.guildName = String(b.guildName).slice(0, 60);
+  if (b.serverName != null) patch.serverName = String(b.serverName).slice(0, 60);
+  if (b.announcement != null) patch.announcement = String(b.announcement).slice(0, 2000);
+  if (Array.isArray(b.castles)) patch.castles = b.castles.map(c => String(c).slice(0, 40)).filter(Boolean).slice(0, 30);
+  if (Object.keys(patch).length === 0) return res.status(400).json({ ok: false, code: 'BAD_REQUEST', error: '無可更新欄位' });
+  patch.updatedAt = new Date().toISOString();
+  await db.collection('settings').doc('guild').set(patch, { merge: true });
+  logActivity(firebase, { action: 'update', module: 'settings', actor: req.userEmail || req.adminEmail || 'officer', target: 'guild', detail: '更新公會資料：' + Object.keys(patch).filter(k => k !== 'updatedAt').join(',') });
+  res.json({ ok: true, data: patch });
+});
+
 // DELETE /api/battles/:id/attendance/:memberId — remove one attendee
 app.delete('/api/battles/:id/attendance/:memberId', requireRole(3), async (req, res) => {
   const battle = await firebase.getDocument('Battles', req.params.id);
