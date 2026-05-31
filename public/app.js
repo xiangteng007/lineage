@@ -130,6 +130,8 @@ function applyPermissions() {
   const tpc = document.getElementById('treasuryPermCard'); if (tpc) tpc.classList.toggle('hidden', !auth.isAdmin);
   const mac = document.getElementById('memberAddCard'); if (mac) mac.classList.toggle('hidden', !(auth.isAdmin || auth.openMode || canDoActionClient('memberCreate')));
   document.querySelectorAll('[onclick*="openLineBroadcastModal"]').forEach(b => b.classList.toggle('hidden', !canDoActionClient('lineBroadcast')));
+  // Guild info editor button: officers (roleLevel>=3) and up
+  const gib = document.getElementById('guildInfoBtn'); if (gib) gib.classList.toggle('hidden', !(auth.isAdmin || auth.openMode || (auth.roleLevel || 0) >= 3));
   // Limit income/expense options to what the actor may do (non-owner)
   const txType = document.getElementById('txType');
   if (txType && txType.options && !auth.isAdmin) {
@@ -2398,6 +2400,101 @@ window.openAdminBindModal = openAdminBindModal;
 window.closeAdminBindModal = closeAdminBindModal;
 window.generateAdminBindCode = generateAdminBindCode;
 window.unbindAdminLine = unbindAdminLine;
+
+// ── Guild Info Editor (officer Lv3+) — name / server / announcement / castles ──
+// Self-contained IIFE (no top-level declarations) per HANDOFF §8 scope rules.
+// Builds an inline-styled modal on demand and saves via PUT /api/guild.
+(function () {
+  let castles = [];
+  function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+  function ensureModal() {
+    if (document.getElementById('guildInfoModal')) return;
+    const wrap = document.createElement('div');
+    wrap.id = 'guildInfoModal';
+    wrap.style.cssText = 'display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.72);align-items:center;justify-content:center;padding:16px;';
+    wrap.innerHTML =
+      '<div style="width:100%;max-width:460px;background:#111;border:1px solid #4a3a14;border-radius:14px;overflow:hidden;max-height:90vh;display:flex;flex-direction:column;">' +
+        '<div style="background:linear-gradient(135deg,#1a1407,#0d0d0d);border-bottom:1px solid #4a3a14;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;">' +
+          '<span style="color:#ffe600;font-weight:800;font-size:16px;letter-spacing:1px;">⚙️ 公會資料</span>' +
+          '<span onclick="window.closeGuildInfoModal()" style="cursor:pointer;color:#9a8a66;font-size:20px;line-height:1;">×</span>' +
+        '</div>' +
+        '<div style="padding:16px 18px;overflow-y:auto;">' +
+          '<label style="display:block;color:#9a8a66;font-size:11px;letter-spacing:1px;margin-bottom:4px;">公會名稱</label>' +
+          '<input id="gi_guildName" type="text" maxlength="60" style="width:100%;background:#0d0d0d;border:1px solid #3a2c0e;border-radius:7px;color:#eee;padding:8px 10px;font-size:14px;margin-bottom:12px;"/>' +
+          '<label style="display:block;color:#9a8a66;font-size:11px;letter-spacing:1px;margin-bottom:4px;">伺服器</label>' +
+          '<input id="gi_serverName" type="text" maxlength="60" style="width:100%;background:#0d0d0d;border:1px solid #3a2c0e;border-radius:7px;color:#eee;padding:8px 10px;font-size:14px;margin-bottom:12px;"/>' +
+          '<label style="display:block;color:#9a8a66;font-size:11px;letter-spacing:1px;margin-bottom:4px;">公告（LINE 輸入「公告」會收到）</label>' +
+          '<textarea id="gi_announcement" maxlength="2000" rows="4" style="width:100%;background:#0d0d0d;border:1px solid #3a2c0e;border-radius:7px;color:#eee;padding:8px 10px;font-size:14px;margin-bottom:12px;resize:vertical;"></textarea>' +
+          '<label style="display:block;color:#9a8a66;font-size:11px;letter-spacing:1px;margin-bottom:4px;">城堡清單</label>' +
+          '<div id="gi_castleList" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>' +
+          '<div style="display:flex;gap:6px;">' +
+            '<input id="gi_castleInput" type="text" maxlength="40" placeholder="新增城堡名稱…" style="flex:1;background:#0d0d0d;border:1px solid #3a2c0e;border-radius:7px;color:#eee;padding:7px 10px;font-size:13px;"/>' +
+            '<button onclick="window.addGuildCastle()" style="background:#1a3a7a;color:#bcd4ff;border:1px solid #2a5aaa;border-radius:7px;padding:0 14px;font-weight:700;cursor:pointer;">＋</button>' +
+          '</div>' +
+        '</div>' +
+        '<div style="padding:12px 18px;border-top:1px solid #2a2a2a;display:flex;gap:8px;justify-content:flex-end;">' +
+          '<button onclick="window.closeGuildInfoModal()" style="background:#222;color:#ccc;border:1px solid #444;border-radius:7px;padding:8px 16px;cursor:pointer;">取消</button>' +
+          '<button onclick="window.saveGuildInfo()" style="background:linear-gradient(135deg,#f59e0b,#b87333);color:#111;border:none;border-radius:7px;padding:8px 20px;font-weight:800;cursor:pointer;">儲存</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(wrap);
+    wrap.addEventListener('click', function (e) { if (e.target === wrap) window.closeGuildInfoModal(); });
+    const ci = wrap.querySelector('#gi_castleInput');
+    if (ci) ci.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); window.addGuildCastle(); } });
+  }
+  function renderCastles() {
+    const box = document.getElementById('gi_castleList');
+    if (!box) return;
+    box.innerHTML = castles.length ? '' : '<span style="color:#6a6256;font-size:12px;">（尚無城堡）</span>';
+    castles.forEach(function (c, i) {
+      const chip = document.createElement('span');
+      chip.style.cssText = 'display:inline-flex;align-items:center;gap:5px;background:#0d160f;border:1px solid #1d4a2e;border-radius:14px;padding:3px 8px 3px 11px;color:#1fd66e;font-size:13px;font-weight:700;';
+      chip.innerHTML = esc(c) + ' <span data-i="' + i + '" style="cursor:pointer;color:#f87171;font-weight:900;">×</span>';
+      chip.querySelector('span[data-i]').addEventListener('click', function () { castles.splice(i, 1); renderCastles(); });
+      box.appendChild(chip);
+    });
+  }
+  async function open() {
+    ensureModal();
+    try {
+      const r = await fetch(API_BASE + '/settings', { headers: authHeaders() });
+      const j = await r.json();
+      const g = (j && j.data && j.data.guild) || {};
+      document.getElementById('gi_guildName').value = g.guildName || '';
+      document.getElementById('gi_serverName').value = g.serverName || '';
+      document.getElementById('gi_announcement').value = g.announcement || '';
+      castles = Array.isArray(g.castles) ? g.castles.slice() : [];
+    } catch (e) { castles = []; }
+    renderCastles();
+    document.getElementById('guildInfoModal').style.display = 'flex';
+  }
+  function close() { const m = document.getElementById('guildInfoModal'); if (m) m.style.display = 'none'; }
+  function addCastle() {
+    const inp = document.getElementById('gi_castleInput');
+    if (!inp) return;
+    const v = inp.value.trim();
+    if (v && castles.indexOf(v) === -1 && castles.length < 30) { castles.push(v); inp.value = ''; renderCastles(); }
+    inp.focus();
+  }
+  async function save() {
+    const payload = {
+      guildName: document.getElementById('gi_guildName').value.trim(),
+      serverName: document.getElementById('gi_serverName').value.trim(),
+      announcement: document.getElementById('gi_announcement').value,
+      castles: castles,
+    };
+    try {
+      const r = await fetch(API_BASE + '/guild', { method: 'PUT', headers: authHeaders(), body: JSON.stringify(payload) });
+      const j = await r.json();
+      if (r.ok && j.ok) { showToast('公會資料已更新', 'success'); close(); }
+      else { showToast('儲存失敗：' + (j.error || r.status), 'error'); }
+    } catch (e) { showToast('儲存失敗：' + e.message, 'error'); }
+  }
+  window.openGuildInfoModal = open;
+  window.closeGuildInfoModal = close;
+  window.addGuildCastle = addCastle;
+  window.saveGuildInfo = save;
+})();
 
 // ── Manual LINE login trigger (from #loginModal LINE button) ──────────
 // Reuses the existing tryLineLogin() pipeline but actively kicks LIFF
