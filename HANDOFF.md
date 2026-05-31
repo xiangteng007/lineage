@@ -10,10 +10,12 @@
 **系統穩定運行**：<https://lineage-nine-sigma.vercel.app/>
 四位管理員已配置 (`ADMIN_EMAILS`)，**xiangteng007@gmail.com 的 LINE 已綁定**（uid `Ua1f...4d0b`，displayName「湘騰」），其他三位待綁。LINE Bot webhook 經三輪修復後完整可用，後台 admin LINE 綁定 modal + LIFF 出席頁 + Google/LINE 雙登入全部上線。
 
-**正式環境 = GitHub `main` @ `c0068b1`**（PR #25 廣播 Flex 修復後 HEAD）。
+**正式環境 = GitHub `main` @ `783477a`**（PR #28 公會資料編輯後 HEAD）。
 ⚠️ **本機 repo 可能落後**：`git pull origin main` 同步。
 
 **2026-05-30 重點**：`settings/permissions` 等 RBAC 文件原本完全沒 seed（`/api/settings` 回 roles/modules 皆 null），導致 `lineBroadcast` 等 action 一律 403 → 已用 `node scripts/seed-settings.js --commit` 補上。廣播 Flex 訊息的 `styles` 屬性放錯在 footer box（應在 bubble 層級），LINE 回 400 → PR #25 修復。第一筆成員「小箱子」已建立。**首領/攻城 LINE 廣播現已實機驗收成功**（手機收到 Flex）。
+
+**2026-05-31 重點**：(1) inspect 腳本／LINE 綁定圖卡／階段總結納入 git（PR #27）。(2) **新增「公會資料」編輯功能**（PR #28）：officer（roleLevel≥3）可在後台概覽「公會資料」按鈕編輯**公會名／伺服器／公告／城堡清單**；後端 `PUT /api/guild`（`requireRole(3)`，白名單＋長度上限，寫 `settings/guild`）。前端是 `public/app.js` 內 IIFE 動態 modal（零頂層宣告）。LINE「公告」指令讀 `settings/guild.announcement`，現可由幹部自行維護。(3) 排查結論：程式碼無未完成標記，剩餘缺口為營運/資料面（3 位 admin 待綁、成員待綁 lineUserId、成員待建檔）。詳見 `SESSION-SUMMARY-2026-05-31.md`。
 
 ---
 
