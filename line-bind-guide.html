@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>LINE 通知設定（手機版）</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:#111;font-family:"Noto Sans TC","Microsoft JhengHei",sans-serif}
+.card{min-height:100vh;display:flex;flex-direction:column;background:#111;max-width:430px;margin:0 auto}
+.hd{background:linear-gradient(135deg,#1a1407,#0d0d0d);border-bottom:1px solid #4a3a14;padding:13px 16px;text-align:center}
+.hd .kij{color:#f59e0b;font-weight:800;font-size:10px;letter-spacing:2px}
+.hd h1{color:#ffe600;font-size:19px;margin:3px 0 1px}
+.hd p{color:#9a8a66;font-size:11px}
+.seclbl{display:flex;align-items:center;gap:7px;padding:10px 16px 6px}
+.seclbl .tag{background:#06c755;color:#06321a;font-weight:800;font-size:11px;border-radius:5px;padding:2px 8px}
+.seclbl .tag.am{background:#f59e0b;color:#2a1c02}
+.seclbl .tt{color:#eee;font-size:13.5px;font-weight:700}
+.qr{display:flex;gap:11px;align-items:center;margin:0 16px;background:#0d0d0d;border:1px solid #1f3a28;border-radius:10px;padding:10px}
+.qr img{width:96px;height:96px;background:#fff;border:5px solid #fff;border-radius:6px;flex:0 0 auto}
+.qr .info .nm{color:#06c755;font-size:15px;font-weight:800}
+.qr .info .id{color:#cfe9d8;font-size:12.5px;margin:1px 0 5px;font-weight:700}
+.qr .info .how{color:#9aa8a0;font-size:11px;line-height:1.5}
+.qr .info .how b{color:#06c755}
+.link{margin:6px 16px 2px;text-align:center;background:#0d160f;border:1px dashed #1d4a2e;border-radius:8px;padding:7px}
+.link .l{color:#6f9a80;font-size:10px}
+.link .u{color:#1fd66e;font-size:13px;font-weight:800}
+.steps{padding:4px 16px}
+.st{display:flex;gap:10px;align-items:flex-start;margin-bottom:8px}
+.n{flex:0 0 25px;height:25px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#b87333);color:#111;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center}
+.tx{flex:1;color:#d8cfc0;font-size:13px;line-height:1.45;padding-top:3px}
+.tx b{color:#ffe600}
+.tx .code{color:#1fd66e;font-weight:800}
+.tx .btn{display:inline-block;background:#1a3a7a;color:#bcd4ff;border:1px solid #2a5aaa;border-radius:4px;padding:0 6px;font-size:11px;font-weight:700}
+.tx .ok{color:#1fd66e;font-weight:700}
+.foot{margin-top:auto;background:#0d0d0d;border-top:1px solid #2a2a2a;padding:9px 16px;text-align:center;color:#8a8270;font-size:11px;line-height:1.5}
+.foot b{color:#ffe600}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="hd"><div class="kij">// BLOOD PLEDGE · LINE 通知設定</div><h1>⚔️ LINE 通知 2 步驟設定</h1><p>設定完成後，召集通知會推到你的 LINE</p></div>
+    <div class="seclbl"><span class="tag">STEP 1</span><span class="tt">加入公會 LINE 好友</span></div>
+    <div class="qr"><img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=0&data=https%3A%2F%2Fline.me%2FR%2Fti%2Fp%2F%40312agkoe" alt="QR"/><div class="info"><div class="nm">長途夜車</div><div class="id">@312agkoe</div><div class="how">📷 LINE「加好友→行動條碼」掃描，或搜尋 ID。</div></div></div>
+    <div class="link"><div class="l">或手機點此連結直接加</div><div class="u">line.me/R/ti/p/@312agkoe</div></div>
+    <div class="seclbl"><span class="tag am">STEP 2</span><span class="tt">後台綁定（綁了才收得到通知）</span></div>
+    <div class="steps">
+      <div class="st"><div class="n">1</div><div class="tx">開 <b>lineage-nine-sigma.vercel.app</b>，右上 <span class="btn">SYS.AUTH</span> 用<b>你的 Google</b> 登入</div></div>
+      <div class="st"><div class="n">2</div><div class="tx">「概覽」頁右下角點藍色 <span class="btn">🔗 LINE 綁定</span></div></div>
+      <div class="st"><div class="n">3</div><div class="tx">記下視窗給的 <b>6 位數綁定碼</b></div></div>
+      <div class="st"><div class="n">4</div><div class="tx">回 LINE「長途夜車」輸入 <span class="code">綁定</span> 送出</div></div>
+      <div class="st"><div class="n">5</div><div class="tx">再把那組 <span class="code">6 位數字</span> 送出</div></div>
+      <div class="st"><div class="n">6</div><div class="tx">看到 <span class="ok">✅ 綁定成功！</span> 即完成 🎉</div></div>
+    </div>
+    <div class="foot">⚠️ <b>先加好友再綁定</b>，否則收不到通知 ｜ 綁定碼有時效，盡快輸入</div>
+  </div>
+</body>
+</html>
