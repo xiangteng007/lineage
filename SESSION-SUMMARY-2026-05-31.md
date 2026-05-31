@@ -23,6 +23,9 @@
 | 廣播實機驗收 | 登記「測試首領」→ 廣播 → 手機實收 Flex（`sent:1`）| ✅ |
 | HANDOFF 更新 | 記錄本階段修復＋3 條新雷點 | [PR #26](https://github.com/xiangteng007/lineage/pull/26) → `ca0e9c4` |
 | admin 綁定指引 | 純文字版＋手機直式圖卡（加好友 QR＋綁定 6 步驟二合一）| `line-bind-guide.html` |
+| 文件/工具納入 git | inspect 腳本＋LINE 圖卡＋本總結文件納入版控 | [PR #27](https://github.com/xiangteng007/lineage/pull/27) → `219c16b` |
+| 本機 main 同步 | 主 repo 切回 `main` 並同步到最新 | — |
+| **公會資料編輯功能（D）** | 新增 officer（Lv3+）可編的「公會資料」介面：公會名／伺服器／公告／城堡清單 ＋ 後端 `PUT /api/guild`（`requireRole(3)`）| [PR #28](https://github.com/xiangteng007/lineage/pull/28) → `783477a` |
 
 ### 本階段釐清的 3 個關鍵雷點（已寫入 HANDOFF §8）
 1. **action 權限走 `x-google-token` header**，不是 `Authorization: Bearer`（手動測 API 易踩）。
@@ -64,15 +67,15 @@
 ### 🟡 建議（資料品質 / 整潔）
 | # | 缺口 | 說明 |
 |---|---|---|
-| C | **清除測試資料** | production 仍有測試用「測試首領」首領戰紀錄，建議刪除（避免污染統計）|
-| D | **公會基本資料補完** | `settings/guild` 已 seed 名稱「長途夜車」/伺服器「水蛇」，但 `castles=[]`、`announcement=''` 可補 |
 | E | **建立其餘成員檔** | 目前僅 1 筆成員；實際公會成員應陸續建檔，attendance/分紅才有意義 |
 
-### 🟢 可選（環境 / 整潔，不影響運作）
-| # | 缺口 | 說明 |
+### ✅ 本階段已處理
+| # | 項目 | 結果 |
 |---|---|---|
-| F | **本機 main 落後** | 本機在 `7bb028e`（webhook 分支），origin/main 在 `ca0e9c4`。建議 `git checkout main && git pull origin main` 同步 |
-| G | **untracked 工作產物** | `line-bind-guide.html`、`SESSION-SUMMARY-*.md`、`.claude/`、`scripts/inspect-line-data.js` 等未進 git，視需要納入或忽略 |
+| C | 清除測試資料 | 依使用者指示**跳過（不刪）**；「測試首領」紀錄保留。系統本就支援 Lv4 元帥／Lv5 公主在「首領」分頁該列刪除，需要時可自行清。 |
+| D | 公會基本資料 | 不手動填，改為**「幹部可在系統內輸入」**→ 已建「公會資料」編輯功能（[PR #28](https://github.com/xiangteng007/lineage/pull/28)）。公會名／伺服器／公告／城堡由 Lv3+ 在後台自行維護。 |
+| F | 本機 main 落後 | ✅ 已 `git checkout main && git pull`，同步到 `783477a`。 |
+| G | untracked 工作產物 | ✅ 已將 inspect 腳本／LINE 圖卡／本總結納入 git（[PR #27](https://github.com/xiangteng007/lineage/pull/27)）。`.claude/`、`fix-frontend.bat` 維持未追蹤（本地設定／本機工具）。 |
 
 ---
 
@@ -80,18 +83,18 @@
 
 1. **發指引圖卡到幹部群** → 3 位 admin 完成綁定（缺口 A）→ adminLineBinds 達 4 筆
 2. 後台陸續**建立成員檔 + 綁 lineUserId**（缺口 B、E）
-3. **清掉測試首領**紀錄（缺口 C）
-4. 視需要補**城堡清單/公告**（缺口 D）
-5. 本機 `git pull origin main` 同步（缺口 F）
+3. 由幹部用新的**「公會資料」**介面填入公告／城堡（D 已可操作）
+4.（可選）清掉「測試首領」紀錄
 
 ---
 
 ## 6. 本階段交付物
 
-- 程式：[PR #25](https://github.com/xiangteng007/lineage/pull/25)（廣播修復）、[PR #26](https://github.com/xiangteng007/lineage/pull/26)（HANDOFF 更新）
+- 程式：[PR #25](https://github.com/xiangteng007/lineage/pull/25)（廣播修復）、[PR #26](https://github.com/xiangteng007/lineage/pull/26)（HANDOFF 更新）、[PR #27](https://github.com/xiangteng007/lineage/pull/27)（工具/文件納入）、[PR #28](https://github.com/xiangteng007/lineage/pull/28)（公會資料編輯功能）
 - 設定：Firestore `settings/*` 四份文件（seed）
 - 文件：`HANDOFF.md`（已更新）、本 `SESSION-SUMMARY-2026-05-31.md`
 - 素材：`line-bind-guide.html`（手機直式 LINE 通知設定圖卡，可重出）
+- 正式環境 HEAD：`783477a`（PR #28 後）
 
 ---
 
