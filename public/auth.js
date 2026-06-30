@@ -89,12 +89,14 @@ async function _signInWithLine(lineUserId, displayName) {
       body: JSON.stringify({ lineUserId, displayName }),
     });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const { customToken } = await resp.json();
-    await firebase.auth().signInWithCustomToken(customToken);
-    console.info('[auth] Firebase signInWithCustomToken OK');
+    const data = await resp.json();
+    const token = data.token || data.customToken;
+    if (token) localStorage.setItem('authToken', token);   // 本地 JWT
+    await _loadCurrentUser();
+    console.info('[auth] 本地 token 登入 OK');
   } catch (err) {
     console.error('[auth] _signInWithLine error:', err);
-    showToast('Firebase 登入失敗：' + (err.message || err), 'error');
+    showToast('登入失敗：' + (err.message || err), 'error');
   }
 }
 
@@ -108,39 +110,41 @@ async function _signInWithLine(lineUserId, displayName) {
  * 同時載入 /settings/guild 取得公會主自訂的階級與模組權限覆寫。
  */
 function initAuthListener() {
-  firebase.auth().onAuthStateChanged(async (firebaseUser) => {
-    if (firebaseUser) {
-      try {
-        // 載入公會設定（階級名稱、模組權限矩陣）
-        await _loadGuildSettings();
-        // 載入使用者資料
-        const userDoc = await firebase.firestore()
-          .collection('users').doc(firebaseUser.uid).get();
-        const userData = userDoc.exists ? userDoc.data() : {};
-        window.currentUser = {
-          uid:              firebaseUser.uid,
-          displayName:      userData.displayName || firebaseUser.displayName || '未知成員',
-          lineUserId:       userData.lineUserId   || null,
-          role:             userData.role         || 'recruit',
-          roleLevel:        userData.roleLevel    || 1,
-          guildCharacters:  userData.guildCharacters || [],
-          permissions:      userData.permissions  || {},
-          roles:            _roles,
-          modulePermissions: _modulePermissions,
-        };
-        updateHeaderAuth(window.currentUser);
-        console.info('[auth] user loaded:', window.currentUser.displayName, '/ level', window.currentUser.roleLevel);
-        // 發布事件，讓其他模組可監聽
-        window.dispatchEvent(new CustomEvent('authReady', { detail: window.currentUser }));
-      } catch (err) {
-        console.error('[auth] user load error:', err);
-      }
-    } else {
-      window.currentUser = null;
-      updateHeaderAuth(null);
-      window.dispatchEvent(new CustomEvent('authReady', { detail: null }));
-    }
-  });
+  // 取代 Firebase onAuthStateChanged：改以本地 token + /api/me 載入身分。
+  _loadCurrentUser();
+}
+
+async function _loadCurrentUser() {
+  const token = localStorage.getItem('authToken');
+  if (!token) {
+    window.currentUser = null;
+    updateHeaderAuth(null);
+    window.dispatchEvent(new CustomEvent('authReady', { detail: null }));
+    return;
+  }
+  try {
+    await _loadGuildSettings();
+    const resp = await fetch('/api/me', { headers: { 'x-auth-token': token } });
+    const j = resp.ok ? await resp.json() : null;
+    const d = (j && j.data) || {};
+    const member = d.member || {};
+    window.currentUser = {
+      uid:              d.lineUserId || null,
+      displayName:      member.displayName || member.name || member.Name || '未知成員',
+      lineUserId:       d.lineUserId || null,
+      role:             d.role || 'recruit',
+      roleLevel:        d.roleLevel || 0,
+      guildCharacters:  member.characters || [],
+      permissions:      d.permissions || {},
+      roles:            _roles,
+      modulePermissions: _modulePermissions,
+    };
+    updateHeaderAuth(window.currentUser);
+    console.info('[auth] user loaded:', window.currentUser.displayName, '/ level', window.currentUser.roleLevel);
+    window.dispatchEvent(new CustomEvent('authReady', { detail: window.currentUser }));
+  } catch (err) {
+    console.error('[auth] user load error:', err);
+  }
 }
 
 /**
@@ -149,15 +153,13 @@ function initAuthListener() {
  */
 async function _loadGuildSettings() {
   try {
-    const snap = await firebase.firestore()
-      .collection('settings').doc('guild').get();
-    if (!snap.exists) return;
-    const data = snap.data();
-    // 覆寫階級名稱
+    const resp = await fetch('/api/settings');
+    if (!resp.ok) return; // 端點不存在或無資料 → 保留預設值
+    const j = await resp.json();
+    const data = (j && (j.guild || j.data || j)) || {};
     if (Array.isArray(data.roles) && data.roles.length === 5) {
       _roles = data.roles;
     }
-    // 覆寫模組權限
     if (data.modulePermissions && typeof data.modulePermissions === 'object') {
       _modulePermissions = { ...DEFAULT_MODULE_PERMISSIONS, ...data.modulePermissions };
     }
@@ -463,12 +465,11 @@ async function saveAdminRoles() {
     });
   });
   try {
-    await firebase.firestore().collection('settings').doc('guild').set({
-      roles: newRoles,
-      modulePermissions: newPerms,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      updatedBy: window.currentUser ? window.currentUser.uid : null,
-    }, { merge: true });
+    await fetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'x-auth-token': localStorage.getItem('authToken') || '' },
+      body: JSON.stringify({ guild: { roles: newRoles, modulePermissions: newPerms } }),
+    });
     _roles = newRoles;
     _modulePermissions = newPerms;
     if (window.currentUser) {
@@ -492,8 +493,9 @@ async function saveAdminRoles() {
  */
 async function logout() {
   try {
-    await firebase.auth().signOut();
-    if (typeof liff !== 'undefined' && liff.isLoggedIn()) {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('authUser');
+    if (typeof liff !== 'undefined' && liff.isLoggedIn && liff.isLoggedIn()) {
       liff.logout();
     }
     window.currentUser = null;

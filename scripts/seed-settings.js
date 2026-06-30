@@ -2,25 +2,26 @@
 /**
  * scripts/seed-settings.js
  * ---------------------------------------------------------------------------
- * Initialise the `settings/*` documents needed for go-live:
- *   settings/permissions  — configurable action thresholds (income/expense/...)
- *   settings/modules      — per-module read/write minimum roleLevel
- *   settings/roles        — 5-tier role definitions (names + colors)
- *   settings/guild        — basic guild info
+ * 初始化 go-live 需要的 settings/* 文件：
+ *   settings/permissions  — 可設定的 action 門檻（收入/支出/...）
+ *   settings/modules      — 各模組讀寫最低 roleLevel
+ *   settings/roles        — 5 階階級定義（名稱 + 顏色）
+ *   settings/guild        — 基本公會資訊
  *
- * SAFETY:
- *   • DRY-RUN by default (no writes). Use --commit to write.
- *   • Idempotent: existing docs are NOT overwritten unless --force is given.
+ * 走 lib 的 store 選擇器（預設 PostgreSQL；STORAGE_DRIVER=firestore 可指回雲端）。
  *
- * USAGE:
- *   node scripts/seed-settings.js              # preview
- *   node scripts/seed-settings.js --commit     # create missing docs
- *   node scripts/seed-settings.js --commit --force   # overwrite with defaults
+ * 安全機制：
+ *   • 預設 DRY-RUN（不寫入）。加 --commit 才寫。
+ *   • 冪等：既有文件不覆寫，除非加 --force。
+ *
+ * 用法：
+ *   node scripts/seed-settings.js              # 預覽
+ *   node scripts/seed-settings.js --commit     # 建立缺少的文件
+ *   node scripts/seed-settings.js --commit --force   # 以預設值覆寫
  * ---------------------------------------------------------------------------
  */
-const admin = require('firebase-admin');
-const path = require('path');
-const fs = require('fs');
+require('dotenv').config();
+const store = require('../firebase');
 
 const args = process.argv.slice(2);
 const COMMIT = args.includes('--commit');
@@ -57,41 +58,21 @@ const SEED = {
   },
 };
 
-function initFirebase() {
-  if (admin.apps.length) return admin.firestore();
-  const keyPath = path.join(__dirname, '..', 'serviceAccountKey.json');
-  if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
-    admin.initializeApp({ credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON)) });
-  } else if (fs.existsSync(keyPath)) {
-    admin.initializeApp({ credential: admin.credential.cert(require(keyPath)) });
-  } else if (process.env.FIREBASE_PROJECT_ID) {
-    admin.initializeApp({ credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
-    }) });
-  } else {
-    console.error('❌ No Firebase credentials found.'); process.exit(1);
-  }
-  return admin.firestore();
-}
-
 (async () => {
-  const db = initFirebase();
-  console.log('\n=== Seed settings ===');
+  console.log(`\n=== Seed settings (driver: ${store.getStorageMode()}) ===`);
   console.log(`mode: ${COMMIT ? (FORCE ? 'COMMIT --force' : 'COMMIT') : 'DRY-RUN (no writes)'}\n`);
   for (const [docId, data] of Object.entries(SEED)) {
-    const ref = db.collection('settings').doc(docId);
-    const snap = await ref.get();
-    const exists = snap.exists;
+    const existing = await store.getDocument('settings', docId);
+    const exists = !!existing;
     if (!COMMIT) {
       console.log(`  [dry-run] settings/${docId.padEnd(12)} ${exists ? 'EXISTS (would skip)' : 'would CREATE'}`);
       continue;
     }
     if (exists && !FORCE) { console.log(`  ⏭  settings/${docId} exists — skipped (use --force to overwrite)`); continue; }
-    await ref.set({ ...data, updatedAt: new Date().toISOString() }, { merge: true });
+    await store.upsertData('settings', docId, { ...data, updatedAt: new Date().toISOString() });
     console.log(`  ✅ settings/${docId} ${exists ? 'updated' : 'created'}`);
   }
   console.log(`\nDone. ${COMMIT ? '' : 'Re-run with --commit to write.'}`);
+  if (store.close) await store.close();
   process.exit(0);
 })().catch(e => { console.error(e); process.exit(1); });

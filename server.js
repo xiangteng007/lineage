@@ -2,9 +2,9 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const https = require('https');
 const line = require('@line/bot-sdk');
 const firebase = require('./firebase');
+const authTokens = require('./lib/auth-tokens');
 const agg = require('./lib/aggregations');
 const httpx = require('./lib/http');
 const { logActivity } = require('./lib/activity');
@@ -269,109 +269,73 @@ async function handleLineEvent(event) {
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ── Google Admin Auth ────────────────────────────
+// ── 本地認證（取代 Google / Firebase Auth）─────────────────────────────
+// 以本地 JWT 驗證身分；前端用 header `x-auth-token` 帶上（相容舊的 x-firebase-token）。
+//   provider === 'local' → 公主（本地管理員），role 直接取自 token
+//   provider === 'line'  → LINE 成員，roleLevel 由 Members 解析
+// 開發便利：設 AUTH_OPEN_MODE=true 可略過認證（一律視為 role 5）。
 
-/** Verify Google ID token and return payload or null */
-async function verifyGoogleToken(token) {
-  return new Promise((resolve) => {
-    https.get(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(token)}`, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => {
-        try {
-          const payload = JSON.parse(data);
-          if (payload.error) { resolve(null); return; }
-          resolve(payload);
-        } catch (e) { resolve(null); }
-      });
-    }).on('error', () => resolve(null));
-  });
+function readAuthToken(req) {
+  return req.headers['x-auth-token'] || req.headers['x-firebase-token'] || null;
 }
 
-/** Admin middleware — requires valid Google token from admin email list */
+/** 解析請求者身分與 roleLevel。回傳 { role, member?, lineId?, adminUser?, userEmail?, openMode?, error? } */
+async function getActor(req) {
+  if (process.env.AUTH_OPEN_MODE === 'true') return { role: 5, openMode: true };
+  const token = readAuthToken(req);
+  if (!token) return { role: 0 };
+  let payload;
+  try { payload = authTokens.verify(token); } catch (e) { return { role: 0, error: 'invalid' }; }
+  if (payload.provider === 'local') {
+    return { role: Number(payload.role) || 5, adminUser: payload.uid, userEmail: payload.uid };
+  }
+  // LINE 成員（uid === lineUserId）
+  const members = await firebase.getAllData('Members');
+  const member = members.find(m => m.lineUserId === payload.uid) || null;
+  const role = permissions.resolveRoleLevel(member, false);
+  return { role, member, lineId: payload.uid, userEmail: (member && (member.name || member.Name)) || payload.uid };
+}
+
+/** 公主限定（roleLevel >= 5）。 */
 async function requireAdmin(req, res, next) {
-  const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
-
-  if (adminEmails.length === 0) {
-    console.warn('⚠️ ADMIN_EMAILS not configured — running in open mode');
+  const actor = await getActor(req);
+  if (actor.error) return res.status(401).json({ error: '無效的登入憑證' });
+  if (actor.role >= 5) {
+    req.adminEmail = actor.adminUser || actor.userEmail; req.userEmail = actor.userEmail; req.actorRole = actor.role;
     return next();
   }
-
-  const token = req.headers['x-google-token'];
-  if (!token) return res.status(401).json({ error: '未登入，請先以管理員帳號登入' });
-
-  const payload = await verifyGoogleToken(token);
-  if (!payload || !payload.email) return res.status(401).json({ error: '無效的登入憑證' });
-
-  if (!adminEmails.includes(payload.email.toLowerCase())) {
-    return res.status(403).json({ error: `${payload.email} 非授權管理員帳號` });
-  }
-
-  req.adminEmail = payload.email;
-  next();
+  if (actor.role === 0) return res.status(401).json({ error: '未登入，請先以管理員帳號登入' });
+  return res.status(403).json({ error: '需要公主（最高管理員）權限' });
 }
 
-/** Auth middleware — requires valid Google token (any user) */
+/** 任一已登入者（公主或成員）。 */
 async function requireAuth(req, res, next) {
-  const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
-
-  if (adminEmails.length === 0) {
+  const actor = await getActor(req);
+  if (actor.error) return res.status(401).json({ error: '無效的登入憑證' });
+  if (actor.role >= 1) {
+    req.adminEmail = actor.adminUser; req.userEmail = actor.userEmail; req.actorRole = actor.role; req.actorMember = actor.member;
     return next();
   }
-
-  const token = req.headers['x-google-token'];
-  if (!token) return res.status(401).json({ error: '未登入，請先以 Google 帳號登入' });
-
-  const payload = await verifyGoogleToken(token);
-  if (!payload || !payload.email) return res.status(401).json({ error: '無效的登入憑證' });
-
-  req.userEmail = payload.email;
-  req.userName = payload.name;
-  next();
+  return res.status(401).json({ error: '未登入' });
 }
 
 /**
- * Role-gated middleware factory. Allows EITHER:
- *   • the Google owner/admin (always roleLevel 5), OR
- *   • a LINE member (verified Firebase ID token) whose resolved roleLevel >= minLevel.
- * In open mode (no ADMIN_EMAILS) everything is allowed (dev).
+ * Role-gated middleware factory：roleLevel >= minLevel 才放行。
+ *   • 公主（本地 JWT，provider=local）恆為 roleLevel 5
+ *   • LINE 成員（本地 JWT，provider=line）依 Members 解析
+ *   • AUTH_OPEN_MODE=true 一律放行（dev）
  */
 function requireRole(minLevel) {
   return async function (req, res, next) {
-    const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
-    if (adminEmails.length === 0) { req.actorRole = 5; return next(); }
-
-    // 1) Google owner / admin
-    const gtoken = req.headers['x-google-token'];
-    if (gtoken) {
-      const payload = await verifyGoogleToken(gtoken);
-      if (payload && payload.email && adminEmails.includes(payload.email.toLowerCase())) {
-        req.adminEmail = payload.email; req.actorRole = 5; return next();
-      }
+    const actor = await getActor(req);
+    if (actor.error) return res.status(401).json({ ok: false, code: 'UNAUTHORIZED', error: '無效的登入憑證' });
+    if (actor.role >= minLevel) {
+      req.actorMember = actor.member; req.actorLineId = actor.lineId; req.actorRole = actor.role;
+      req.adminEmail = actor.adminUser; req.userEmail = actor.userEmail;
+      return next();
     }
-
-    // 2) LINE member via Firebase ID token (uid === lineUserId)
-    const ftoken = req.headers['x-firebase-token'];
-    if (ftoken) {
-      try {
-        const admin = require('firebase-admin');
-        const decoded = await admin.auth().verifyIdToken(ftoken);
-        const lineUserId = decoded.uid;
-        const members = await firebase.getAllData('Members');
-        const member = members.find(m => m.lineUserId === lineUserId) || null;
-        const level = permissions.resolveRoleLevel(member, false);
-        if (level >= minLevel) {
-          req.actorMember = member; req.actorLineId = lineUserId; req.actorRole = level;
-          req.userEmail = (member && (member.name || member.Name)) || lineUserId;
-          return next();
-        }
-        return res.status(403).json({ ok: false, code: 'FORBIDDEN', error: `權限不足（需 ${minLevel} 級以上）` });
-      } catch (e) {
-        return res.status(401).json({ ok: false, code: 'UNAUTHORIZED', error: '無效的登入憑證' });
-      }
-    }
-
-    return res.status(401).json({ ok: false, code: 'UNAUTHORIZED', error: '未登入' });
+    if (actor.role === 0) return res.status(401).json({ ok: false, code: 'UNAUTHORIZED', error: '未登入' });
+    return res.status(403).json({ ok: false, code: 'FORBIDDEN', error: `權限不足（需 ${minLevel} 級以上）` });
   };
 }
 
@@ -389,28 +353,13 @@ async function getActionPermConfig() {
 }
 function invalidatePermConfig() { _permCfg = null; _permCfgAt = 0; }
 
-/** Resolve the acting user's roleLevel: Google owner=5, LINE member via firebase token, open mode=5. */
+/** Resolve the acting user's roleLevel（公主=5、LINE 成員、AUTH_OPEN_MODE=5）。 */
 async function resolveActor(req) {
-  const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
-  if (adminEmails.length === 0) return { role: 5, openMode: true };
-  const gtoken = req.headers['x-google-token'];
-  if (gtoken) {
-    const payload = await verifyGoogleToken(gtoken);
-    if (payload && payload.email && adminEmails.includes(payload.email.toLowerCase())) {
-      return { role: 5, adminEmail: payload.email };
-    }
-  }
-  const ftoken = req.headers['x-firebase-token'];
-  if (ftoken) {
-    try {
-      const admin = require('firebase-admin');
-      const decoded = await admin.auth().verifyIdToken(ftoken);
-      const members = await firebase.getAllData('Members');
-      const member = members.find(m => m.lineUserId === decoded.uid) || null;
-      return { role: permissions.resolveRoleLevel(member, false), member, lineId: decoded.uid };
-    } catch (e) { return { role: 0, error: 'invalid' }; }
-  }
-  return { role: 0 };
+  const actor = await getActor(req);
+  if (actor.openMode) return { role: 5, openMode: true };
+  if (actor.error) return { role: 0, error: 'invalid' };
+  if (actor.adminUser) return { role: actor.role, adminEmail: actor.adminUser };
+  return { role: actor.role, member: actor.member, lineId: actor.lineId };
 }
 
 /** Gate a configurable action by roleLevel + settings/permissions. `action` may be a string or function(req)->string. */
@@ -432,10 +381,9 @@ function requireAction(action) {
 
 // ── System Config Endpoint ────────────────────────
 app.get('/api/config', (req, res) => {
-  const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
   res.json({
-    openMode: adminEmails.length === 0,
-    googleClientId: process.env.GOOGLE_CLIENT_ID || '',
+    openMode: process.env.AUTH_OPEN_MODE === 'true',
+    authMode: 'local',
     liffId: process.env.LINE_LIFF_ID || ''
   });
 });
@@ -450,22 +398,9 @@ app.get('/api/status', (req, res) => {
 });
 
 // ── Auth Endpoints ───────────────────────────────
-app.post('/api/auth/verify', async (req, res) => {
-  const { token } = req.body;
-  if (!token) return res.status(400).json({ error: '缺少 token' });
-
-  const payload = await verifyGoogleToken(token);
-  if (!payload || !payload.email) return res.status(401).json({ error: '無效的 token' });
-
-  const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
-  const isAdmin = adminEmails.length === 0 || adminEmails.includes(payload.email.toLowerCase());
-
-  res.json({
-    email: payload.email,
-    name: payload.name,
-    picture: payload.picture,
-    isAdmin
-  });
+// 舊的 Google 登入驗證已移除，改用本地帳號登入：POST /api/admin/login（見 lib/routes-local-auth.js）。
+app.post('/api/auth/verify', (req, res) => {
+  res.status(410).json({ ok: false, code: 'GONE', error: 'Google 登入已停用，請改用 /api/admin/login 本地登入' });
 });
 
 // ── Helpers ──────────────────────────────────────
@@ -551,11 +486,7 @@ app.post('/api/line/broadcast', requireAction('lineBroadcast'), async (req, res)
     // every targeted mode (bound + tier) so admins stay in the loop.
     let adminBinds = [];
     try {
-      const adb = firebase.getDb();
-      if (adb) {
-        const snap = await adb.collection('adminLineBinds').get();
-        adminBinds = snap.docs.map(d => d.data()).filter(b => b && b.lineUserId);
-      }
+      adminBinds = (await firebase.getAllData('adminLineBinds')).filter(b => b && b.lineUserId);
     } catch (e) { console.warn('[broadcast] adminBinds fetch failed:', e.message); }
 
     const [members, alliances] = await Promise.all([firebase.getAllData('Members'), firebase.getAllData('Alliances')]);
@@ -1202,20 +1133,16 @@ app.post('/api/chroma/search', requireAuth, async (req, res) => {
       const { id } = req.params;
       const { name, note } = req.body;
       if (!name) return res.status(400).json({ error: '缺少角色名' });
-      const db = firebase.getDb ? firebase.getDb() : null;
-      if (!db) return res.status(503).json({ error: 'DB unavailable' });
-      const ref = db.collection(firebase.resolveCollection(col)).doc(id);
-      const snap = await ref.get();
-      if (!snap.exists) return res.status(404).json({ error: '找不到記錄' });
-      const data = snap.data();
+      const rec = await firebase.getDocument(col, id);
+      if (!rec) return res.status(404).json({ error: '找不到記錄' });
       let preReg = [];
-      try { preReg = JSON.parse(data.preRegistered || '[]'); } catch {}
+      try { preReg = JSON.parse(rec.preRegistered || '[]'); } catch {}
       // 避免重複報名
       if (preReg.some(p => p.name === name)) {
         return res.json({ ok: true, message: '已報名', preRegistered: JSON.stringify(preReg) });
       }
       preReg.push({ name, note: note || '', registeredAt: new Date().toISOString() });
-      await ref.update({ preRegistered: JSON.stringify(preReg) });
+      await firebase.updateData(col, id, { preRegistered: JSON.stringify(preReg) });
       res.json({ ok: true, preRegistered: JSON.stringify(preReg) });
     } catch (err) {
       console.error(`pre-register ${col} error:`, err);
@@ -1229,15 +1156,12 @@ app.post('/api/chroma/search', requireAuth, async (req, res) => {
       const { id } = req.params;
       const { name } = req.body;
       if (!name) return res.status(400).json({ error: '缺少角色名' });
-      const db = firebase.getDb ? firebase.getDb() : null;
-      if (!db) return res.status(503).json({ error: 'DB unavailable' });
-      const ref = db.collection(firebase.resolveCollection(col)).doc(id);
-      const snap = await ref.get();
-      if (!snap.exists) return res.status(404).json({ error: '找不到記錄' });
+      const rec = await firebase.getDocument(col, id);
+      if (!rec) return res.status(404).json({ error: '找不到記錄' });
       let preReg = [];
-      try { preReg = JSON.parse(snap.data().preRegistered || '[]'); } catch {}
+      try { preReg = JSON.parse(rec.preRegistered || '[]'); } catch {}
       preReg = preReg.filter(p => p.name !== name);
-      await ref.update({ preRegistered: JSON.stringify(preReg) });
+      await firebase.updateData(col, id, { preRegistered: JSON.stringify(preReg) });
       res.json({ ok: true, preRegistered: JSON.stringify(preReg) });
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -1250,16 +1174,14 @@ app.post('/api/chroma/search', requireAuth, async (req, res) => {
       const { id } = req.params;
       const { attendance, drops, loot, note } = req.body;
       if (!Array.isArray(attendance)) return res.status(400).json({ error: '缺少出席名單' });
-      const db = firebase.getDb ? firebase.getDb() : null;
-      if (!db) return res.status(503).json({ error: 'DB unavailable' });
-      const ref = db.collection(firebase.resolveCollection(col)).doc(id);
-      await ref.update({
+      const ok = await firebase.updateData(col, id, {
         attendance: JSON.stringify(attendance),
         drops: drops || 0,
         loot: loot || 0,
         note: note || '',
         updatedAt: new Date().toISOString()
       });
+      if (!ok) return res.status(404).json({ error: '找不到記錄' });
       res.json({ ok: true });
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -1315,9 +1237,7 @@ app.post('/api/members/:id/level-update', requireAuth, async (req, res) => {
   const oldLevel = member.level || null;
   await firebase.updateData('Members', req.params.id, { level: newLevel, updatedAt: new Date().toISOString() });
   try {
-    const db = firebase.getDb();
-    if (db) await db.collection(firebase.resolveCollection('members')).doc(String(req.params.id))
-      .collection('levelHistory').add({ level: newLevel, prevLevel: oldLevel, changedBy: req.userEmail || 'open_mode', changedAt: new Date().toISOString(), note: req.body.note || '' });
+    await firebase.addData('levelHistory', { memberId: String(req.params.id), level: newLevel, prevLevel: oldLevel, changedBy: req.userEmail || 'open_mode', changedAt: new Date().toISOString(), note: req.body.note || '' });
   } catch (e) { console.error('levelHistory write failed:', e.message); }
   logActivity(firebase, { action: 'level-update', module: 'members', actor: req.userEmail || 'open_mode', target: member.name || member.Name || req.params.id, detail: `${oldLevel != null ? oldLevel : '?'} → Lv${newLevel}` });
   res.json({ ok: true, id: req.params.id, level: newLevel, prevLevel: oldLevel });
@@ -1335,12 +1255,10 @@ app.post('/api/alliances/:id/end', requireAdmin, async (req, res) => {
 
 // PUT /api/settings — upsert guild / roles / modules settings docs
 app.put('/api/settings', requireAdmin, async (req, res) => {
-  const db = firebase.getDb();
-  if (!db) return res.status(503).json({ ok: false, code: 'DB_UNAVAILABLE', error: 'DB unavailable' });
   const updated = [];
   for (const key of ['guild', 'roles', 'modules', 'permissions']) {
     if (req.body[key] && typeof req.body[key] === 'object') {
-      await db.collection('settings').doc(key).set({ ...req.body[key], updatedAt: new Date().toISOString() }, { merge: true });
+      await firebase.upsertData('settings', key, { ...req.body[key], updatedAt: new Date().toISOString() });
       updated.push(key);
     }
   }
@@ -1352,8 +1270,6 @@ app.put('/api/settings', requireAdmin, async (req, res) => {
 // PUT /api/guild — officer-editable guild info (name / server / announcement / castles)
 // Gated at roleLevel >= 3 (幹部) so officers — not just the owner — can maintain it.
 app.put('/api/guild', requireRole(3), async (req, res) => {
-  const db = firebase.getDb();
-  if (!db) return res.status(503).json({ ok: false, code: 'DB_UNAVAILABLE', error: 'DB unavailable' });
   const b = req.body || {};
   const patch = {};
   if (b.guildName != null) patch.guildName = String(b.guildName).slice(0, 60);
@@ -1362,7 +1278,7 @@ app.put('/api/guild', requireRole(3), async (req, res) => {
   if (Array.isArray(b.castles)) patch.castles = b.castles.map(c => String(c).slice(0, 40)).filter(Boolean).slice(0, 30);
   if (Object.keys(patch).length === 0) return res.status(400).json({ ok: false, code: 'BAD_REQUEST', error: '無可更新欄位' });
   patch.updatedAt = new Date().toISOString();
-  await db.collection('settings').doc('guild').set(patch, { merge: true });
+  await firebase.upsertData('settings', 'guild', patch);
   logActivity(firebase, { action: 'update', module: 'settings', actor: req.userEmail || req.adminEmail || 'officer', target: 'guild', detail: '更新公會資料：' + Object.keys(patch).filter(k => k !== 'updatedAt').join(',') });
   res.json({ ok: true, data: patch });
 });
@@ -1414,6 +1330,7 @@ require('./lib/routes-sprint-bcd')(app, firebase, agg, httpx);
 require('./lib/routes-auth')(app, firebase, agg);
 require('./lib/routes-liff')(app, firebase);
 require('./lib/routes-admin-bind')(app, firebase, requireAdmin);
+require('./lib/routes-local-auth')(app);
 
 // ── Serve frontend ───────────────────────────────
 app.get('*', (req, res) => {

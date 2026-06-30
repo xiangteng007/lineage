@@ -8,15 +8,23 @@
     "dev": "node server.js",
     "test": "node --test test/aggregations.test.js test/permissions.test.js test/routes-liff.test.js",
     "seed": "node scripts/seed-settings.js",
+    "create-admin": "node scripts/create-admin.js",
+    "export-firestore": "node scripts/export-firestore.js",
+    "import-postgres": "node scripts/import-postgres.js",
     "migrate": "node scripts/migrate-collections.js"
   },
   "dependencies": {
     "@line/bot-sdk": "^11.0.0",
     "@xenova/transformers": "^2.17.2",
+    "bcryptjs": "^2.4.3",
     "chromadb": "^3.4.3",
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",
     "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
     "firebase-admin": "^13.8.0"
   }
 }

@@ -1,27 +1,7 @@
-/* ── Firebase Web App Config ─────────────────────
-   Project: lineage-b0156
-   App:     Lineage AI Web
-   ─────────────────────────────────────────────── */
-const firebaseConfig = {
-  apiKey:            "AIzaSyCjF_cuGR2obzunvMJgShz8nmqveZTZLbk",
-  authDomain:        "lineage-b0156.firebaseapp.com",
-  projectId:         "lineage-b0156",
-  storageBucket:     "lineage-b0156.firebasestorage.app",
-  messagingSenderId: "100077284718",
-  appId:             "1:100077284718:web:2e84704056911a02b8e57f",
-  measurementId:     "G-PGFK6RERQW"
-};
-
-// ── Initialize (compat mode for CDN usage) ───────
-firebase.initializeApp(firebaseConfig);
-const fbAuth = firebase.auth();
-const db   = firebase.firestore();
-
-// ── Firestore settings ────────────────────────────
-db.settings({ ignoreUndefinedProperties: true });
-
-// ── Export for use in other scripts ──────────────
-window._firebaseAuth = fbAuth;
-window._firebaseDb   = db;
-
-console.log('[Firebase] ✅ Initialized — project:', firebaseConfig.projectId);
+/* ── DEPRECATED ───────────────────────────────────────────────────────────
+   本檔已停用。前端不再使用 Firebase（已改為本地 JWT + REST 輪詢）。
+   index.html 已移除對它的 <script> 引用，保留此檔僅為避免舊快取 404。
+   ───────────────────────────────────────────────────────────────────────── */
+window._firebaseAuth = null;
+window._firebaseDb = null;
+console.log('[firebase-config] 已停用（本地模式，無 Firebase）');
