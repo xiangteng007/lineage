@@ -1,0 +1,73 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  Lineage AI 血盟管理系統 — NAS 自架（取代 GCP Cloud Run + Firestore）
+#
+#  三個服務：
+#    db          PostgreSQL 16（資料持久化在 named volume，備份只要備份這個 volume）
+#    app         Node.js / Express（本系統）
+#    cloudflared Cloudflare Tunnel（讓 LINE webhook 從外網以 HTTPS 連進來，
+#                免開 router port、免固定 IP、免自己弄憑證）
+#
+#  使用：
+#    1. cp .env.example .env，填好 JWT_SECRET / PGPASSWORD / LINE_* / CLOUDFLARE_TUNNEL_TOKEN
+#    2. docker compose up -d --build
+#    3. docker compose run --rm app node scripts/create-admin.js   # 建公主帳號
+#  詳見 MIGRATION.md。
+# ═══════════════════════════════════════════════════════════════════════════
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${PGUSER:-lineage}
+      POSTGRES_PASSWORD: ${PGPASSWORD:-lineage}
+      POSTGRES_DB: ${PGDATABASE:-lineage}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # 首次啟動自動建表（容器已有資料時會略過）
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PGUSER:-lineage} -d ${PGDATABASE:-lineage}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      STORAGE_DRIVER: postgres
+      PGHOST: db
+      PGPORT: 5432
+      PGUSER: ${PGUSER:-lineage}
+      PGPASSWORD: ${PGPASSWORD:-lineage}
+      PGDATABASE: ${PGDATABASE:-lineage}
+      JWT_SECRET: ${JWT_SECRET:?請在 .env 設定 JWT_SECRET（長亂數）}
+      JWT_TTL: ${JWT_TTL:-30d}
+      COLLECTION_MODE: ${COLLECTION_MODE:-legacy}
+      AUTH_OPEN_MODE: ${AUTH_OPEN_MODE:-false}
+      LINE_CHANNEL_ACCESS_TOKEN: ${LINE_CHANNEL_ACCESS_TOKEN:-}
+      LINE_CHANNEL_SECRET: ${LINE_CHANNEL_SECRET:-}
+      LINE_LIFF_ID: ${LINE_LIFF_ID:-}
+      CHROMA_SERVER_URL: ${CHROMA_SERVER_URL:-}
+      CHROMA_SERVER_TOKEN: ${CHROMA_SERVER_TOKEN:-}
+    # 區網直接連時用得到（內網管理）；外網一律走 cloudflared，可不對外開這個 port
+    ports:
+      - "${APP_PORT:-3001}:3001"
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
+    depends_on:
+      - app
+    # 在 Cloudflare Zero Trust 後台把 public hostname 指到 http://app:3001 即可
+
+volumes:
+  pgdata:

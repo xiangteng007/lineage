@@ -4,7 +4,6 @@
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
   <title>Lineage AI | Command Center</title>
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -2877,8 +2876,10 @@
 <div id="loginModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;align-items:center;justify-content:center;" onclick="closeLoginModal(event)">
   <div style="background:var(--p1);border:2px solid rgba(248,113,113,0.5);outline:1px solid rgba(248,113,113,0.2);outline-offset:3px;width:100%;max-width:360px;padding:24px;text-align:center;" onclick="event.stopPropagation()">
     <div style="font-size:14px;font-weight:900;color:#f87171;text-transform:uppercase;letter-spacing:0.15em;margin-bottom:16px;border-bottom:1px solid rgba(248,113,113,0.2);padding-bottom:12px;">// System Auth</div>
-    <div style="font-size:11px;color:rgba(248,113,113,0.7);text-transform:uppercase;letter-spacing:0.12em;font-weight:700;margin-bottom:20px;">Authentication required.<br>All login attempts are logged.</div>
-    <div id="googleSignInDiv" style="display:flex;justify-content:center;min-height:44px;"></div>
+    <div style="font-size:11px;color:rgba(248,113,113,0.7);text-transform:uppercase;letter-spacing:0.12em;font-weight:700;margin-bottom:16px;">公主（管理員）登入 · Owner Login</div>
+    <input id="ownerUser" type="text" autocomplete="username" placeholder="帳號 Username" style="width:100%;box-sizing:border-box;margin-bottom:10px;padding:10px 12px;background:var(--p1,#0d0d0d);border:1px solid rgba(186,117,23,0.4);color:var(--tx,#e8d5b0);font-family:'JetBrains Mono',monospace;font-size:13px;" />
+    <input id="ownerPass" type="password" autocomplete="current-password" placeholder="密碼 Password" onkeydown="if(event.key==='Enter')handleOwnerLogin()" style="width:100%;box-sizing:border-box;margin-bottom:14px;padding:10px 12px;background:var(--p1,#0d0d0d);border:1px solid rgba(186,117,23,0.4);color:var(--tx,#e8d5b0);font-family:'JetBrains Mono',monospace;font-size:13px;" />
+    <button type="button" onclick="handleOwnerLogin()" style="width:100%;padding:11px 14px;background:#ba7517;color:#1a1a1a;border:2px solid #d4882a;font-family:'Chakra Petch','Noto Sans TC',sans-serif;font-size:14px;font-weight:700;letter-spacing:0.06em;cursor:pointer;">登入後台</button>
 
     <!-- OR divider -->
     <div style="display:flex;align-items:center;gap:10px;margin:18px 0;">
@@ -3241,13 +3242,9 @@
 
 <!-- ═══ SCRIPTS ═══ -->
 <!-- Firebase SDK (compat) -->
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<!-- LIFF SDK -->
+<!-- LIFF SDK（LINE 登入，非 GCP，保留） -->
 <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<!-- Firebase config + Auth module -->
-<script src="firebase-config.js"></script>
+<!-- Auth module（已移除 Firebase，改用本地 token） -->
 <script src="auth.js"></script>
 <!-- Main app -->
 <script src="app.js"></script>

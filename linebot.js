@@ -17,45 +17,61 @@
  */
 
 const line = require('@line/bot-sdk');
-const admin = require('firebase-admin');
+const store = require('./firebase');             // 本地資料層（PostgreSQL，API 同舊 Firestore）
+const authTokens = require('./lib/auth-tokens');  // 本地 JWT（取代 Firebase Auth custom token）
 
-// ── Firebase init (idempotent) ─────────────────────────────────────────────
-function ensureFirebase() {
-  if (admin.apps.length > 0) return;
-  try {
-    const fs = require('fs');
-    const path = require('path');
-    const keyPath = path.join(__dirname, 'serviceAccountKey.json');
-    if (fs.existsSync(keyPath)) {
-      const sa = require(keyPath);
-      admin.initializeApp({ credential: admin.credential.cert(sa) });
-    } else if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
-      const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
-      admin.initializeApp({ credential: admin.credential.cert(sa) });
-    } else if (process.env.FIREBASE_PROJECT_ID) {
-      admin.initializeApp({
-        credential: admin.credential.cert({
-          projectId: process.env.FIREBASE_PROJECT_ID,
-          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-          privateKey: (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
-        }),
-      });
-    } else {
-      console.warn('[linebot] No Firebase credentials — Firestore calls will fail.');
-      return;
-    }
-    console.log('[linebot] Firebase Admin initialized.');
-  } catch (err) {
-    console.error('[linebot] Firebase init error:', err.message);
-  }
+// 取代 FieldValue.serverTimestamp()
+const FieldValue = { serverTimestamp: () => new Date().toISOString() };
+
+// ── Firestore 相容薄殼（後接本地 store）──────────────────────────────────
+// linebot 原本大量使用 admin.firestore() 的鏈式 API。為了把資料層換成
+// PostgreSQL 又不動到每個呼叫點，這裡用 store 重建等價的最小 Firestore 介面：
+//   collection().where().orderBy().limit().get()
+//   collection().doc().get()/set()/update()、collection().add()
+//   snapshot：empty/size/docs/forEach；doc：exists/id/data()/ref.update()
+function _querySnap(name, rows) {
+  const docs = rows.map(r => ({
+    id: r.id,
+    data: () => r,
+    ref: { update: (patch) => store.updateData(name, r.id, patch) },
+  }));
+  return { empty: docs.length === 0, size: docs.length, docs, forEach: (fn) => docs.forEach(fn) };
 }
-
-ensureFirebase();
-
-/** @returns {FirebaseFirestore.Firestore} */
-function db() {
-  return admin.firestore();
+function _docSnap(name, id, data) {
+  return {
+    id,
+    exists: data != null,
+    data: () => (data == null ? undefined : data),
+    ref: { update: (patch) => store.updateData(name, id, patch) },
+  };
 }
+function _query(name, where, order, lim) {
+  return {
+    where: (f, op, v) => _query(name, [...where, [f, op, v]], order, lim),
+    orderBy: (f, dir) => _query(name, where, [...order, [f, dir || 'asc']], lim),
+    limit: (n) => _query(name, where, order, n),
+    get: async () => _querySnap(name, await store.queryCollection(name, { where, orderBy: order, limit: lim || undefined })),
+  };
+}
+function _collection(name) {
+  const q = _query(name, [], [], null);
+  return {
+    where: q.where,
+    orderBy: q.orderBy,
+    limit: q.limit,
+    get: async () => _querySnap(name, await store.getAllData(name)),
+    doc: (id) => ({
+      get: async () => _docSnap(name, id, await store.getDocument(name, id)),
+      set: async (data, opts) => (opts && opts.merge)
+        ? store.upsertData(name, id, data)
+        : store.addData(name, { ...data, ID: id }),
+      update: (patch) => store.updateData(name, id, patch),
+    }),
+    add: async (data) => { const saved = await store.addData(name, data); return { id: saved && saved.ID }; },
+  };
+}
+/** Firestore 相容入口（取代 admin.firestore()）。 */
+function db() { return { collection: _collection }; }
 
 // ── LINE client factory ────────────────────────────────────────────────────
 function getLineConfig() {
@@ -409,12 +425,12 @@ async function handleBindFlow(event, session, text) {
           email,
           lineUserId: userId,
           displayName,
-          boundAt: admin.firestore.FieldValue.serverTimestamp(),
+          boundAt: FieldValue.serverTimestamp(),
         });
         await db().collection('bindCodes').doc(text).update({
           used: true,
           usedBy: userId,
-          usedAt: admin.firestore.FieldValue.serverTimestamp(),
+          usedAt: FieldValue.serverTimestamp(),
         });
         clearSession(userId);
         return replyText(replyToken,
@@ -483,7 +499,7 @@ async function handleBindFlow(event, session, text) {
         job,
         level,
         tier: '試煉',
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: FieldValue.serverTimestamp(),
         characters: [{ name: charName, job, level }],
       };
       const docRef = await db().collection('Members').add(newMember);
@@ -491,7 +507,7 @@ async function handleBindFlow(event, session, text) {
       await db().collection('bindCodes').doc(code).update({
         used: true,
         usedBy: userId,
-        usedAt: admin.firestore.FieldValue.serverTimestamp(),
+        usedAt: FieldValue.serverTimestamp(),
       });
       clearSession(userId);
       return replyText(replyToken,
@@ -672,8 +688,8 @@ async function handleGenCode(event) {
     await db().collection('bindCodes').doc(code).set({
       code,
       createdBy: userId,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      expiresAt: admin.firestore.Timestamp.fromDate(expiresAt),
+      createdAt: FieldValue.serverTimestamp(),
+      expiresAt: expiresAt.toISOString(),
       used: false,
     });
     return replyText(replyToken, `🔑 綁定碼：${code}（24小時有效，請轉發給新成員）`);
@@ -721,7 +737,7 @@ async function handleSetAttendees(event, text) {
     await db().collection(collection).doc(battleId).update({
       attendance: JSON.stringify(attendeeIds),
       attendees: attendeeIds,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     });
 
     let msg = `✅ 已更新 ${battleId} 出席名單，共 ${attendeeIds.length} 人`;
@@ -1022,17 +1038,13 @@ function setupLineBot(app) {
         const docRef = snap.docs[0].ref;
         await docRef.update({
           displayName: displayName || snap.docs[0].data().displayName,
-          lastLoginAt: admin.firestore.FieldValue.serverTimestamp(),
+          lastLoginAt: FieldValue.serverTimestamp(),
         });
       }
 
-      // Firebase Custom Token uses lineUserId as the UID
-      const customToken = await admin.auth().createCustomToken(lineUserId, {
-        provider: 'line',
-        displayName: displayName || '',
-      });
-
-      return res.json({ customToken });
+      // 本地 JWT（uid === lineUserId），取代 Firebase custom token
+      const token = authTokens.issueMemberToken(lineUserId, { displayName: displayName || '' });
+      return res.json({ token, customToken: token });
     } catch (err) {
       console.error('[linebot] /api/line-auth error:', err.message);
       return res.status(500).json({ error: '⚠️ 系統錯誤，請稍後再試' });

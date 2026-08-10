@@ -1,6 +1,6 @@
 # 天堂精典版管理系統 ⚔️
 
-> 基於 Firebase Firestore + LINE Bot 的血盟管理系統，適用於《天堂經典版》公會日常運作。
+> 基於 PostgreSQL + LINE Bot 的血盟管理系統，適用於《天堂經典版》公會日常運作。可完全自架於 NAS，不依賴任何雲端付費服務。
 
 ## 功能特色
 
@@ -15,10 +15,15 @@
 | 分層 | 技術 |
 |---|---|
 | 後端伺服器 | Node.js + Express |
-| 資料庫 | Firebase Cloud Firestore |
+| 資料庫 | PostgreSQL（JSONB documents 表） |
+| 認證 | 本地 JWT（公主帳密 + LINE 成員） |
 | LINE 整合 | @line/bot-sdk |
-| 前端介面 | Vanilla HTML/CSS/JS |
-| 部署平台 | Vercel / 區網自架 |
+| 前端介面 | Vanilla HTML/CSS/JS（輪詢更新） |
+| 部署平台 | Docker on NAS + Cloudflare Tunnel |
+
+> 🔁 **已從 GCP 搬到 NAS**：原為 Firestore + Cloud Run + Firebase/Google 登入，現改為
+> PostgreSQL + 本地 JWT + Docker，**完全脫離 GCP 費用**。搬遷步驟見 **[MIGRATION.md](MIGRATION.md)**；
+> 資料層可用 `STORAGE_DRIVER=firestore` 暫時切回雲端。
 
 ## 快速開始
 

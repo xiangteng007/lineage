@@ -7,7 +7,7 @@ const API_BASE = '/api';
 
 // ── State ────────────────────────────────────────
 let state = { members: [], battles: [], sieges: [], alliances: [], treasury: null, transactions: [], activityLogs: [] };
-let auth = { isLoggedIn: false, isAdmin: false, user: null, token: null };
+let auth = { isLoggedIn: false, isAdmin: false, user: null, token: null, authToken: null };
 let filters = { members: '', battles: '', sieges: '', alliances: '', treasury: '' };
 
 // ── Charts ───────────────────────────────────────
@@ -85,12 +85,9 @@ async function tryLineLogin() {
       try {
         const ar = await fetch(`${API_BASE}/line-auth`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lineUserId, displayName: profile.displayName }) });
         const aj = await ar.json();
-        if (aj && aj.customToken && window.firebase && firebase.auth) {
-          const cred = await firebase.auth().signInWithCustomToken(aj.customToken);
-          auth.firebaseUser = cred.user;
-          auth.firebaseToken = await cred.user.getIdToken();
-        }
-      } catch (e) { console.warn('[line-login] firebase session failed:', e && e.message); }
+        const tok = aj && (aj.token || aj.customToken);
+        if (tok) { auth.authToken = tok; localStorage.setItem('authToken', tok); }
+      } catch (e) { console.warn('[line-login] token failed:', e && e.message); }
       console.info('[line-login] member:', auth.roleName, 'level', auth.roleLevel);
       return true;
     }
@@ -186,41 +183,18 @@ async function init() {
       auth.isLoggedIn = false; // still not "logged in" as a named user
       auth.openMode = true;
     }
-    if (cfg.googleClientId) {
-      window.GOOGLE_CLIENT_ID = cfg.googleClientId;
-      // Init Google Sign-In after we have the client ID
-      if (window.google && window.google.accounts) {
-        google.accounts.id.initialize({
-          client_id: cfg.googleClientId,
-          callback: function (resp) { handleGoogleLogin(resp && resp.credential); },
-          auto_select: false,
-        });
-      }
-    }
+    // Google 登入已移除 —— 改用本地帳號登入（公主）與 LINE 登入（成員）。
   } catch (e) {
     console.warn('Config fetch failed, defaulting to guest mode');
   }
 
-  // 2. Restore existing session from localStorage
+  // 2. Restore existing owner session from localStorage（本地 JWT）
   if (!auth.openMode) {
-    const savedToken = localStorage.getItem('gToken');
-    const savedUser = localStorage.getItem('gUser');
+    const savedToken = localStorage.getItem('authToken');
+    const savedUser = localStorage.getItem('authUser');
     if (savedToken && savedUser) {
-      try {
-        const res = await fetch(`${API_BASE}/auth/verify`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: savedToken })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setAuthState(savedToken, data);
-        } else {
-          clearAuthState();
-        }
-      } catch (e) {
-        clearAuthState();
-      }
+      try { setAuthState(savedToken, JSON.parse(savedUser)); }
+      catch (e) { clearAuthState(); }
     }
   }
 
@@ -242,29 +216,18 @@ async function init() {
   startTelemetry();
 }
 
-// ── Realtime sync (Firestore onSnapshot) ─────────
+// ── Realtime sync (輪詢取代 Firestore onSnapshot) ─────────
+// 原本用 Firestore onSnapshot 當「變更通知」觸發 fetchData()；改本地後端後
+// 改用輪詢即可（單一血盟資料量小，10 秒一次很輕量）。分頁隱藏時暫停輪詢。
 let _realtimeStarted = false;
-let _realtimeTimer = null;
+let _pollTimer = null;
 function startRealtimeSync() {
   if (_realtimeStarted) return;
-  const fdb = window._firebaseDb;
-  if (!fdb || typeof fdb.collection !== 'function') return; // client SDK unavailable -> silent degrade
   _realtimeStarted = true;
-  const cols = ['Members', 'Battles', 'Sieges', 'Transactions', 'Alliances'];
-  const seen = {};
-  const scheduleRefresh = () => {
-    clearTimeout(_realtimeTimer);
-    _realtimeTimer = setTimeout(() => { fetchData(); }, 800); // debounce bursts into one refresh
-  };
-  cols.forEach(col => {
-    try {
-      fdb.collection(col).onSnapshot(
-        () => { if (!seen[col]) { seen[col] = true; return; } scheduleRefresh(); }, // ignore initial attach
-        (err) => { console.warn('[realtime] listener disabled for', col, err && err.message); }
-      );
-    } catch (e) { console.warn('[realtime] attach failed', col, e && e.message); }
-  });
-  console.log('[realtime] onSnapshot listeners attached');
+  const intervalMs = Number(window._pollIntervalMs) || 10000;
+  _pollTimer = setInterval(() => { if (!document.hidden) fetchData(); }, intervalMs);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) fetchData(); });
+  console.log('[realtime] polling every', intervalMs, 'ms');
 }
 
 // ── Telemetry Simulation ─────────────────────────
@@ -309,51 +272,48 @@ function updateTelemetry() {
 // ── Auth ─────────────────────────────────────────
 function setAuthState(token, userData) {
   auth.isLoggedIn = true;
-  auth.isAdmin = userData.isAdmin;
+  auth.isAdmin = !!userData.isAdmin;
   auth.user = userData;
-  auth.token = token;
-  localStorage.setItem('gToken', token);
-  localStorage.setItem('gUser', JSON.stringify(userData));
+  auth.token = token;       // legacy 欄位
+  auth.authToken = token;   // 本地 JWT，authHeaders 會帶 x-auth-token
+  localStorage.setItem('authToken', token);
+  localStorage.setItem('authUser', JSON.stringify(userData));
 }
 
 function clearAuthState() {
-  auth = { isLoggedIn: false, isAdmin: false, user: null, token: null };
-  localStorage.removeItem('gToken');
-  localStorage.removeItem('gUser');
+  auth = { isLoggedIn: false, isAdmin: false, user: null, token: null, authToken: null };
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('authUser');
 }
 
-async function handleGoogleLogin(credential) {
+// 公主（最高管理員）本地帳號登入 —— 取代 Google 登入
+async function handleOwnerLogin() {
+  const errEl = document.getElementById('loginError');
+  const showErr = (msg) => { if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; errEl.classList.remove('hidden'); } };
+  const username = (document.getElementById('ownerUser') || {}).value || '';
+  const password = (document.getElementById('ownerPass') || {}).value || '';
+  if (!username.trim() || !password) { showErr('請輸入帳號與密碼'); return; }
   try {
-    const res = await fetch(`${API_BASE}/auth/verify`, {
+    const res = await fetch(`${API_BASE}/admin/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: credential })
+      body: JSON.stringify({ username: username.trim(), password })
     });
-
     const data = await res.json();
-
-    if (!res.ok) {
-      document.getElementById('loginError').textContent = data.error || '登入失敗';
-      document.getElementById('loginError').classList.remove('hidden');
-      return;
-    }
-
-    setAuthState(credential, data);
+    if (!res.ok || !data.ok) { showErr(data.error || '登入失敗'); return; }
+    setAuthState(data.token, { isAdmin: (data.roleLevel || 0) >= 5, name: data.username, roleLevel: data.roleLevel });
     closeLoginModal();
     renderAuthUI();
-    renderMembers(); // Re-render with admin controls
+    await fetchData();
+    applyPermissions && applyPermissions();
+    renderMembers();
     renderAlliances();
-
-    if (data.isAdmin) {
-      showToast(`歡迎，${data.name || data.email}！已以管理員身份登入`, 'success');
-    } else {
-      showToast(`歡迎，${data.name || data.email}！已登入血盟系統`, 'success');
-    }
+    showToast(`歡迎，${data.username}！已以管理員身份登入`, 'success');
   } catch (e) {
-    document.getElementById('loginError').textContent = '無法連線至伺服器，請稍後再試';
-    document.getElementById('loginError').classList.remove('hidden');
+    showErr('無法連線至伺服器，請稍後再試');
   }
 }
+window.handleOwnerLogin = handleOwnerLogin;
 
 function logout() {
   clearAuthState();
@@ -361,11 +321,7 @@ function logout() {
   renderMembers();
   renderAlliances();
   showToast('已登出', 'default');
-  
-  // Reset Google One Tap
-  if (window.google && window.google.accounts) {
-    google.accounts.id.disableAutoSelect();
-  }
+  fetchData(); // 回到訪客視角
 }
 
 function renderAuthUI() {
@@ -417,51 +373,12 @@ function renderAuthUI() {
 
 // ── Login Modal ───────────────────────────────────
 function openLoginModal() {
-  document.getElementById('loginModal').style.display = 'flex';
-  document.getElementById('loginError').classList.add('hidden');
-  const div = document.getElementById('googleSignInDiv');
-  if (!div) return;
-
-  // Case A: GSI script not loaded yet (async defer can finish after init()).
-  // Show a wait message and retry once the global appears.
-  if (!(window.google && window.google.accounts && window.google.accounts.id)) {
-    div.innerHTML = '<div style="color:var(--tx3);font-size:13px;padding:16px 0;text-align:center;font-family:\'JetBrains Mono\',monospace;letter-spacing:0.12em;">> AWAITING GOOGLE IDENTITY SDK…</div>';
-    setTimeout(function () {
-      var modal = document.getElementById('loginModal');
-      if (modal && modal.style.display === 'flex') openLoginModal();
-    }, 700);
-    return;
-  }
-
-  // Case B: SDK is ready — make sure it's initialised with our client_id
-  // every time the modal opens (idempotent). The earlier initialize() call
-  // in init() can be a no-op if the SDK wasn't loaded yet; this guarantees
-  // renderButton has a valid client_id to bind to.
-  var clientId = window.GOOGLE_CLIENT_ID || '';
-  if (!clientId) {
-    div.innerHTML = '<div style="color:#f87171;font-size:13px;padding:16px 0;text-align:center;font-weight:700;letter-spacing:0.08em;">GOOGLE_CLIENT_ID NOT CONFIGURED<br><span style="font-size:11px;opacity:0.8;">請在 Vercel 環境變數設定 GOOGLE_CLIENT_ID</span></div>';
-    return;
-  }
-
-  try {
-    google.accounts.id.initialize({
-      client_id: clientId,
-      callback: function (resp) { handleGoogleLogin(resp && resp.credential); },
-      auto_select: false,
-    });
-    div.innerHTML = ''; // clear any prior placeholder before render
-    google.accounts.id.renderButton(div, {
-      type: 'standard',
-      theme: 'filled_black',
-      size: 'large',
-      text: 'signin_with',
-      shape: 'rectangular',
-      width: 280,
-    });
-  } catch (e) {
-    console.error('[auth] GSI renderButton error:', e);
-    div.innerHTML = '<div style="color:#f87171;font-size:13px;padding:16px 0;text-align:center;">Google 元件初始化失敗<br><span style="font-size:11px;opacity:0.8;">' + (e && e.message ? String(e.message).replace(/[<>&]/g, '') : 'unknown') + '</span></div>';
-  }
+  const modal = document.getElementById('loginModal');
+  if (modal) modal.style.display = 'flex';
+  const errEl = document.getElementById('loginError');
+  if (errEl) { errEl.style.display = 'none'; errEl.classList.add('hidden'); }
+  const u = document.getElementById('ownerUser');
+  if (u) setTimeout(() => { try { u.focus(); } catch (e) {} }, 50);
 }
 
 function closeLoginModal(e) {
@@ -636,8 +553,7 @@ function renderActivityFeed() {
 // ── Auth Header ───────────────────────────────────
 function authHeaders() {
   const headers = { 'Content-Type': 'application/json' };
-  if (auth.token) headers['x-google-token'] = auth.token;
-  if (auth.firebaseToken) headers['x-firebase-token'] = auth.firebaseToken;
+  if (auth.authToken) headers['x-auth-token'] = auth.authToken;
   return headers;
 }
 const authHeader = authHeaders; // alias for legacy call sites
@@ -954,7 +870,7 @@ async function updateMember() {
   if (!name || !job) { showToast('請填寫角色名稱與職業', 'error'); return; }
 
   try {
-    if (auth.firebaseUser) { try { auth.firebaseToken = await auth.firebaseUser.getIdToken(); } catch (e) {} }
+    // 本地 token 於登入時已設定，無需刷新
     const res = await fetch(`${API_BASE}/members/${id}`, {
       method: 'PUT', headers: authHeaders(),
       body: JSON.stringify({ name, job, notes, tier, level })
@@ -2296,8 +2212,8 @@ function exportToCSV(moduleName) {
   document.body.removeChild(link);
 }
 
-// ── Expose Google login handler globally ────────────
-window.handleGoogleLogin = handleGoogleLogin;
+// ── Expose owner login handler globally ────────────
+window.handleOwnerLogin = handleOwnerLogin;
 
 // ── Admin LINE Binding Modal ─────────────────────────
 async function openAdminBindModal() {
@@ -3311,7 +3227,7 @@ async function addManualTransaction() {
   const act = type === 'expense' ? 'treasuryExpense' : 'treasuryIncome';
   if (!canDoActionClient(act)) { showToast(type === 'expense' ? '您沒有支出登記權限' : '您沒有收入登記權限', 'error'); return; }
   try {
-    if (auth.firebaseUser) { try { auth.firebaseToken = await auth.firebaseUser.getIdToken(); } catch (e) {} }
+    // 本地 token 於登入時已設定，無需刷新
     const res = await fetch(`${API_BASE}/transactions`, { method: 'POST', headers: authHeaders(), body: JSON.stringify({ type, amount, category, note }) });
     const data = await res.json();
     if (res.ok) {
@@ -3360,7 +3276,7 @@ async function saveTreasuryPermConfig() {
 
 async function submitCastleTax() {
   if (!canDoActionClient('treasuryCastleTax')) { showToast('您沒有城堡稅登錄權限', 'error'); return; }
-  if (auth.firebaseUser) { try { auth.firebaseToken = await auth.firebaseUser.getIdToken(); } catch (e) {} }
+  // 本地 token 於登入時已設定，無需刷新
   const list = document.getElementById('castleTaxList');
   if (!list) return;
   const entries = [...list.querySelectorAll('div')].map(row => ({

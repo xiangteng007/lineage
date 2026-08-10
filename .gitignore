@@ -7,6 +7,12 @@ serviceAccountKey.json
 .env.local
 .env.production
 
+# 含明文密鑰的舊 Cloud Run 設定（請改用 .env；並輪替已外洩的金鑰）
+cloud_run_env.yaml
+
+# Firestore 一次性匯出（可能含成員個資 / 綁定碼，勿上傳）
+firestore-export/
+
 # 依賴套件
 node_modules/
 
